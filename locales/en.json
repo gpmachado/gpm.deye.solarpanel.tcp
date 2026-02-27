@@ -1,0 +1,47 @@
+{
+  "pair": {
+    "title": "Add Deye Inverter",
+    "help": "Enter the IP address of your Solarman Wi-Fi logger. The logger serial number will be detected automatically. If auto-detection fails, enter the serial manually — it is printed on the label of the Wi-Fi data logger stick.",
+    "label": {
+      "host": "IP Address",
+      "port": "TCP Port",
+      "slaveId": "Modbus Slave ID",
+      "loggerSerial": "Logger Serial Number"
+    },
+    "placeholder": {
+      "host": "e.g. 192.168.1.100",
+      "loggerSerial": "e.g. 1782317166"
+    },
+    "status": {
+      "connecting": "Connecting to logger…",
+      "found": "Found: "
+    },
+    "error": {
+      "host_required": "IP address is required.",
+      "invalid_serial": "Logger serial number is invalid.",
+      "serial_not_found": "Could not auto-detect the logger serial. Enter it manually."
+    },
+    "serial_section": {
+      "description": "Could not auto-detect the logger serial. Enter it manually — found on the label of the Wi-Fi data logger stick."
+    }
+  },
+  "device": {
+    "unavailable": "Inverter unreachable: {error}"
+  },
+  "settings": {
+    "host": "IP Address",
+    "loggerSerial": "Logger Serial Number",
+    "port": "TCP Port",
+    "slaveId": "Modbus Slave ID"
+  },
+  "driver": {
+    "2mppt": {
+      "name": "Deye String Inverter (2 MPPT)",
+      "description": "Deye G0* string inverters with 2 PV inputs (SUN-5/6/8/10/12K-G03)"
+    },
+    "4mppt": {
+      "name": "Deye String Inverter (4 MPPT)",
+      "description": "Deye G0* string inverters with 4 PV inputs (SUN-15/20K-G03)"
+    }
+  }
+}

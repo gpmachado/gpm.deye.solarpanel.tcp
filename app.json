@@ -1,0 +1,326 @@
+{
+  "_comment": "This file is generated. Please edit .homeycompose/app.json instead.",
+  "id": "gpm.deye.solarpanel.tcp",
+  "version": "1.0.0",
+  "compatibility": ">=12.4.0",
+  "sdk": 3,
+  "platforms": [
+    "local"
+  ],
+  "name": {
+    "en": "Deye Inverter (Local - Solarman V5)"
+  },
+  "description": {
+    "en": "Local integration for Deye inverters using Solarman V5 protocol (port 8899)"
+  },
+  "category": [
+    "energy"
+  ],
+  "permissions": [],
+  "brandColor": "#E84D0E",
+  "images": {
+    "small": "/assets/images/small.png",
+    "large": "/assets/images/large.png",
+    "xlarge": "/assets/images/xlarge.png"
+  },
+  "author": {
+    "name": "Gabriel Pedrosa Machado",
+    "email": "g.machado@me.com"
+  },
+  "drivers": [
+    {
+      "name": {
+        "en": "Deye String Inverter (2 MPPT)"
+      },
+      "class": "solarpanel",
+      "capabilities": [
+        "measure_power",
+        "meter_power.today",
+        "meter_power",
+        "measure_voltage.pv1",
+        "measure_current.pv1",
+        "measure_voltage.pv2",
+        "measure_current.pv2",
+        "measure_temperature",
+        "measure_voltage.grid",
+        "measure_current.grid",
+        "measure_frequency"
+      ],
+      "capabilitiesOptions": {
+        "measure_power": {
+          "title": {
+            "en": "Output AC Power"
+          }
+        },
+        "meter_power.today": {
+          "title": {
+            "en": "Today Production"
+          }
+        },
+        "meter_power": {
+          "title": {
+            "en": "Total Production"
+          }
+        },
+        "measure_voltage.pv1": {
+          "title": {
+            "en": "PV1 Voltage"
+          }
+        },
+        "measure_current.pv1": {
+          "title": {
+            "en": "PV1 Current"
+          }
+        },
+        "measure_voltage.pv2": {
+          "title": {
+            "en": "PV2 Voltage"
+          }
+        },
+        "measure_current.pv2": {
+          "title": {
+            "en": "PV2 Current"
+          }
+        },
+        "measure_temperature": {
+          "title": {
+            "en": "Temperature"
+          }
+        },
+        "measure_voltage.grid": {
+          "title": {
+            "en": "Grid Voltage"
+          }
+        },
+        "measure_current.grid": {
+          "title": {
+            "en": "Grid Current"
+          }
+        },
+        "measure_frequency": {
+          "title": {
+            "en": "Grid Frequency"
+          }
+        }
+      },
+      "platforms": [
+        "local"
+      ],
+      "connectivity": [
+        "lan"
+      ],
+      "energy": {
+        "measurePowerProducedCapability": "measure_power",
+        "meterPowerExportedCapability": "meter_power"
+      },
+      "pair": [
+        {
+          "id": "pair"
+        }
+      ],
+      "settings": [
+        {
+          "id": "host",
+          "type": "text",
+          "label": {
+            "en": "IP Address"
+          },
+          "value": ""
+        },
+        {
+          "id": "loggerSerial",
+          "type": "number",
+          "label": {
+            "en": "Logger Serial Number"
+          },
+          "value": 0
+        },
+        {
+          "type": "group",
+          "label": {
+            "en": "Advanced"
+          },
+          "children": [
+            {
+              "id": "port",
+              "type": "number",
+              "label": {
+                "en": "TCP Port"
+              },
+              "value": 8899
+            },
+            {
+              "id": "slaveId",
+              "type": "number",
+              "label": {
+                "en": "Modbus Slave ID"
+              },
+              "value": 1
+            }
+          ]
+        }
+      ],
+      "mainCapability": "measure_power",
+      "id": "deye_string_2mppt"
+    },
+    {
+      "name": {
+        "en": "Deye String Inverter (4 MPPT)"
+      },
+      "class": "solarpanel",
+      "capabilities": [
+        "measure_power",
+        "meter_power.today",
+        "meter_power",
+        "measure_voltage.pv1",
+        "measure_current.pv1",
+        "measure_voltage.pv2",
+        "measure_current.pv2",
+        "measure_voltage.pv3",
+        "measure_current.pv3",
+        "measure_voltage.pv4",
+        "measure_current.pv4",
+        "measure_temperature",
+        "measure_voltage.grid",
+        "measure_current.grid",
+        "measure_frequency"
+      ],
+      "capabilitiesOptions": {
+        "measure_power": {
+          "title": {
+            "en": "Output AC Power"
+          }
+        },
+        "meter_power.today": {
+          "title": {
+            "en": "Today Production"
+          }
+        },
+        "meter_power": {
+          "title": {
+            "en": "Total Production"
+          }
+        },
+        "measure_voltage.pv1": {
+          "title": {
+            "en": "PV1 Voltage"
+          }
+        },
+        "measure_current.pv1": {
+          "title": {
+            "en": "PV1 Current"
+          }
+        },
+        "measure_voltage.pv2": {
+          "title": {
+            "en": "PV2 Voltage"
+          }
+        },
+        "measure_current.pv2": {
+          "title": {
+            "en": "PV2 Current"
+          }
+        },
+        "measure_voltage.pv3": {
+          "title": {
+            "en": "PV3 Voltage"
+          }
+        },
+        "measure_current.pv3": {
+          "title": {
+            "en": "PV3 Current"
+          }
+        },
+        "measure_voltage.pv4": {
+          "title": {
+            "en": "PV4 Voltage"
+          }
+        },
+        "measure_current.pv4": {
+          "title": {
+            "en": "PV4 Current"
+          }
+        },
+        "measure_temperature": {
+          "title": {
+            "en": "Temperature"
+          }
+        },
+        "measure_voltage.grid": {
+          "title": {
+            "en": "Grid Voltage"
+          }
+        },
+        "measure_current.grid": {
+          "title": {
+            "en": "Grid Current"
+          }
+        },
+        "measure_frequency": {
+          "title": {
+            "en": "Grid Frequency"
+          }
+        }
+      },
+      "platforms": [
+        "local"
+      ],
+      "connectivity": [
+        "lan"
+      ],
+      "energy": {
+        "measurePowerProducedCapability": "measure_power",
+        "meterPowerExportedCapability": "meter_power"
+      },
+      "pair": [
+        {
+          "id": "pair"
+        }
+      ],
+      "settings": [
+        {
+          "id": "host",
+          "type": "text",
+          "label": {
+            "en": "IP Address"
+          },
+          "value": ""
+        },
+        {
+          "id": "loggerSerial",
+          "type": "number",
+          "label": {
+            "en": "Logger Serial Number"
+          },
+          "value": 0
+        },
+        {
+          "type": "group",
+          "label": {
+            "en": "Advanced"
+          },
+          "children": [
+            {
+              "id": "port",
+              "type": "number",
+              "label": {
+                "en": "TCP Port"
+              },
+              "value": 8899
+            },
+            {
+              "id": "slaveId",
+              "type": "number",
+              "label": {
+                "en": "Modbus Slave ID"
+              },
+              "value": 1
+            }
+          ]
+        }
+      ],
+      "mainCapability": "measure_power",
+      "id": "deye_string_4mppt"
+    }
+  ]
+}

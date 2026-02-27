@@ -1,0 +1,79 @@
+<form class="homey-form" onsubmit="handleSubmit(event)">
+  <fieldset class="homey-form-group">
+
+    <div class="homey-form-input-wrapper">
+      <label class="homey-form-label" for="host">IP Address</label>
+      <input class="homey-form-input" type="text" id="host" placeholder="192.168.1.x" autocomplete="off" />
+    </div>
+
+    <div id="serial-section" style="display:none; margin-top:12px; padding:12px; background:#fff8f5; border:1px solid #f5c6a0; border-radius:6px;">
+      <p style="margin:0 0 8px; font-size:13px; color:#c04000;">Could not auto-detect the logger serial.<br>Enter it manually — printed on the label of the logger stick.</p>
+      <div class="homey-form-input-wrapper">
+        <label class="homey-form-label" for="loggerSerial">Logger Serial Number</label>
+        <input class="homey-form-input" type="number" id="loggerSerial" placeholder="e.g. 1782317166" />
+      </div>
+    </div>
+
+    <p id="status" style="font-size:13px; color:#555; min-height:18px; margin-top:8px;"></p>
+
+  </fieldset>
+
+  <button class="homey-button-primary-full" type="submit" id="submitBtn">Continue</button>
+</form>
+
+<script>
+  Homey.setTitle('Add Deye Inverter');
+
+  var serialSectionVisible = false;
+
+  function setStatus(msg, color) {
+    var el = document.getElementById('status');
+    el.textContent = msg;
+    el.style.color = color || '#555';
+  }
+
+  function showSerialSection() {
+    if (serialSectionVisible) return;
+    document.getElementById('serial-section').style.display = 'block';
+    serialSectionVisible = true;
+  }
+
+  function handleSubmit(event) {
+    event.preventDefault();
+
+    var host         = document.getElementById('host').value.trim();
+    var loggerSerial = document.getElementById('loggerSerial').value.trim();
+
+    if (!host) { setStatus('IP address is required.', '#c0392b'); return; }
+
+    document.getElementById('submitBtn').disabled = true;
+    setStatus('Connecting\u2026', '#555');
+
+    var data = { host: host };
+    if (loggerSerial) data.loggerSerial = loggerSerial;
+
+    Homey.emit('list_devices', data, function(err, result) {
+      document.getElementById('submitBtn').disabled = false;
+
+      if (err) {
+        var msg = err.message || String(err);
+        if (msg.indexOf('serial_not_found') !== -1) {
+          showSerialSection();
+          setStatus('Auto-detection failed. Enter the serial number and try again.', '#c0392b');
+        } else {
+          setStatus(msg, '#c0392b');
+        }
+        return;
+      }
+
+      var device = Array.isArray(result) && result[0];
+      if (!device) { setStatus('No device found.', '#c0392b'); return; }
+
+      setStatus('Adding device\u2026', '#27ae60');
+      Homey.createDevice(device, function(createErr) {
+        if (createErr) { setStatus(createErr.message || String(createErr), '#c0392b'); return; }
+        Homey.done();
+      });
+    });
+  }
+</script>

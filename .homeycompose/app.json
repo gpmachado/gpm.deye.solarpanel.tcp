@@ -1,0 +1,29 @@
+{
+  "id": "gpm.deye.solarpanel.tcp",
+  "version": "1.0.0",
+  "compatibility": ">=12.4.0",
+  "sdk": 3,
+  "platforms": [
+    "local"
+  ],
+  "name": {
+    "en": "Deye Inverter (Local - Solarman V5)"
+  },
+  "description": {
+    "en": "Local integration for Deye inverters using Solarman V5 protocol (port 8899)"
+  },
+  "category": [
+    "energy"
+  ],
+  "permissions": [],
+  "brandColor": "#E84D0E",
+  "images": {
+    "small": "/assets/images/small.png",
+    "large": "/assets/images/large.png",
+    "xlarge": "/assets/images/xlarge.png"
+  },
+  "author": {
+    "name": "Gabriel Pedrosa Machado",
+    "email": "g.machado@me.com"
+  }
+}

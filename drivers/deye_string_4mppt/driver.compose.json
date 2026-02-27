@@ -1,0 +1,164 @@
+{
+  "name": {
+    "en": "Deye String Inverter (4 MPPT)"
+  },
+  "class": "solarpanel",
+  "capabilities": [
+    "measure_power",
+    "meter_power.today",
+    "meter_power",
+    "alarm_generic",
+    "measure_temperature",
+    "measure_voltage.grid",
+    "measure_current.grid",
+    "measure_frequency",
+    "measure_voltage.pv1",
+    "measure_current.pv1",
+    "measure_voltage.pv2",
+    "measure_current.pv2",
+    "measure_voltage.pv3",
+    "measure_current.pv3",
+    "measure_voltage.pv4",
+    "measure_current.pv4"
+  ],
+  "capabilitiesOptions": {
+    "measure_power": {
+      "title": {
+        "en": "Output AC Power"
+      }
+    },
+    "meter_power.today": {
+      "title": {
+        "en": "Today Production"
+      }
+    },
+    "meter_power": {
+      "title": {
+        "en": "Total Production"
+      }
+    },
+    "alarm_generic": {
+      "title": {
+        "en": "Fault / Alarm"
+      }
+    },
+    "measure_temperature": {
+      "title": {
+        "en": "Temperature"
+      }
+    },
+    "measure_voltage.grid": {
+      "title": {
+        "en": "Grid Voltage"
+      }
+    },
+    "measure_current.grid": {
+      "title": {
+        "en": "Grid Current"
+      }
+    },
+    "measure_frequency": {
+      "title": {
+        "en": "Grid Frequency"
+      }
+    },
+    "measure_voltage.pv1": {
+      "title": {
+        "en": "PV1 Voltage"
+      }
+    },
+    "measure_current.pv1": {
+      "title": {
+        "en": "PV1 Current"
+      }
+    },
+    "measure_voltage.pv2": {
+      "title": {
+        "en": "PV2 Voltage"
+      }
+    },
+    "measure_current.pv2": {
+      "title": {
+        "en": "PV2 Current"
+      }
+    },
+    "measure_voltage.pv3": {
+      "title": {
+        "en": "PV3 Voltage"
+      }
+    },
+    "measure_current.pv3": {
+      "title": {
+        "en": "PV3 Current"
+      }
+    },
+    "measure_voltage.pv4": {
+      "title": {
+        "en": "PV4 Voltage"
+      }
+    },
+    "measure_current.pv4": {
+      "title": {
+        "en": "PV4 Current"
+      }
+    }
+  },
+  "platforms": [
+    "local"
+  ],
+  "connectivity": [
+    "lan"
+  ],
+  "energy": {
+    "measurePowerProducedCapability": "measure_power",
+    "meterPowerExportedCapability": "meter_power"
+  },
+  "pair": [
+    {
+      "id": "pair"
+    }
+  ],
+  "settings": [
+    {
+      "id": "host",
+      "type": "text",
+      "label": {
+        "en": "IP Address"
+      },
+      "value": ""
+    },
+    {
+      "id": "loggerSerial",
+      "type": "number",
+      "label": {
+        "en": "Logger Serial Number"
+      },
+      "value": 0
+    },
+    {
+      "type": "group",
+      "label": {
+        "en": "Advanced"
+      },
+      "children": [
+        {
+          "id": "port",
+          "type": "number",
+          "label": {
+            "en": "TCP Port"
+          },
+          "value": 8899
+        },
+        {
+          "id": "slaveId",
+          "type": "number",
+          "label": {
+            "en": "Modbus Slave ID"
+          },
+          "value": 1
+        }
+      ]
+    }
+  ],
+  "mainCapability": "measure_power"
+}

@@ -1,0 +1,9 @@
+{
+  "name": "com.deys.solarpanel.tcp",
+  "version": "1.0.0",
+  "main": "app.js",
+  "scripts": {},
+  "devDependencies": {
+    "@types/homey": "npm:homey-apps-sdk-v3-types@^0.3.12"
+  }
+}
