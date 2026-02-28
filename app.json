@@ -25,7 +25,10 @@
   },
   "author": {
     "name": "Gabriel Pedrosa Machado",
-    "email": "g.machado@me.com"
+    "email": "g.machado@me.com",
+    "source": "https://github.com/gpmachado/gpm.deye.solarpanel.tcp",
+    "homepage": "https://github.com/gpmachado/gpm.deye.solarpanel.tcp",
+    "support": "https://github.com/gpmachado/gpm.deye.solarpanel.tcp/issues"
   },
   "drivers": [
     {
@@ -37,14 +40,15 @@
         "measure_power",
         "meter_power.today",
         "meter_power",
-        "measure_voltage.pv1",
-        "measure_current.pv1",
-        "measure_voltage.pv2",
-        "measure_current.pv2",
+        "alarm_generic",
         "measure_temperature",
         "measure_voltage.grid",
         "measure_current.grid",
-        "measure_frequency"
+        "measure_frequency",
+        "measure_voltage.pv1",
+        "measure_current.pv1",
+        "measure_voltage.pv2",
+        "measure_current.pv2"
       ],
       "capabilitiesOptions": {
         "measure_power": {
@@ -60,6 +64,31 @@
         "meter_power": {
           "title": {
             "en": "Total Production"
+          }
+        },
+        "alarm_generic": {
+          "title": {
+            "en": "Fault / Alarm"
+          }
+        },
+        "measure_temperature": {
+          "title": {
+            "en": "Temperature"
+          }
+        },
+        "measure_voltage.grid": {
+          "title": {
+            "en": "Grid Voltage"
+          }
+        },
+        "measure_current.grid": {
+          "title": {
+            "en": "Grid Current"
+          }
+        },
+        "measure_frequency": {
+          "title": {
+            "en": "Grid Frequency"
           }
         },
         "measure_voltage.pv1": {
@@ -82,24 +111,24 @@
             "en": "PV2 Current"
           }
         },
-        "measure_temperature": {
+        "measure_voltage.pv3": {
           "title": {
-            "en": "Temperature"
+            "en": "PV3 Voltage"
           }
         },
-        "measure_voltage.grid": {
+        "measure_current.pv3": {
           "title": {
-            "en": "Grid Voltage"
+            "en": "PV3 Current"
           }
         },
-        "measure_current.grid": {
+        "measure_voltage.pv4": {
           "title": {
-            "en": "Grid Current"
+            "en": "PV4 Voltage"
           }
         },
-        "measure_frequency": {
+        "measure_current.pv4": {
           "title": {
-            "en": "Grid Frequency"
+            "en": "PV4 Current"
           }
         }
       },
@@ -172,6 +201,11 @@
         "measure_power",
         "meter_power.today",
         "meter_power",
+        "alarm_generic",
+        "measure_temperature",
+        "measure_voltage.grid",
+        "measure_current.grid",
+        "measure_frequency",
         "measure_voltage.pv1",
         "measure_current.pv1",
         "measure_voltage.pv2",
@@ -179,11 +213,7 @@
         "measure_voltage.pv3",
         "measure_current.pv3",
         "measure_voltage.pv4",
-        "measure_current.pv4",
-        "measure_temperature",
-        "measure_voltage.grid",
-        "measure_current.grid",
-        "measure_frequency"
+        "measure_current.pv4"
       ],
       "capabilitiesOptions": {
         "measure_power": {
@@ -199,6 +229,31 @@
         "meter_power": {
           "title": {
             "en": "Total Production"
+          }
+        },
+        "alarm_generic": {
+          "title": {
+            "en": "Fault / Alarm"
+          }
+        },
+        "measure_temperature": {
+          "title": {
+            "en": "Temperature"
+          }
+        },
+        "measure_voltage.grid": {
+          "title": {
+            "en": "Grid Voltage"
+          }
+        },
+        "measure_current.grid": {
+          "title": {
+            "en": "Grid Current"
+          }
+        },
+        "measure_frequency": {
+          "title": {
+            "en": "Grid Frequency"
           }
         },
         "measure_voltage.pv1": {
@@ -239,26 +294,6 @@
         "measure_current.pv4": {
           "title": {
             "en": "PV4 Current"
-          }
-        },
-        "measure_temperature": {
-          "title": {
-            "en": "Temperature"
-          }
-        },
-        "measure_voltage.grid": {
-          "title": {
-            "en": "Grid Voltage"
-          }
-        },
-        "measure_current.grid": {
-          "title": {
-            "en": "Grid Current"
-          }
-        },
-        "measure_frequency": {
-          "title": {
-            "en": "Grid Frequency"
           }
         }
       },

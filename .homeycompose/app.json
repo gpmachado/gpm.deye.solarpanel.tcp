@@ -24,6 +24,9 @@
   },
   "author": {
     "name": "Gabriel Pedrosa Machado",
-    "email": "g.machado@me.com"
+    "email": "g.machado@me.com",
+    "source": "https://github.com/gpmachado/gpm.deye.solarpanel.tcp",
+  "homepage": "https://github.com/gpmachado/gpm.deye.solarpanel.tcp",
+  "support": "https://github.com/gpmachado/gpm.deye.solarpanel.tcp/issues"
   }
 }
