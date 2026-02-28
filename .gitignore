@@ -1,3 +1,15 @@
-/env.json
-/node_modules/
-/.homeybuild/
+# Environment
+env.json
+
+# Dependencies
+node_modules/
+
+# Homey build output
+.homeybuild/
+
+# macOS
+.DS_Store
+
+# Logs
+*.log
+npm-debug.log*

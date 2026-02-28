@@ -190,6 +190,11 @@
         }
       ],
       "mainCapability": "measure_power",
+      "images": {
+        "large": "/drivers/deye_string_2mppt/assets/images/large.png",
+        "small": "/drivers/deye_string_2mppt/assets/images/small.png",
+        "xlarge": "/drivers/deye_string_2mppt/assets/images/xlarge.png"
+      },
       "id": "deye_string_2mppt"
     },
     {
@@ -355,6 +360,11 @@
         }
       ],
       "mainCapability": "measure_power",
+      "images": {
+        "large": "/drivers/deye_string_4mppt/assets/images/large.png",
+        "small": "/drivers/deye_string_4mppt/assets/images/small.png",
+        "xlarge": "/drivers/deye_string_4mppt/assets/images/xlarge.png"
+      },
       "id": "deye_string_4mppt"
     }
   ]

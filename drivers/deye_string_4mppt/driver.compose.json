@@ -160,5 +160,10 @@
       ]
     }
   ],
-  "mainCapability": "measure_power"
+  "mainCapability": "measure_power",
+  "images": {
+    "large": "{{driverAssetsPath}}/images/large.png",
+    "small": "{{driverAssetsPath}}/images/small.png",
+    "xlarge": "{{driverAssetsPath}}/images/xlarge.png"
+  }
 }
