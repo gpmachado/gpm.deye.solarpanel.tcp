@@ -1,5 +1,11 @@
 {
   "1.0.0": {
     "en": "First version!"
+  },
+  "1.1.0": {
+    "en": "Added Deye Hybrid 3-phase (SG04LP3), Microinverter 2MPPT and 4MPPT drivers. Improved pairing: UDP broadcast discovery (no IP needed) and manual serial fallback for custom passwords. Fixed morning unavailability bug at dawn startup."
+  },
+  "1.0.1": {
+    "en": "Support for Deye SUN-5/6/8/10/12K-G03 (2 MPPT) and SUN-15/20K-G03 (4 MPPT)"
   }
 }

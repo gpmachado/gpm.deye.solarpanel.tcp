@@ -4,7 +4,7 @@ const DeyeDevice = require('../../lib/DeyeDevice');
 const { DEYE_STRING_2MPPT } = require('../../lib/deyeRegisters');
 
 /**
- * Deye String Inverter — 2 MPPT inputs (PV1 + PV2).
+ * Deye String Inverter -- 2 MPPT inputs (PV1 + PV2).
  * Extends the shared DeyeDevice with the 2-string register profile.
  */
 class DeyeString2MpptDevice extends DeyeDevice {

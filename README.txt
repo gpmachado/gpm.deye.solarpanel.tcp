@@ -1,5 +1,3 @@
-Deye Inverter (Local – Solarman V5)
-
 Monitor your Deye solar inverter directly on your local network — no cloud account, no internet dependency.
 
 This app communicates with the Solarman Wi-Fi data logger stick using the SolarmanV5 protocol over TCP port 8899, polling your inverter every 60 seconds.
