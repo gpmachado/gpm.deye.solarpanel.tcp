@@ -1,0 +1,2 @@
+# Ignore scripts and tests from the final Homey package
+scripts/

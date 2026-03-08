@@ -1,0 +1,47 @@
+{
+    "pair": {
+        "title": "Deye 인버터 추가",
+        "help": "Solarman Wi-Fi 로거의 IP 주소를 입력하세요. 로거 일련번호가 자동으로 감지됩니다. 자동 감지에 실패할 경우, Wi-Fi 데이터 로거 라벨에 인쇄된 일련번호를 수동으로 입력하세요.",
+        "label": {
+            "host": "IP 주소",
+            "port": "TCP 포트",
+            "slaveId": "모드버스 슬레이브 ID",
+            "loggerSerial": "로거 일련번호"
+        },
+        "placeholder": {
+            "host": "예: 192.168.1.100",
+            "loggerSerial": "예: 1782317166"
+        },
+        "status": {
+            "connecting": "로거에 연결 중…",
+            "found": "발견됨: "
+        },
+        "error": {
+            "host_required": "IP 주소가 필요합니다.",
+            "invalid_serial": "로거 일련번호가 유효하지 않습니다.",
+            "serial_not_found": "로거 일련번호를 자동으로 감지할 수 없습니다. 수동으로 입력해 주세요."
+        },
+        "serial_section": {
+            "description": "로거 일련번호를 자동으로 감지할 수 없습니다. 수동으로 입력해 주세요 — Wi-Fi 데이터 로거 라벨에서 찾을 수 있습니다."
+        }
+    },
+    "device": {
+        "unavailable": "인버터에 연결할 수 없음: {error}"
+    },
+    "settings": {
+        "host": "IP 주소",
+        "loggerSerial": "로거 일련번호",
+        "port": "TCP 포트",
+        "slaveId": "모드버스 슬레이브 ID"
+    },
+    "driver": {
+        "2mppt": {
+            "name": "Deye 스트링 인버터 (2 MPPT)",
+            "description": "2개의 PV 입력이 있는 Deye G0* 스트링 인버터 (SUN-5/6/8/10/12K-G03)"
+        },
+        "4mppt": {
+            "name": "Deye 스트링 인버터 (4 MPPT)",
+            "description": "4개의 PV 입력이 있는 Deye G0* 스트링 인버터 (SUN-15/20K-G03)"
+        }
+    }
+}

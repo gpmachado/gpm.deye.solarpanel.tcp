@@ -1,0 +1,47 @@
+{
+    "pair": {
+        "title": "Lägg till Deye Växelriktare",
+        "help": "Ange IP-adressen för din Solarman Wi-Fi-logger. Loggerns serienummer kommer att upptäckas automatiskt. Om den automatiska upptäckten misslyckas, ange serienumret manuellt – det finns tryckt på Wi-Fi-loggerns etikett.",
+        "label": {
+            "host": "IP-adress",
+            "port": "TCP-port",
+            "slaveId": "Modbus Slave-ID",
+            "loggerSerial": "Loggerns Serienummer"
+        },
+        "placeholder": {
+            "host": "t.ex. 192.168.1.100",
+            "loggerSerial": "t.ex. 1782317166"
+        },
+        "status": {
+            "connecting": "Ansluter till logger…",
+            "found": "Hittades: "
+        },
+        "error": {
+            "host_required": "IP-adress krävs.",
+            "invalid_serial": "Loggerns serienummer är ogiltigt.",
+            "serial_not_found": "Kunde inte automatiskt upptäcka loggerns serienummer. Ange det manuellt."
+        },
+        "serial_section": {
+            "description": "Kunde inte automatiskt upptäcka loggerns serienummer. Ange det manuellt – finns på Wi-Fi-loggerns etikett."
+        }
+    },
+    "device": {
+        "unavailable": "Växelriktaren är onåbar: {error}"
+    },
+    "settings": {
+        "host": "IP-adress",
+        "loggerSerial": "Loggerns Serienummer",
+        "port": "TCP-port",
+        "slaveId": "Modbus Slave-ID"
+    },
+    "driver": {
+        "2mppt": {
+            "name": "Deye Strängväxelriktare (2 MPPT)",
+            "description": "Deye G0* strängväxelriktare med 2 PV-ingångar (SUN-5/6/8/10/12K-G03)"
+        },
+        "4mppt": {
+            "name": "Deye Strängväxelriktare (4 MPPT)",
+            "description": "Deye G0* strängväxelriktare med 4 PV-ingångar (SUN-15/20K-G03)"
+        }
+    }
+}

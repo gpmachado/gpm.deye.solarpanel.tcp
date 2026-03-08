@@ -1,0 +1,286 @@
+{
+  "name": {
+    "en": "Deye Hybrid Inverter 3-phase (SG04LP3)"
+  },
+  "class": "solarpanel",
+  "capabilities": [
+    "measure_power.pv1",
+    "measure_power.pv2",
+    "measure_power",
+    "meter_power.today",
+    "meter_power",
+    "alarm_generic",
+    "measure_temperature",
+    "measure_temperature.ac",
+    "measure_frequency",
+    "measure_voltage.l1",
+    "measure_voltage.l2",
+    "measure_voltage.l3",
+    "measure_current.l1",
+    "measure_current.l2",
+    "measure_current.l3",
+    "measure_power.grid",
+    "measure_power.load",
+    "measure_power.load_l1",
+    "measure_power.load_l2",
+    "measure_power.load_l3",
+    "measure_battery",
+    "measure_voltage.battery",
+    "measure_power.battery",
+    "measure_temperature.battery",
+    "meter_power.grid_imported_today",
+    "meter_power.grid_exported_today",
+    "meter_power.grid_imported",
+    "meter_power.grid_exported",
+    "meter_power.load_today",
+    "meter_power.battery_charged_today",
+    "meter_power.battery_discharged_today",
+    "measure_voltage.pv1",
+    "measure_current.pv1",
+    "measure_voltage.pv2",
+    "measure_current.pv2"
+  ],
+  "capabilitiesOptions": {
+    "measure_power.pv1": {
+      "title": {
+        "en": "PV1 Power"
+      }
+    },
+    "measure_power.pv2": {
+      "title": {
+        "en": "PV2 Power"
+      }
+    },
+    "meter_power.today": {
+      "title": {
+        "en": "Today Production"
+      }
+    },
+    "meter_power": {
+      "title": {
+        "en": "Total Production"
+      }
+    },
+    "alarm_generic": {
+      "title": {
+        "en": "Fault / Alarm"
+      }
+    },
+    "measure_temperature": {
+      "title": {
+        "en": "DC Temperature"
+      }
+    },
+    "measure_temperature.ac": {
+      "title": {
+        "en": "AC Temperature"
+      }
+    },
+    "measure_frequency": {
+      "title": {
+        "en": "Grid Frequency"
+      }
+    },
+    "measure_voltage.l1": {
+      "title": {
+        "en": "Grid L1 Voltage"
+      }
+    },
+    "measure_voltage.l2": {
+      "title": {
+        "en": "Grid L2 Voltage"
+      }
+    },
+    "measure_voltage.l3": {
+      "title": {
+        "en": "Grid L3 Voltage"
+      }
+    },
+    "measure_current.l1": {
+      "title": {
+        "en": "Grid L1 Current"
+      }
+    },
+    "measure_current.l2": {
+      "title": {
+        "en": "Grid L2 Current"
+      }
+    },
+    "measure_current.l3": {
+      "title": {
+        "en": "Grid L3 Current"
+      }
+    },
+    "measure_power.grid": {
+      "title": {
+        "en": "Grid Power (+ import / \u2212 export)"
+      }
+    },
+    "measure_power.load": {
+      "title": {
+        "en": "Total Load Power"
+      }
+    },
+    "measure_power.load_l1": {
+      "title": {
+        "en": "Load L1 Power"
+      }
+    },
+    "measure_power.load_l2": {
+      "title": {
+        "en": "Load L2 Power"
+      }
+    },
+    "measure_power.load_l3": {
+      "title": {
+        "en": "Load L3 Power"
+      }
+    },
+    "measure_battery": {
+      "title": {
+        "en": "Battery SOC"
+      }
+    },
+    "measure_voltage.battery": {
+      "title": {
+        "en": "Battery Voltage"
+      }
+    },
+    "measure_power.battery": {
+      "title": {
+        "en": "Battery Power (+ charge / \u2212 discharge)"
+      }
+    },
+    "measure_temperature.battery": {
+      "title": {
+        "en": "Battery Temperature"
+      }
+    },
+    "meter_power.grid_imported_today": {
+      "title": {
+        "en": "Grid Import Today"
+      }
+    },
+    "meter_power.grid_exported_today": {
+      "title": {
+        "en": "Grid Export Today"
+      }
+    },
+    "meter_power.grid_imported": {
+      "title": {
+        "en": "Grid Import Total"
+      }
+    },
+    "meter_power.grid_exported": {
+      "title": {
+        "en": "Grid Export Total"
+      }
+    },
+    "meter_power.load_today": {
+      "title": {
+        "en": "Load Consumption Today"
+      }
+    },
+    "meter_power.battery_charged_today": {
+      "title": {
+        "en": "Battery Charged Today"
+      }
+    },
+    "meter_power.battery_discharged_today": {
+      "title": {
+        "en": "Battery Discharged Today"
+      }
+    },
+    "measure_voltage.pv1": {
+      "title": {
+        "en": "PV1 Voltage"
+      }
+    },
+    "measure_current.pv1": {
+      "title": {
+        "en": "PV1 Current"
+      }
+    },
+    "measure_voltage.pv2": {
+      "title": {
+        "en": "PV2 Voltage"
+      }
+    },
+    "measure_current.pv2": {
+      "title": {
+        "en": "PV2 Current"
+      }
+    },
+    "measure_power": {
+      "title": {
+        "en": "Total AC Output Power"
+      }
+    }
+  },
+  "platforms": [
+    "local"
+  ],
+  "connectivity": [
+    "lan"
+  ],
+  "energy": {
+    "batteries": [
+      "INTERNAL"
+    ],
+    "measurePowerProducedCapability": "measure_power",
+    "meterPowerExportedCapability": "meter_power"
+  },
+  "pair": [
+    {
+      "id": "pair"
+    }
+  ],
+  "settings": [
+    {
+      "id": "host",
+      "type": "text",
+      "label": {
+        "en": "IP Address"
+      },
+      "value": ""
+    },
+    {
+      "id": "loggerSerial",
+      "type": "number",
+      "label": {
+        "en": "Logger Serial Number"
+      },
+      "value": 0
+    },
+    {
+      "type": "group",
+      "label": {
+        "en": "Advanced"
+      },
+      "children": [
+        {
+          "id": "port",
+          "type": "number",
+          "label": {
+            "en": "TCP Port"
+          },
+          "value": 8899
+        },
+        {
+          "id": "slaveId",
+          "type": "number",
+          "label": {
+            "en": "Modbus Slave ID"
+          },
+          "value": 1
+        }
+      ]
+    }
+  ],
+  "mainCapability": "measure_power.pv1",
+  "images": {
+    "large": "{{driverAssetsPath}}/images/large.png",
+    "small": "{{driverAssetsPath}}/images/small.png",
+    "xlarge": "{{driverAssetsPath}}/images/xlarge.png"
+  }
+}

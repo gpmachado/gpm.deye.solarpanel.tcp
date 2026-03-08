@@ -1,0 +1,47 @@
+{
+    "pair": {
+        "title": "Legg til Deye Vekselretter",
+        "help": "Oppgi IP-adressen til din Solarman Wi-Fi-logger. Loggerens serienummer vil bli oppdaget automatisk. Hvis automatisk oppdagelse mislykkes, fyll inn serienummeret manuelt — det er trykt på etiketten til Wi-Fi-loggeren.",
+        "label": {
+            "host": "IP-adresse",
+            "port": "TCP-port",
+            "slaveId": "Modbus Slave-ID",
+            "loggerSerial": "Logger Serienummer"
+        },
+        "placeholder": {
+            "host": "f.eks. 192.168.1.100",
+            "loggerSerial": "f.eks. 1782317166"
+        },
+        "status": {
+            "connecting": "Kobler til logger…",
+            "found": "Funnet: "
+        },
+        "error": {
+            "host_required": "IP-adresse er påkrevd.",
+            "invalid_serial": "Loggerens serienummer er ugyldig.",
+            "serial_not_found": "Kunne ikke automatisk oppdage loggerens serienummer. Skriv det inn manuelt."
+        },
+        "serial_section": {
+            "description": "Kunne ikke automatisk oppdage loggerens serienummer. Skriv det inn manuelt — finnes på etiketten til Wi-Fi-loggeren."
+        }
+    },
+    "device": {
+        "unavailable": "Vekselretter utilgjengelig: {error}"
+    },
+    "settings": {
+        "host": "IP-adresse",
+        "loggerSerial": "Logger Serienummer",
+        "port": "TCP-port",
+        "slaveId": "Modbus Slave-ID"
+    },
+    "driver": {
+        "2mppt": {
+            "name": "Deye Strengvekselretter (2 MPPT)",
+            "description": "Deye G0* strengvekselrettere med 2 PV-innganger (SUN-5/6/8/10/12K-G03)"
+        },
+        "4mppt": {
+            "name": "Deye Strengvekselretter (4 MPPT)",
+            "description": "Deye G0* strengvekselrettere med 4 PV-innganger (SUN-15/20K-G03)"
+        }
+    }
+}

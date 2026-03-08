@@ -1,0 +1,47 @@
+{
+    "pair": {
+        "title": "Deye Wechselrichter hinzufügen",
+        "help": "Geben Sie die IP-Adresse Ihres Solarman Wi-Fi Loggers ein. Die Seriennummer des Loggers wird automatisch erkannt. Wenn die automatische Erkennung fehlschlägt, geben Sie die Seriennummer manuell ein – sie ist auf dem Etikett des Wi-Fi Datenloggers abgedruckt.",
+        "label": {
+            "host": "IP-Adresse",
+            "port": "TCP-Port",
+            "slaveId": "Modbus Slave-ID",
+            "loggerSerial": "Seriennummer des Loggers"
+        },
+        "placeholder": {
+            "host": "z.B. 192.168.1.100",
+            "loggerSerial": "z.B. 1782317166"
+        },
+        "status": {
+            "connecting": "Verbindung mit Logger herstellen…",
+            "found": "Gefunden: "
+        },
+        "error": {
+            "host_required": "IP-Adresse ist erforderlich.",
+            "invalid_serial": "Seriennummer des Loggers ist ungültig.",
+            "serial_not_found": "Die automatische Erkennung der Seriennummer ist fehlgeschlagen. Bitte manuell eingeben."
+        },
+        "serial_section": {
+            "description": "Die Seriennummer des Loggers konnte nicht automatisch erkannt werden. Geben Sie sie manuell ein – zu finden auf dem Etikett des Wi-Fi Datenloggers."
+        }
+    },
+    "device": {
+        "unavailable": "Wechselrichter nicht erreichbar: {error}"
+    },
+    "settings": {
+        "host": "IP-Adresse",
+        "loggerSerial": "Serienummer des Loggers",
+        "port": "TCP-Port",
+        "slaveId": "Modbus Slave-ID"
+    },
+    "driver": {
+        "2mppt": {
+            "name": "Deye String-Wechselrichter (2 MPPT)",
+            "description": "Deye G0* String-Wechselrichter mit 2 PV-Eingängen (SUN-5/6/8/10/12K-G03)"
+        },
+        "4mppt": {
+            "name": "Deye String-Wechselrichter (4 MPPT)",
+            "description": "Deye G0* String-Wechselrichter mit 4 PV-Eingängen (SUN-15/20K-G03)"
+        }
+    }
+}

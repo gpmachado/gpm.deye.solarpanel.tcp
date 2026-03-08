@@ -1,0 +1,47 @@
+{
+    "pair": {
+        "title": "Tilføj Deye Inverter",
+        "help": "Indtast IP-adressen for din Solarman Wi-Fi-logger. Loggerens serienummer vil blive registreret automatisk. Hvis automatisk registrering fejler, skal du indtaste serienummeret manuelt — det er trykt på etiketten på Wi-Fi-loggeren.",
+        "label": {
+            "host": "IP-adresse",
+            "port": "TCP-port",
+            "slaveId": "Modbus Slave-ID",
+            "loggerSerial": "Logger Serienummer"
+        },
+        "placeholder": {
+            "host": "f.eks. 192.168.1.100",
+            "loggerSerial": "f.eks. 1782317166"
+        },
+        "status": {
+            "connecting": "Forbinder til logger…",
+            "found": "Fundet: "
+        },
+        "error": {
+            "host_required": "IP-adresse er påkrævet.",
+            "invalid_serial": "Loggerens serienummer er ugyldigt.",
+            "serial_not_found": "Kunne ikke automatisk registrere loggerens serienummer. Indtast det manuelt."
+        },
+        "serial_section": {
+            "description": "Kunne ikke automatisk registrere loggerens serienummer. Indtast det manuelt — findes på etiketten på Wi-Fi-loggeren."
+        }
+    },
+    "device": {
+        "unavailable": "Inverter kan ikke nås: {error}"
+    },
+    "settings": {
+        "host": "IP-adresse",
+        "loggerSerial": "Logger Serienummer",
+        "port": "TCP-port",
+        "slaveId": "Modbus Slave-ID"
+    },
+    "driver": {
+        "2mppt": {
+            "name": "Deye String Inverter (2 MPPT)",
+            "description": "Deye G0* string-invertere med 2 PV-indgange (SUN-5/6/8/10/12K-G03)"
+        },
+        "4mppt": {
+            "name": "Deye String Inverter (4 MPPT)",
+            "description": "Deye G0* string-invertere med 4 PV-indgange (SUN-15/20K-G03)"
+        }
+    }
+}

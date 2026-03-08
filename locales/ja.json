@@ -1,0 +1,47 @@
+{
+    "pair": {
+        "title": "Deyeインバータを追加",
+        "help": "Solarman Wi-FiロガーのIPアドレスを入力してください。ロガーのシリアル番号は自動的に検出されます。自動検出に失敗した場合は、Wi-Fiデータロガーのラベルに印刷されているシリアル番号を手動で入力してください。",
+        "label": {
+            "host": "IPアドレス",
+            "port": "TCPポート",
+            "slaveId": "ModbusスレーブID",
+            "loggerSerial": "ロガーシリアル番号"
+        },
+        "placeholder": {
+            "host": "例： 192.168.1.100",
+            "loggerSerial": "例： 1782317166"
+        },
+        "status": {
+            "connecting": "ロガーに接続中…",
+            "found": "検出： "
+        },
+        "error": {
+            "host_required": "IPアドレスは必須です。",
+            "invalid_serial": "ロガーのシリアル番号が無効です。",
+            "serial_not_found": "ロガーのシリアル番号を自動検出できませんでした。手動で入力してください。"
+        },
+        "serial_section": {
+            "description": "ロガーのシリアル番号を自動検出できませんでした。手動で入力してください — Wi-Fiデータロガーのラベルに記載されています。"
+        }
+    },
+    "device": {
+        "unavailable": "インバータに接続できません： {error}"
+    },
+    "settings": {
+        "host": "IPアドレス",
+        "loggerSerial": "ロガーシリアル番号",
+        "port": "TCPポート",
+        "slaveId": "ModbusスレーブID"
+    },
+    "driver": {
+        "2mppt": {
+            "name": "Deyeストリングインバータ (2 MPPT)",
+            "description": "2つのPV入力を備えたDeye G0*ストリングインバータ (SUN-5/6/8/10/12K-G03)"
+        },
+        "4mppt": {
+            "name": "Deyeストリングインバータ (4 MPPT)",
+            "description": "4つのPV入力を備えたDeye G0*ストリングインバータ (SUN-15/20K-G03)"
+        }
+    }
+}

@@ -1,0 +1,47 @@
+{
+    "pair": {
+        "title": "Ajouter un onduleur Deye",
+        "help": "Entrez l'adresse IP de votre enregistreur Wi-Fi Solarman. Le numéro de série de l'enregistreur sera détecté automatiquement. Si la détection automatique échoue, entrez le numéro de série manuellement — il est imprimé sur l'étiquette de la clé d'enregistrement Wi-Fi.",
+        "label": {
+            "host": "Adresse IP",
+            "port": "Port TCP",
+            "slaveId": "ID Esclave Modbus",
+            "loggerSerial": "Numéro de série de l'enregistreur"
+        },
+        "placeholder": {
+            "host": "ex. 192.168.1.100",
+            "loggerSerial": "ex. 1782317166"
+        },
+        "status": {
+            "connecting": "Connexion à l'enregistreur…",
+            "found": "Trouvé: "
+        },
+        "error": {
+            "host_required": "L'adresse IP est requise.",
+            "invalid_serial": "Le numéro de série de l'enregistreur est invalide.",
+            "serial_not_found": "Impossible de détecter automatiquement le numéro de série. Entrez-le manuellement."
+        },
+        "serial_section": {
+            "description": "Impossible de détecter automatiquement le numéro de série de l'enregistreur. Entrez-le manuellement — il se trouve sur l'étiquette de la clé d'enregistrement Wi-Fi."
+        }
+    },
+    "device": {
+        "unavailable": "Onduleur injoignable: {error}"
+    },
+    "settings": {
+        "host": "Adresse IP",
+        "loggerSerial": "Numéro de série de l'enregistreur",
+        "port": "Port TCP",
+        "slaveId": "ID Esclave Modbus"
+    },
+    "driver": {
+        "2mppt": {
+            "name": "Onduleur chaîne Deye (2 MPPT)",
+            "description": "Onduleurs de chaîne Deye G0* avec 2 entrées PV (SUN-5/6/8/10/12K-G03)"
+        },
+        "4mppt": {
+            "name": "Onduleur chaîne Deye (4 MPPT)",
+            "description": "Onduleurs de chaîne Deye G0* avec 4 entrées PV (SUN-15/20K-G03)"
+        }
+    }
+}

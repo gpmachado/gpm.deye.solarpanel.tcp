@@ -1,0 +1,47 @@
+{
+    "pair": {
+        "title": "Añadir Inversor Deye",
+        "help": "Introduce la dirección IP de tu registrador Wi-Fi Solarman. El número de serie del registrador se detectará automáticamente. Si la autodetección falla, introduce el número de serie manualmente — está impreso en la etiqueta del registrador Wi-Fi.",
+        "label": {
+            "host": "Dirección IP",
+            "port": "Puerto TCP",
+            "slaveId": "ID de Esclavo Modbus",
+            "loggerSerial": "Número de Serie del Registrador"
+        },
+        "placeholder": {
+            "host": "ej. 192.168.1.100",
+            "loggerSerial": "ej. 1782317166"
+        },
+        "status": {
+            "connecting": "Conectando al registrador…",
+            "found": "Encontrado: "
+        },
+        "error": {
+            "host_required": "La dirección IP es obligatoria.",
+            "invalid_serial": "El número de serie del registrador no es válido.",
+            "serial_not_found": "No se pudo autodetectar el número de serie. Introdúcelo manualmente."
+        },
+        "serial_section": {
+            "description": "No se pudo autodetectar el número de serie. Introdúcelo manualmente — se encuentra en la etiqueta del registrador Wi-Fi."
+        }
+    },
+    "device": {
+        "unavailable": "Inversor inalcanzable: {error}"
+    },
+    "settings": {
+        "host": "Dirección IP",
+        "loggerSerial": "Número de Serie del Registrador",
+        "port": "Puerto TCP",
+        "slaveId": "ID de Esclavo Modbus"
+    },
+    "driver": {
+        "2mppt": {
+            "name": "Inversor de Cadena Deye (2 MPPT)",
+            "description": "Inversores de cadena Deye G0* con 2 entradas PV (SUN-5/6/8/10/12K-G03)"
+        },
+        "4mppt": {
+            "name": "Inversor de Cadena Deye (4 MPPT)",
+            "description": "Inversores de cadena Deye G0* con 4 entradas PV (SUN-15/20K-G03)"
+        }
+    }
+}

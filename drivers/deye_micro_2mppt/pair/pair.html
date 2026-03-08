@@ -1,0 +1,181 @@
+<div id="screen-main">
+
+  <!-- -- Scan button ------------------------------------------------------- -->
+  <div style="margin-bottom:16px;">
+    <button class="homey-button-secondary-full" id="scanBtn" type="button">
+      [search] Scan network for loggers
+    </button>
+    <p id="scan-status" style="font-size:12px;color:#888;margin:6px 0 0;min-height:16px;text-align:center;"></p>
+  </div>
+
+  <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;">
+    <hr style="flex:1;border:none;border-top:1px solid #e0e0e0;">
+    <span style="font-size:12px;color:#aaa;">or enter manually</span>
+    <hr style="flex:1;border:none;border-top:1px solid #e0e0e0;">
+  </div>
+
+  <!-- -- Manual IP --------------------------------------------------------- -->
+  <fieldset class="homey-form-group">
+
+    <div class="homey-form-input-wrapper">
+      <label class="homey-form-label" for="host">IP Address</label>
+      <input class="homey-form-input" type="text" id="host" placeholder="192.168.1.x" autocomplete="off" />
+    </div>
+
+    <!-- Serial section -- hidden until auto-detect fails -------------------- -->
+    <div id="serial-section" style="display:none;margin-top:12px;
+         padding:12px;background:#fff8f5;border:1px solid #f5c6a0;border-radius:6px;">
+      <p style="margin:0 0 8px;font-size:13px;color:#c04000;">
+        Could not auto-detect the logger serial.<br>
+        Enter it manually -- printed on the label of the Wi-Fi data logger stick.
+      </p>
+      <div class="homey-form-input-wrapper">
+        <label class="homey-form-label" for="loggerSerial">Logger Serial Number</label>
+        <input class="homey-form-input" type="number" id="loggerSerial" placeholder="e.g. 1782317166" />
+      </div>
+    </div>
+
+    <p id="status" style="font-size:13px;color:#555;min-height:18px;margin-top:8px;"></p>
+
+  </fieldset>
+
+  <button class="homey-button-primary-full" id="submitBtn" type="button">Continue</button>
+</div>
+
+<!-- -- Scan results list -------------------------------------------------- -->
+<div id="screen-results" style="display:none;">
+  <p style="font-size:13px;color:#555;margin:0 0 12px;">
+    Select a logger to add:
+  </p>
+  <div id="results-list"></div>
+  <button class="homey-button-secondary-full" id="backBtn" type="button" style="margin-top:12px;">
+    <- Back </button>
+      <p id="results-status" style="font-size:13px;color:#555;min-height:18px;margin-top:8px;"></p>
+</div>
+
+<script>
+  Homey.setTitle('Add Deye Inverter');
+
+  // -- Helpers ----------------------------------------------------------------
+
+  function setStatus(id, msg, color) {
+    var el = document.getElementById(id);
+    el.textContent = msg;
+    el.style.color = color || '#555';
+  }
+
+  function showScreen(name) {
+    document.getElementById('screen-main').style.display = name === 'main' ? '' : 'none';
+    document.getElementById('screen-results').style.display = name === 'results' ? '' : 'none';
+  }
+
+  var serialSectionVisible = false;
+  function showSerialSection() {
+    if (serialSectionVisible) return;
+    document.getElementById('serial-section').style.display = 'block';
+    serialSectionVisible = true;
+  }
+
+  // -- Add device via list_devices --------------------------------------------
+
+  function addDevice(data, statusId) {
+    setStatus(statusId, 'Connecting...', '#555');
+    document.getElementById('submitBtn').disabled = true;
+    document.getElementById('scanBtn').disabled = true;
+
+    Homey.emit('list_devices', data, function (err, result) {
+      document.getElementById('submitBtn').disabled = false;
+      document.getElementById('scanBtn').disabled = false;
+
+      if (err) {
+        var msg = err.message || String(err);
+        if (msg.indexOf('serial_not_found') !== -1 || msg.indexOf('auto-detect') !== -1 || msg.indexOf('manually') !== -1) {
+          showSerialSection();
+          setStatus(statusId, 'Auto-detection failed. Enter the serial and try again.', '#c0392b');
+        } else {
+          setStatus(statusId, msg, '#c0392b');
+        }
+        return;
+      }
+
+      var device = Array.isArray(result) && result[0];
+      if (!device) { setStatus(statusId, 'No device found.', '#c0392b'); return; }
+
+      setStatus(statusId, 'Adding device...', '#27ae60');
+      Homey.createDevice(device, function (createErr) {
+        if (createErr) { setStatus(statusId, createErr.message || String(createErr), '#c0392b'); return; }
+        Homey.done();
+      });
+    });
+  }
+
+  // -- Manual submit ----------------------------------------------------------
+
+  document.getElementById('submitBtn').addEventListener('click', function () {
+    var host = document.getElementById('host').value.trim();
+    var loggerSerial = document.getElementById('loggerSerial').value.trim();
+
+    if (!host) { setStatus('status', 'IP address is required.', '#c0392b'); return; }
+
+    var data = { host: host };
+    if (loggerSerial) data.loggerSerial = loggerSerial;
+
+    addDevice(data, 'status');
+  });
+
+  // -- UDP Scan ---------------------------------------------------------------
+
+  document.getElementById('scanBtn').addEventListener('click', function () {
+    var scanBtn = document.getElementById('scanBtn');
+    scanBtn.disabled = true;
+    setStatus('scan-status', 'Scanning... (3 s)', '#555');
+
+    Homey.emit('discover', {}, function (err, loggers) {
+      scanBtn.disabled = false;
+
+      if (err || !loggers) {
+        setStatus('scan-status', 'Scan failed: ' + (err && err.message || 'unknown error'), '#c0392b');
+        return;
+      }
+
+      if (loggers.length === 0) {
+        setStatus('scan-status', 'No loggers found. Try entering the IP manually.', '#e67e22');
+        return;
+      }
+
+      setStatus('scan-status', '', '#555');
+
+      // Build result cards
+      var list = document.getElementById('results-list');
+      list.innerHTML = '';
+
+      loggers.forEach(function (logger) {
+        var card = document.createElement('div');
+        card.style.cssText = 'padding:12px;border:1px solid #e0e0e0;border-radius:6px;' +
+          'margin-bottom:8px;cursor:pointer;background:#fff;';
+
+        card.innerHTML =
+          '<div style="font-weight:600;font-size:14px;">' + logger.ip + '</div>' +
+          '<div style="font-size:12px;color:#888;margin-top:2px;">' +
+          'Serial: ' + logger.serial + ' &nbsp;-&nbsp; MAC: ' + logger.mac +
+          '</div>';
+
+        card.addEventListener('click', function () {
+          setStatus('results-status', 'Connecting to ' + logger.ip + '...', '#555');
+          addDevice({ host: logger.ip, loggerSerial: String(logger.serial) }, 'results-status');
+        });
+
+        list.appendChild(card);
+      });
+
+      showScreen('results');
+    });
+  });
+
+  // -- Back button ------------------------------------------------------------
+
+  document.getElementById('backBtn').addEventListener('click', function () {
+    showScreen('main');
+    setStatus('results-status', '', '#555');
+  });
+</script>

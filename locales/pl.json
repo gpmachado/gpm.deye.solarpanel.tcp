@@ -1,0 +1,47 @@
+{
+    "pair": {
+        "title": "Dodaj Falownik Deye",
+        "help": "Wprowadź adres IP swojego rejestratora Wi-Fi Solarman. Numer seryjny rejestratora zostanie wykryty automatycznie. Jeśli automatyczne wykrywanie się nie powiedzie, wprowadź numer seryjny ręcznie — jest on wydrukowany na etykiecie rejestratora Wi-Fi.",
+        "label": {
+            "host": "Adres IP",
+            "port": "Port TCP",
+            "slaveId": "Modbus ID Slave",
+            "loggerSerial": "Numer Seryjny Rejestratora"
+        },
+        "placeholder": {
+            "host": "np. 192.168.1.100",
+            "loggerSerial": "np. 1782317166"
+        },
+        "status": {
+            "connecting": "Łączenie z rejestratorem…",
+            "found": "Znaleziono: "
+        },
+        "error": {
+            "host_required": "Adres IP jest wymagany.",
+            "invalid_serial": "Numer seryjny rejestratora jest nieprawidłowy.",
+            "serial_not_found": "Nie udało się automatycznie wykryć numeru seryjnego. Wprowadź go ręcznie."
+        },
+        "serial_section": {
+            "description": "Nie udało się automatycznie wykryć numeru seryjnego rejestratora. Wprowadź go ręcznie — znajduje się na etykiecie rejestratora Wi-Fi."
+        }
+    },
+    "device": {
+        "unavailable": "Falownik nieosiągalny: {error}"
+    },
+    "settings": {
+        "host": "Adres IP",
+        "loggerSerial": "Numer Seryjny Rejestratora",
+        "port": "Port TCP",
+        "slaveId": "Modbus ID Slave"
+    },
+    "driver": {
+        "2mppt": {
+            "name": "Falownik Łańcuchowy Deye (2 MPPT)",
+            "description": "Falowniki łańcuchowe Deye G0* z 2 wejściami PV (SUN-5/6/8/10/12K-G03)"
+        },
+        "4mppt": {
+            "name": "Falownik Łańcuchowy Deye (4 MPPT)",
+            "description": "Falowniki łańcuchowe Deye G0* z 4 wejściami PV (SUN-15/20K-G03)"
+        }
+    }
+}

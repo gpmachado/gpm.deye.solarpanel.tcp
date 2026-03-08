@@ -1,0 +1,96 @@
+{
+  "name": {
+    "en": "Deye Hybrid Battery 3-phase (SG04LP3)"
+  },
+  "class": "battery",
+  "capabilities": [
+    "measure_battery",
+    "measure_power.battery",
+    "measure_voltage.battery",
+    "measure_temperature.battery",
+    "meter_power.battery_charged",
+    "meter_power.battery_discharged",
+    "meter_power.battery_charged_today",
+    "meter_power.battery_discharged_today"
+  ],
+  "capabilitiesOptions": {
+    "measure_battery": {
+      "title": { "en": "Battery SOC" }
+    },
+    "measure_power.battery": {
+      "title": { "en": "Battery Power (+ charge / − discharge)" }
+    },
+    "measure_voltage.battery": {
+      "title": { "en": "Battery Voltage" }
+    },
+    "measure_temperature.battery": {
+      "title": { "en": "Battery Temperature" }
+    },
+    "meter_power.battery_charged": {
+      "title": { "en": "Total Charged Energy" }
+    },
+    "meter_power.battery_discharged": {
+      "title": { "en": "Total Discharged Energy" }
+    },
+    "meter_power.battery_charged_today": {
+      "title": { "en": "Charged Today" }
+    },
+    "meter_power.battery_discharged_today": {
+      "title": { "en": "Discharged Today" }
+    }
+  },
+  "energy": {
+    "homeBattery": true,
+    "meterPowerImportedCapability": "meter_power.battery_charged",
+    "meterPowerExportedCapability": "meter_power.battery_discharged"
+  },
+  "platforms": [
+    "local"
+  ],
+  "connectivity": [
+    "lan"
+  ],
+  "pair": [
+    {
+      "id": "pair"
+    }
+  ],
+  "settings": [
+    {
+      "id": "host",
+      "type": "text",
+      "label": { "en": "IP Address" },
+      "value": ""
+    },
+    {
+      "id": "loggerSerial",
+      "type": "number",
+      "label": { "en": "Logger Serial Number" },
+      "value": 0
+    },
+    {
+      "type": "group",
+      "label": { "en": "Advanced" },
+      "children": [
+        {
+          "id": "port",
+          "type": "number",
+          "label": { "en": "TCP Port" },
+          "value": 8899
+        },
+        {
+          "id": "slaveId",
+          "type": "number",
+          "label": { "en": "Modbus Slave ID" },
+          "value": 1
+        }
+      ]
+    }
+  ],
+  "mainCapability": "measure_battery",
+  "images": {
+    "large": "{{driverAssetsPath}}/images/large.png",
+    "small": "{{driverAssetsPath}}/images/small.png",
+    "xlarge": "{{driverAssetsPath}}/images/xlarge.png"
+  }
+}

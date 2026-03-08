@@ -1,0 +1,47 @@
+{
+    "pair": {
+        "title": "Aggiungi Inverter Deye",
+        "help": "Inserisci l'indirizzo IP del tuo logger Wi-Fi Solarman. Il numero di serie del logger verrà rilevato automaticamente. Se il rilevamento automatico fallisce, inserisci il numero di serie manualmente — è stampato sull'etichetta del data logger Wi-Fi.",
+        "label": {
+            "host": "Indirizzo IP",
+            "port": "Porta TCP",
+            "slaveId": "ID Slave Modbus",
+            "loggerSerial": "Numero di serie del Logger"
+        },
+        "placeholder": {
+            "host": "es. 192.168.1.100",
+            "loggerSerial": "es. 1782317166"
+        },
+        "status": {
+            "connecting": "Connessione al logger…",
+            "found": "Trovato: "
+        },
+        "error": {
+            "host_required": "L'indirizzo IP è obbligatorio.",
+            "invalid_serial": "Il numero di serie del logger non è valido.",
+            "serial_not_found": "Impossibile rilevare automaticamente il numero di serie. Inseriscilo manualmente."
+        },
+        "serial_section": {
+            "description": "Impossibile rilevare automaticamente il numero di serie del logger. Inseriscilo manualmente — si trova sull'etichetta del data logger Wi-Fi."
+        }
+    },
+    "device": {
+        "unavailable": "Inverter irraggiungibile: {error}"
+    },
+    "settings": {
+        "host": "Indirizzo IP",
+        "loggerSerial": "Numero di serie del Logger",
+        "port": "Porta TCP",
+        "slaveId": "ID Slave Modbus"
+    },
+    "driver": {
+        "2mppt": {
+            "name": "Inverter di stringa Deye (2 MPPT)",
+            "description": "Inverter di stringa Deye G0* con 2 ingressi fv (SUN-5/6/8/10/12K-G03)"
+        },
+        "4mppt": {
+            "name": "Inverter di stringa Deye (4 MPPT)",
+            "description": "Inverter di stringa Deye G0* con 4 ingressi fv (SUN-15/20K-G03)"
+        }
+    }
+}

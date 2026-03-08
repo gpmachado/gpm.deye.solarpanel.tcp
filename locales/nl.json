@@ -1,0 +1,47 @@
+{
+    "pair": {
+        "title": "Deye Omvormer Toevoegen",
+        "help": "Voer het IP-adres van je Solarman Wi-Fi-logger in. Het serienummer van de logger wordt automatisch gedetecteerd. Als autodetectie mislukt, voer dan het serienummer handmatig in — dit staat afgedrukt op het label van de Wi-Fi-datalogger.",
+        "label": {
+            "host": "IP-adres",
+            "port": "TCP-poort",
+            "slaveId": "Modbus Slave-ID",
+            "loggerSerial": "Serienummer Logger"
+        },
+        "placeholder": {
+            "host": "bijv. 192.168.1.100",
+            "loggerSerial": "bijv. 1782317166"
+        },
+        "status": {
+            "connecting": "Verbinden met logger…",
+            "found": "Gevonden: "
+        },
+        "error": {
+            "host_required": "IP-adres is verplicht.",
+            "invalid_serial": "Serienummer logger is ongeldig.",
+            "serial_not_found": "Autodetectie van het serienummer van de logger is mislukt. Voer het handmatig in."
+        },
+        "serial_section": {
+            "description": "Autodetectie van het serienummer van de logger is mislukt. Voer het handmatig in — dit staat op het label van de Wi-Fi-datalogger."
+        }
+    },
+    "device": {
+        "unavailable": "Omvormer onbereikbaar: {error}"
+    },
+    "settings": {
+        "host": "IP-adres",
+        "loggerSerial": "Serienummer Logger",
+        "port": "TCP-poort",
+        "slaveId": "Modbus Slave-ID"
+    },
+    "driver": {
+        "2mppt": {
+            "name": "Deye String Omvormer (2 MPPT)",
+            "description": "Deye G0* string-omvormers met 2 PV-ingangen (SUN-5/6/8/10/12K-G03)"
+        },
+        "4mppt": {
+            "name": "Deye String Omvormer (4 MPPT)",
+            "description": "Deye G0* string-omvormers met 4 PV-ingangen (SUN-15/20K-G03)"
+        }
+    }
+}
