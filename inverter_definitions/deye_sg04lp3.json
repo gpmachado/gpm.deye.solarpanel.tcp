@@ -1,0 +1,1151 @@
+{
+  "requests": [
+    {
+      "start": 3,
+      "end": 89,
+      "mb_functioncode": 3
+    },
+    {
+      "start": 128,
+      "end": 133,
+      "mb_functioncode": 3
+    },
+    {
+      "start": 514,
+      "end": 558,
+      "mb_functioncode": 3
+    },
+    {
+      "start": 586,
+      "end": 591,
+      "mb_functioncode": 3
+    },
+    {
+      "start": 598,
+      "end": 636,
+      "mb_functioncode": 3
+    },
+    {
+      "start": 644,
+      "end": 653,
+      "mb_functioncode": 3
+    },
+    {
+      "start": 672,
+      "end": 679,
+      "mb_functioncode": 3
+    }
+  ],
+  "parameters": [
+    {
+      "group": "solar",
+      "items": [
+        {
+          "name": "PV1 Power",
+          "class": "power",
+          "state_class": "measurement",
+          "uom": "W",
+          "scale": 1,
+          "rule": 1,
+          "registers": [
+            672
+          ],
+          "icon": "mdi:solar-power"
+        },
+        {
+          "name": "PV2 Power",
+          "class": "power",
+          "state_class": "measurement",
+          "uom": "W",
+          "scale": 1,
+          "rule": 1,
+          "registers": [
+            673
+          ],
+          "icon": "mdi:solar-power"
+        },
+        {
+          "name": "PV1 Voltage",
+          "class": "voltage",
+          "state_class": "measurement",
+          "uom": "V",
+          "scale": 0.1,
+          "rule": 1,
+          "registers": [
+            676
+          ],
+          "icon": "mdi:solar-power"
+        },
+        {
+          "name": "PV2 Voltage",
+          "class": "voltage",
+          "state_class": "measurement",
+          "uom": "V",
+          "scale": 0.1,
+          "rule": 1,
+          "registers": [
+            678
+          ],
+          "icon": "mdi:solar-power"
+        },
+        {
+          "name": "PV1 Current",
+          "class": "current",
+          "state_class": "measurement",
+          "uom": "A",
+          "scale": 0.1,
+          "rule": 1,
+          "registers": [
+            677
+          ],
+          "icon": "mdi:solar-power"
+        },
+        {
+          "name": "PV2 Current",
+          "class": "current",
+          "state_class": "measurement",
+          "uom": "A",
+          "scale": 0.1,
+          "rule": 1,
+          "registers": [
+            679
+          ],
+          "icon": "mdi:solar-power"
+        },
+        {
+          "name": "Daily Production",
+          "class": "energy",
+          "state_class": "total_increasing",
+          "uom": "kWh",
+          "scale": 0.1,
+          "rule": 1,
+          "registers": [
+            529
+          ],
+          "icon": "mdi:solar-power",
+          "validation": {
+            "max": 100,
+            "invalidate_all": null
+          }
+        },
+        {
+          "name": "Total Production",
+          "class": "energy",
+          "state_class": "total_increasing",
+          "uom": "kWh",
+          "scale": 0.1,
+          "rule": 3,
+          "registers": [
+            534,
+            535
+          ],
+          "icon": "mdi:solar-power"
+        }
+      ]
+    },
+    {
+      "group": "Battery",
+      "items": [
+        {
+          "name": "Daily Battery Charge",
+          "class": "energy",
+          "state_class": "total_increasing",
+          "uom": "kWh",
+          "scale": 0.1,
+          "rule": 1,
+          "registers": [
+            514
+          ],
+          "icon": "mdi:battery-plus"
+        },
+        {
+          "name": "Daily Battery Discharge",
+          "class": "energy",
+          "state_class": "total_increasing",
+          "uom": "kWh",
+          "scale": 0.1,
+          "rule": 1,
+          "registers": [
+            515
+          ],
+          "icon": "mdi:battery-minus"
+        },
+        {
+          "name": "Total Battery Charge",
+          "class": "energy",
+          "state_class": "total_increasing",
+          "uom": "kWh",
+          "scale": 0.1,
+          "rule": 3,
+          "registers": [
+            516,
+            517
+          ],
+          "icon": "mdi:battery-plus"
+        },
+        {
+          "name": "Total Battery Discharge",
+          "class": "energy",
+          "state_class": "total_increasing",
+          "uom": "kWh",
+          "scale": 0.1,
+          "rule": 3,
+          "registers": [
+            518,
+            519
+          ],
+          "icon": "mdi:battery-minus"
+        },
+        {
+          "name": "Battery Power",
+          "class": "power",
+          "state_class": "measurement",
+          "uom": "W",
+          "scale": 1,
+          "rule": 2,
+          "registers": [
+            590
+          ],
+          "icon": "mdi:battery"
+        },
+        {
+          "name": "Battery Voltage",
+          "class": "voltage",
+          "state_class": "measurement",
+          "uom": "V",
+          "scale": 0.01,
+          "rule": 1,
+          "registers": [
+            587
+          ],
+          "icon": "mdi:battery"
+        },
+        {
+          "name": "Battery SOC",
+          "class": "battery",
+          "state_class": "measurement",
+          "uom": "%",
+          "scale": 1,
+          "rule": 1,
+          "registers": [
+            588
+          ],
+          "icon": "mdi:battery",
+          "validation": {
+            "min": 0,
+            "max": 101
+          }
+        },
+        {
+          "name": "Battery Current",
+          "class": "current",
+          "state_class": "measurement",
+          "uom": "A",
+          "scale": 0.01,
+          "rule": 2,
+          "registers": [
+            591
+          ],
+          "icon": "mdi:battery"
+        },
+        {
+          "name": "Battery Temperature",
+          "class": "temperature",
+          "state_class": "measurement",
+          "uom": "\u00b0C",
+          "scale": 0.1,
+          "rule": 1,
+          "offset": 1000,
+          "registers": [
+            586
+          ],
+          "icon": "mdi:battery-thermometer",
+          "validation": {
+            "min": 1,
+            "max": 99,
+            "invalidate_all": null
+          }
+        }
+      ]
+    },
+    {
+      "group": "Grid",
+      "items": [
+        {
+          "name": "Total Grid Power",
+          "class": "measurement",
+          "state_class": "measurement",
+          "uom": "W",
+          "scale": 1,
+          "rule": 2,
+          "registers": [
+            625
+          ],
+          "icon": "mdi:transmission-tower"
+        },
+        {
+          "name": "Grid Voltage L1",
+          "class": "voltage",
+          "state_class": "measurement",
+          "uom": "V",
+          "scale": 0.1,
+          "rule": 1,
+          "registers": [
+            598
+          ],
+          "icon": "mdi:transmission-tower"
+        },
+        {
+          "name": "Grid Voltage L2",
+          "class": "voltage",
+          "state_class": "measurement",
+          "uom": "V",
+          "scale": 0.1,
+          "rule": 1,
+          "registers": [
+            599
+          ],
+          "icon": "mdi:transmission-tower"
+        },
+        {
+          "name": "Grid Voltage L3",
+          "class": "voltage",
+          "state_class": "measurement",
+          "uom": "V",
+          "scale": 0.1,
+          "rule": 1,
+          "registers": [
+            600
+          ],
+          "icon": "mdi:transmission-tower"
+        },
+        {
+          "name": "Grid Frequency",
+          "class": "frequency",
+          "state_class": "measurement",
+          "uom": "Hz",
+          "scale": 0.01,
+          "rule": 1,
+          "registers": [
+            609
+          ],
+          "icon": "mdi:sine-wave"
+        },
+        {
+          "name": "Daily Energy Bought",
+          "class": "energy",
+          "state_class": "total_increasing",
+          "uom": "kWh",
+          "scale": 0.1,
+          "rule": 1,
+          "registers": [
+            520
+          ],
+          "icon": "mdi:transmission-tower-export"
+        },
+        {
+          "name": "Total Energy Bought",
+          "class": "energy",
+          "state_class": "total_increasing",
+          "uom": "kWh",
+          "scale": 0.1,
+          "rule": 3,
+          "registers": [
+            522,
+            523
+          ],
+          "icon": "mdi:transmission-tower-export"
+        },
+        {
+          "name": "Daily Energy Sold",
+          "class": "energy",
+          "state_class": "total_increasing",
+          "uom": "kWh",
+          "scale": 0.1,
+          "rule": 1,
+          "registers": [
+            521
+          ],
+          "icon": "mdi:transmission-tower-import"
+        },
+        {
+          "name": "Total Energy Sold",
+          "class": "energy",
+          "state_class": "total_increasing",
+          "uom": "kWh",
+          "scale": 0.1,
+          "rule": 3,
+          "registers": [
+            524,
+            525
+          ],
+          "icon": "mdi:transmission-tower-import"
+        },
+        {
+          "name": "Internal CT L1 Power",
+          "class": "power",
+          "state_class": "measurement",
+          "uom": "W",
+          "scale": 1,
+          "rule": 2,
+          "registers": [
+            604
+          ],
+          "icon": "mdi:transmission-tower"
+        },
+        {
+          "name": "Internal CT L2 Power",
+          "class": "power",
+          "state_class": "measurement",
+          "uom": "W",
+          "scale": 1,
+          "rule": 2,
+          "registers": [
+            605
+          ],
+          "icon": "mdi:transmission-tower"
+        },
+        {
+          "name": "Internal CT L3 Power",
+          "class": "power",
+          "state_class": "measurement",
+          "uom": "W",
+          "scale": 1,
+          "rule": 2,
+          "registers": [
+            606
+          ],
+          "icon": "mdi:transmission-tower"
+        },
+        {
+          "name": "External CT L1 Power",
+          "class": "power",
+          "state_class": "measurement",
+          "uom": "W",
+          "scale": 1,
+          "rule": 2,
+          "registers": [
+            616
+          ],
+          "icon": "mdi:transmission-tower"
+        },
+        {
+          "name": "External CT L2 Power",
+          "class": "power",
+          "state_class": "measurement",
+          "uom": "W",
+          "scale": 1,
+          "rule": 2,
+          "registers": [
+            617
+          ],
+          "icon": "mdi:transmission-tower"
+        },
+        {
+          "name": "External CT L3 Power",
+          "class": "power",
+          "state_class": "measurement",
+          "uom": "W",
+          "scale": 1,
+          "rule": 2,
+          "registers": [
+            618
+          ],
+          "icon": "mdi:transmission-tower"
+        }
+      ]
+    },
+    {
+      "group": "Upload",
+      "items": [
+        {
+          "name": "Total Load Power",
+          "class": "power",
+          "state_class": "measurement",
+          "uom": "W",
+          "scale": 1,
+          "rule": 1,
+          "registers": [
+            653
+          ],
+          "icon": "mdi:lightning-bolt-outline"
+        },
+        {
+          "name": "Load L1 Power",
+          "class": "power",
+          "state_class": "measurement",
+          "uom": "W",
+          "scale": 1,
+          "rule": 1,
+          "registers": [
+            650
+          ],
+          "icon": "mdi:lightning-bolt-outline"
+        },
+        {
+          "name": "Load L2 Power",
+          "class": "power",
+          "state_class": "measurement",
+          "uom": "W",
+          "scale": 1,
+          "rule": 1,
+          "registers": [
+            651
+          ],
+          "icon": "mdi:lightning-bolt-outline"
+        },
+        {
+          "name": "Load L3 Power",
+          "class": "power",
+          "state_class": "measurement",
+          "uom": "W",
+          "scale": 1,
+          "rule": 1,
+          "registers": [
+            652
+          ],
+          "icon": "mdi:lightning-bolt-outline"
+        },
+        {
+          "name": "Load Voltage L1",
+          "class": "voltage",
+          "state_class": "measurement",
+          "uom": "V",
+          "scale": 0.1,
+          "rule": 1,
+          "registers": [
+            644
+          ],
+          "icon": "mdi:lightning-bolt-outline"
+        },
+        {
+          "name": "Load Voltage L2",
+          "class": "voltage",
+          "state_class": "measurement",
+          "uom": "V",
+          "scale": 0.1,
+          "rule": 1,
+          "registers": [
+            645
+          ],
+          "icon": "mdi:lightning-bolt-outline"
+        },
+        {
+          "name": "Load Voltage L3",
+          "class": "voltage",
+          "state_class": "measurement",
+          "uom": "V",
+          "scale": 0.1,
+          "rule": 1,
+          "registers": [
+            646
+          ],
+          "icon": "mdi:lightning-bolt-outline"
+        },
+        {
+          "name": "Daily Load Consumption",
+          "class": "energy",
+          "state_class": "total_increasing",
+          "uom": "kWh",
+          "scale": 0.1,
+          "rule": 1,
+          "registers": [
+            526
+          ],
+          "icon": "mdi:lightning-bolt-outline"
+        },
+        {
+          "name": "Total Load Consumption",
+          "class": "energy",
+          "state_class": "total_increasing",
+          "uom": "kWh",
+          "scale": 0.1,
+          "rule": 3,
+          "registers": [
+            527,
+            528
+          ],
+          "icon": "mdi:lightning-bolt-outline"
+        }
+      ]
+    },
+    {
+      "group": "Inverter",
+      "items": [
+        {
+          "name": "Current L1",
+          "class": "current",
+          "state_class": "measurement",
+          "uom": "A",
+          "scale": 0.01,
+          "rule": 2,
+          "registers": [
+            630
+          ],
+          "icon": "mdi:home-lightning-bolt"
+        },
+        {
+          "name": "Current L2",
+          "class": "current",
+          "state_class": "measurement",
+          "uom": "A",
+          "scale": 0.01,
+          "rule": 2,
+          "registers": [
+            631
+          ],
+          "icon": "mdi:home-lightning-bolt"
+        },
+        {
+          "name": "Current L3",
+          "class": "current",
+          "state_class": "measurement",
+          "uom": "A",
+          "scale": 0.01,
+          "rule": 2,
+          "registers": [
+            632
+          ],
+          "icon": "mdi:home-lightning-bolt"
+        },
+        {
+          "name": "Inverter L1 Power",
+          "class": "power",
+          "state_class": "measurement",
+          "uom": "W",
+          "scale": 1,
+          "rule": 2,
+          "registers": [
+            633
+          ],
+          "icon": "mdi:home-lightning-bolt"
+        },
+        {
+          "name": "Inverter L2 Power",
+          "class": "power",
+          "state_class": "measurement",
+          "uom": "W",
+          "scale": 1,
+          "rule": 2,
+          "registers": [
+            634
+          ],
+          "icon": "mdi:home-lightning-bolt"
+        },
+        {
+          "name": "Inverter L3 Power",
+          "class": "power",
+          "state_class": "measurement",
+          "uom": "W",
+          "scale": 1,
+          "rule": 2,
+          "registers": [
+            635
+          ],
+          "icon": "mdi:home-lightning-bolt"
+        },
+        {
+          "name": "DC Temperature",
+          "class": "temperature",
+          "state_class": "measurement",
+          "uom": "\u00b0C",
+          "scale": 0.1,
+          "rule": 2,
+          "offset": 1000,
+          "registers": [
+            540
+          ],
+          "icon": "mdi:thermometer"
+        },
+        {
+          "name": "AC Temperature",
+          "class": "temperature",
+          "state_class": "measurement",
+          "uom": "\u00b0C",
+          "scale": 0.1,
+          "rule": 2,
+          "offset": 1000,
+          "registers": [
+            541
+          ],
+          "icon": "mdi:thermometer"
+        },
+        {
+          "name": "Inverter ID",
+          "class": "",
+          "state_class": "",
+          "uom": "",
+          "scale": 1,
+          "rule": 5,
+          "registers": [
+            3,
+            4,
+            5,
+            6,
+            7
+          ],
+          "isstr": true
+        },
+        {
+          "name": "Communication Board Version No.",
+          "class": "",
+          "state_class": "",
+          "uom": "",
+          "scale": 1,
+          "rule": 1,
+          "registers": [
+            17
+          ],
+          "isstr": true
+        },
+        {
+          "name": "Control Board Version No.",
+          "class": "",
+          "state_class": "",
+          "uom": "",
+          "scale": 1,
+          "rule": 1,
+          "registers": [
+            13
+          ],
+          "isstr": true
+        }
+      ]
+    },
+    {
+      "group": "Alert",
+      "items": [
+        {
+          "name": "Alert",
+          "class": "",
+          "state_class": "",
+          "uom": "",
+          "scale": 1,
+          "rule": 6,
+          "registers": [
+            553,
+            554,
+            555,
+            556,
+            557,
+            558
+          ]
+        }
+      ]
+    },
+    {
+      "group": "ExportControl",
+      "items": [
+        {
+          "name": "Export Limit Status",
+          "class": "",
+          "state_class": "",
+          "uom": "",
+          "scale": 1,
+          "rule": 1,
+          "registers": [
+            130
+          ],
+          "icon": "mdi:transmission-tower-export",
+          "lookup": [
+            {
+              "key": 0,
+              "value": "Ograniczenie wy\u0142\u0105czone"
+            },
+            {
+              "key": 1,
+              "value": "Ograniczenie aktywne"
+            }
+          ]
+        },
+        {
+          "name": "Export Limit Percent",
+          "class": "measurement",
+          "state_class": "measurement",
+          "uom": "%",
+          "scale": 1,
+          "rule": 1,
+          "registers": [
+            129
+          ],
+          "icon": "mdi:percent"
+        }
+      ]
+    },
+    {
+      "group": "SystemInfo",
+      "items": [
+        {
+          "name": "Inverter Run Time",
+          "class": "duration",
+          "state_class": "measurement",
+          "uom": "h",
+          "scale": 1,
+          "rule": 3,
+          "registers": [
+            536,
+            537
+          ],
+          "icon": "mdi:timer-outline"
+        },
+        {
+          "name": "Inverter Mode",
+          "class": "",
+          "state_class": "",
+          "uom": "",
+          "scale": 1,
+          "rule": 1,
+          "registers": [
+            85
+          ],
+          "icon": "mdi:home-lightning-bolt",
+          "lookup": [
+            {
+              "key": 0,
+              "value": "Standby"
+            },
+            {
+              "key": 1,
+              "value": "Normal"
+            },
+            {
+              "key": 2,
+              "value": "Fault"
+            },
+            {
+              "key": 3,
+              "value": "Flash Update"
+            }
+          ]
+        },
+        {
+          "name": "MPPT1 Status",
+          "class": "",
+          "state_class": "",
+          "uom": "",
+          "scale": 1,
+          "rule": 1,
+          "registers": [
+            86
+          ],
+          "icon": "mdi:solar-panel",
+          "lookup": [
+            {
+              "key": 0,
+              "value": "Not Connected"
+            },
+            {
+              "key": 1,
+              "value": "Connected"
+            },
+            {
+              "key": 2,
+              "value": "Producing"
+            },
+            {
+              "key": 65535,
+              "value": "N/A"
+            }
+          ]
+        },
+        {
+          "name": "MPPT2 Status",
+          "class": "",
+          "state_class": "",
+          "uom": "",
+          "scale": 1,
+          "rule": 1,
+          "registers": [
+            87
+          ],
+          "icon": "mdi:solar-panel",
+          "lookup": [
+            {
+              "key": 0,
+              "value": "Not Connected"
+            },
+            {
+              "key": 1,
+              "value": "Connected"
+            },
+            {
+              "key": 2,
+              "value": "Producing"
+            },
+            {
+              "key": 65535,
+              "value": "N/A"
+            }
+          ]
+        },
+        {
+          "name": "Battery Status",
+          "class": "",
+          "state_class": "",
+          "uom": "",
+          "scale": 1,
+          "rule": 1,
+          "registers": [
+            88
+          ],
+          "icon": "mdi:battery",
+          "lookup": [
+            {
+              "key": 0,
+              "value": "Idle"
+            },
+            {
+              "key": 1,
+              "value": "Charging"
+            },
+            {
+              "key": 2,
+              "value": "Discharging"
+            },
+            {
+              "key": 3,
+              "value": "Full"
+            },
+            {
+              "key": 65535,
+              "value": "N/A"
+            }
+          ]
+        },
+        {
+          "name": "RTC Year",
+          "class": "",
+          "state_class": "",
+          "uom": "",
+          "scale": 1,
+          "rule": 1,
+          "registers": [
+            64
+          ]
+        },
+        {
+          "name": "RTC Month",
+          "class": "",
+          "state_class": "",
+          "uom": "",
+          "scale": 1,
+          "rule": 1,
+          "registers": [
+            65
+          ]
+        },
+        {
+          "name": "RTC Day",
+          "class": "",
+          "state_class": "",
+          "uom": "",
+          "scale": 1,
+          "rule": 1,
+          "registers": [
+            66
+          ]
+        },
+        {
+          "name": "RTC Hour",
+          "class": "",
+          "state_class": "",
+          "uom": "",
+          "scale": 1,
+          "rule": 1,
+          "registers": [
+            67
+          ]
+        },
+        {
+          "name": "RTC Minute",
+          "class": "",
+          "state_class": "",
+          "uom": "",
+          "scale": 1,
+          "rule": 1,
+          "registers": [
+            68
+          ]
+        },
+        {
+          "name": "RTC Second",
+          "class": "",
+          "state_class": "",
+          "uom": "",
+          "scale": 1,
+          "rule": 1,
+          "registers": [
+            69
+          ]
+        }
+      ]
+    },
+    {
+      "group": "PowerControl",
+      "items": [
+        {
+          "name": "PQ Mode Status",
+          "class": "",
+          "state_class": "",
+          "uom": "",
+          "scale": 1,
+          "rule": 1,
+          "registers": [
+            131
+          ],
+          "icon": "mdi:flash",
+          "lookup": [
+            {
+              "key": 0,
+              "value": "Disabled"
+            },
+            {
+              "key": 1,
+              "value": "Enabled"
+            }
+          ]
+        },
+        {
+          "name": "V(Q) Control Status",
+          "class": "",
+          "state_class": "",
+          "uom": "",
+          "scale": 1,
+          "rule": 1,
+          "registers": [
+            132
+          ],
+          "icon": "mdi:flash",
+          "lookup": [
+            {
+              "key": 0,
+              "value": "Disabled"
+            },
+            {
+              "key": 1,
+              "value": "Enabled"
+            }
+          ]
+        },
+        {
+          "name": "F(W) Control Status",
+          "class": "",
+          "state_class": "",
+          "uom": "",
+          "scale": 1,
+          "rule": 1,
+          "registers": [
+            133
+          ],
+          "icon": "mdi:flash",
+          "lookup": [
+            {
+              "key": 0,
+              "value": "Disabled"
+            },
+            {
+              "key": 1,
+              "value": "Enabled"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "group": "ExportControlStatus",
+      "items": [
+        {
+          "name": "Export Control Mode",
+          "class": "",
+          "state_class": "",
+          "uom": "",
+          "scale": 1,
+          "rule": 1,
+          "registers": [
+            130
+          ],
+          "icon": "mdi:transmission-tower-export",
+          "lookup": [
+            {
+              "key": 0,
+              "value": "Off"
+            },
+            {
+              "key": 1,
+              "value": "Enabled"
+            }
+          ]
+        },
+        {
+          "name": "Export Control Limit (%)",
+          "class": "measurement",
+          "state_class": "measurement",
+          "uom": "%",
+          "scale": 1,
+          "rule": 1,
+          "registers": [
+            129
+          ],
+          "icon": "mdi:percent"
+        }
+      ]
+    },
+    {
+      "group": "InverterStatus",
+      "items": [
+        {
+          "name": "Work Mode",
+          "class": "",
+          "state_class": "",
+          "uom": "",
+          "scale": 1,
+          "rule": 1,
+          "registers": [
+            85
+          ],
+          "icon": "mdi:home-lightning-bolt",
+          "lookup": [
+            {
+              "key": 0,
+              "value": "Standby"
+            },
+            {
+              "key": 1,
+              "value": "Normal (On-Grid)"
+            },
+            {
+              "key": 2,
+              "value": "Fault"
+            },
+            {
+              "key": 3,
+              "value": "Flash Update"
+            }
+          ]
+        },
+        {
+          "name": "Grid Synchronization",
+          "class": "",
+          "state_class": "",
+          "uom": "",
+          "scale": 1,
+          "rule": 1,
+          "registers": [
+            89
+          ],
+          "icon": "mdi:transmission-tower",
+          "lookup": [
+            {
+              "key": 0,
+              "value": "Not Synchronized"
+            },
+            {
+              "key": 1,
+              "value": "Synchronized"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

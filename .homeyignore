@@ -1,0 +1,6 @@
+node
+third_Party
+.homeybuild
+.git
+.claude
+*.md

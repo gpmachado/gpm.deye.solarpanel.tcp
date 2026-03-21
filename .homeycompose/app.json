@@ -1,0 +1,48 @@
+{
+  "id": "gpm.deye.solarpanel.tcp",
+  "version": "1.2.1",
+  "compatibility": ">=13.0.0",
+  "sdk": 3,
+  "runtime": "python",
+  "pythonVersion": "3.14",
+  "platforms": [
+    "local"
+  ],
+  "name": {
+    "en": "Deye Inverter (Local - Solarman V5)"
+  },
+  "description": {
+    "en": "Local integration for Deye inverters using Solarman V5 protocol (port 8899)",
+    "nl": "Lokale integratie voor Deye-omvormers via Solarman V5-protocol (poort 8899)",
+    "de": "Lokale Integration für Deye-Wechselrichter über Solarman V5-Protokoll (Port 8899)",
+    "fr": "Intégration locale pour onduleurs Deye via le protocole Solarman V5 (port 8899)",
+    "it": "Integrazione locale per inverter Deye tramite protocollo Solarman V5 (porta 8899)",
+    "sv": "Lokal integration för Deye-växelriktare via Solarman V5-protokoll (port 8899)",
+    "no": "Lokal integrasjon for Deye-vekselrettere via Solarman V5-protokoll (port 8899)",
+    "es": "Integración local para inversores Deye mediante protocolo Solarman V5 (puerto 8899)",
+    "da": "Lokal integration til Deye-invertere via Solarman V5-protokol (port 8899)",
+    "ru": "Локальная интеграция для инверторов Deye по протоколу Solarman V5 (порт 8899)",
+    "pl": "Lokalna integracja dla falowników Deye przez protokół Solarman V5 (port 8899)"
+  },
+  "category": [
+    "energy"
+  ],
+  "permissions": [],
+  "brandColor": "#E84D0E",
+  "images": {
+    "small": "/assets/images/small.png",
+    "large": "/assets/images/large.png",
+    "xlarge": "/assets/images/xlarge.png"
+  },
+  "author": {
+    "name": "Gabriel Pedrosa Machado",
+    "email": "g.machado@me.com",
+    "source": "https://github.com/gpmachado/gpm.deye.solarpanel.tcp",
+    "homepage": "https://github.com/gpmachado/gpm.deye.solarpanel.tcp",
+    "support": "https://github.com/gpmachado/gpm.deye.solarpanel.tcp/issues"
+  },
+  "pythonPackages": [
+    "pysolarmanv5",
+    "astral"
+  ]
+}

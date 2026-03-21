@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    body { font-family: sans-serif; padding: 20px; }
+    label { display: block; margin-bottom: 6px; font-weight: bold; }
+    input { width: 100%; padding: 8px; box-sizing: border-box; font-size: 14px; border: 1px solid #ccc; border-radius: 4px; }
+    .hint { font-size: 12px; color: #888; margin-top: 4px; }
+    button { margin-top: 16px; width: 100%; padding: 10px; background: #E84D0E; color: white; border: none; border-radius: 4px; font-size: 14px; cursor: pointer; }
+    button:disabled { background: #aaa; }
+    .status { margin-top: 12px; font-size: 13px; color: #555; text-align: center; }
+  </style>
+</head>
+<body>
+  <label for="ip">Logger IP Address</label>
+  <input id="ip" type="text" placeholder="Leave empty to auto-discover on network" autocomplete="off" />
+  <div class="hint">Leave empty to scan automatically. Or enter the IP shown in your router's device list.</div>
+
+  <label for="serial" style="margin-top:14px;">Logger Serial Number <span style="font-weight:normal;color:#888">(optional)</span></label>
+  <input id="serial" type="text" placeholder="e.g. 2304xxxxxxx — leave empty to auto-detect" autocomplete="off" />
+  <div class="hint">Printed on the sticker of the Wi-Fi logger. Detected automatically if blank.</div>
+
+  <button id="btn" onclick="connect()">Connect</button>
+  <div class="status" id="status"></div>
+
+  <script>
+    function connect() {
+      var ip     = document.getElementById('ip').value.trim();
+      var serial = document.getElementById('serial').value.trim();
+      var btn    = document.getElementById('btn');
+      var status = document.getElementById('status');
+
+      btn.disabled = true;
+      status.textContent = ip ? 'Connecting to ' + ip + '...' : 'Scanning network for Solarman loggers...';
+
+      Homey.emit('login', { username: ip, password: serial }, function(err) {
+        if (err) {
+          status.textContent = err.message || String(err);
+          btn.disabled = false;
+        } else {
+          Homey.nextView();
+        }
+      });
+    }
+
+    document.getElementById('ip').addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') connect();
+    });
+  </script>
+</body>
+</html>

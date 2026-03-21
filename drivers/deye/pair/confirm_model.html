@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    body { font-family: sans-serif; padding: 20px; }
+    label { display: block; margin-bottom: 6px; font-weight: bold; }
+    select { width: 100%; padding: 8px; box-sizing: border-box; font-size: 14px; border: 1px solid #ccc; border-radius: 4px; background: white; }
+    .hint { font-size: 12px; color: #888; margin-top: 6px; }
+    .detected-badge { display: inline-block; background: #e8f5e9; color: #2e7d32; font-size: 12px; padding: 3px 8px; border-radius: 12px; margin-bottom: 12px; }
+    button { margin-top: 18px; width: 100%; padding: 10px; background: #E84D0E; color: white; border: none; border-radius: 4px; font-size: 14px; cursor: pointer; }
+    button:disabled { background: #aaa; }
+    .status { margin-top: 12px; font-size: 13px; color: #555; text-align: center; min-height: 20px; }
+    h3 { margin: 0 0 12px 0; font-size: 16px; }
+  </style>
+</head>
+<body>
+  <h3>Confirm Inverter Model</h3>
+  <div class="status" id="status">Detecting inverter model...</div>
+  <div id="content" style="display:none">
+    <div class="detected-badge" id="badge"></div>
+    <label for="model">Select model:</label>
+    <select id="model"></select>
+    <div class="hint">Auto-detection reads live registers. If the pre-selected model looks wrong, choose the correct one.</div>
+    <button id="btn" onclick="confirm_model()">Confirm &amp; Add Device</button>
+  </div>
+
+  <script>
+    var MODEL_LABELS = {};
+
+    Homey.ready(function() {
+      var data = null;
+      try { data = JSON.parse(localStorage.getItem('deye_pairing')); } catch(e) {}
+
+      if (!data || !data.detected || !data.models) {
+        document.getElementById('status').textContent = 'Could not load model data. Press Continue to use auto-detected model.';
+        return;
+      }
+
+      MODEL_LABELS = data.models;
+      var detected = data.detected;
+      var sel = document.getElementById('model');
+
+      var ordered = [detected].concat(Object.keys(data.models).filter(function(k) { return k !== detected; }));
+      ordered.forEach(function(mid) {
+        var opt = document.createElement('option');
+        opt.value = mid;
+        opt.textContent = data.models[mid];
+        if (mid === detected) opt.textContent += ' (Auto-detected)';
+        sel.appendChild(opt);
+      });
+      sel.value = detected;
+
+      document.getElementById('badge').textContent = 'Detected: ' + data.models[detected];
+      document.getElementById('status').textContent = '';
+      document.getElementById('content').style.display = 'block';
+    });
+
+    function confirm_model() {
+      var model = document.getElementById('model').value;
+      var btn   = document.getElementById('btn');
+      btn.disabled = true;
+      document.getElementById('status').textContent = 'Preparing device...';
+      Homey.emit('confirm_model', { model: model }, function(err) {
+        if (err) {
+          document.getElementById('status').textContent = err.message || String(err);
+          btn.disabled = false;
+        } else {
+          Homey.nextView();
+        }
+      });
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,385 @@
+"""
+Deye universal driver — supports all 5 Deye inverter models via Solarman V5.
+Model selection: present all 5 options; user picks the correct one.
+Capabilities are built dynamically from the selected YAML definition.
+"""
+
+import asyncio
+import json
+import logging
+import os
+import socket
+
+from homey.driver import Driver
+from app.lib.solarman_client import SolarmanClient
+from app.lib.capability_map import build_capabilities
+
+_LOGGER = logging.getLogger(__name__)
+
+# ── Available Deye models (yaml filename → display name) ─────────────────────
+DEYE_MODELS: dict[str, str] = {
+    "deye_string":  "Deye String Inverter (2/4 MPPT)",
+    "deye_micro":   "Deye Microinverter (4 MPPT) — SUN-M/SUN2000G3",
+    "deye_hybrid":  "Deye Hybrid (Battery + 2 MPPT)",
+    "deye_sg04lp3": "Deye SG04LP3 Hybrid 3-phase — SUN-8/10/12K",
+}
+
+_INVERTER_DEFS_DIR = os.path.join(os.path.dirname(__file__), "..", "..", "inverter_definitions")
+
+
+def _yaml_path(model_id: str) -> str:
+    return os.path.join(_INVERTER_DEFS_DIR, f"{model_id}.json")
+
+
+def _load_sensors(model_id: str) -> list:
+    path = _yaml_path(model_id)
+    with open(path, encoding="utf-8") as f:
+        definition = json.load(f)
+    sensors = []
+    for group in definition.get("parameters", []):
+        for item in group.get("items", []):
+            sensors.append(item)
+    return sensors
+
+
+async def _detect_model(host: str, serial: int, port: int = 8899) -> tuple[str, dict]:
+    """
+    Auto-detect the inverter model by reading all register sets and scoring each model.
+    Scoring: +2 for each non-zero value from measure_power/meter_power caps, +1 for other non-zero values.
+    Returns (model_id, parsed_values) for the best-scoring model (falls back to 'deye_4mppt').
+    """
+    from app.lib.parser import ParameterParser
+    from app.lib.capability_map import get_sensor_capability_map
+    from app.lib.v5_transport import V5Transport
+
+    best_model  = "deye_string"
+    best_score  = -1
+    best_values: dict = {}
+
+    for model_id in DEYE_MODELS:
+        path = _yaml_path(model_id)
+        with open(path, encoding="utf-8") as f:
+            definition = json.load(f)
+
+        try:
+            m = V5Transport(host, serial, port=port, slave=1, timeout=8.0)
+            await m.connect()
+            try:
+                params = ParameterParser(definition)
+                for req in definition["requests"]:
+                    start, end, fc = req["start"], req["end"], req["mb_functioncode"]
+                    length = end - start + 1
+                    try:
+                        if fc == 3:
+                            data = await m.read_holding_registers(register_addr=start, quantity=length)
+                        else:
+                            data = await m.read_input_registers(register_addr=start, quantity=length)
+                        params.parse(data, start, length)
+                    except Exception as req_e:
+                        _LOGGER.debug(f"Model probe {model_id} request [{start}-{end}] skipped: {req_e}")
+            finally:
+                await m.disconnect()
+
+            values = params.get_result()
+            cap_map = get_sensor_capability_map(list(
+                item
+                for group in definition.get("parameters", [])
+                for item in group.get("items", [])
+            ))
+
+            score = 0
+            for sensor_name, cap_id in cap_map.items():
+                val = values.get(sensor_name)
+                if val is None or val == 0:
+                    continue
+                if cap_id in ("measure_power", "meter_power"):
+                    score += 2
+                else:
+                    score += 1
+
+            _LOGGER.info(f"Model probe {model_id}: score={score}")
+            if score > best_score:
+                best_score = score
+                best_model = model_id
+                best_values = values
+
+        except Exception as e:
+            _LOGGER.debug(f"Model probe {model_id} failed: {e}")
+
+        await asyncio.sleep(1)  # brief pause between probes — let logger recover
+
+    _LOGGER.info(f"Detected model: {best_model} (score={best_score})")
+    return best_model, best_values
+
+
+async def _discover_loggers(timeout: float = 3.0) -> list[dict]:
+    """
+    UDP broadcast discovery — identical to ha-solarman scanner.py and Node.js scanLoggers.js.
+    Sends "WIFIKIT-214028-READ" to port 48899, collects "IP,MAC,Serial" replies.
+    Returns list of {ip, mac, serial}.
+    """
+    DISCOVERY_PORT    = 48899
+    DISCOVERY_PAYLOAD = b"WIFIKIT-214028-READ"
+    found: list[dict] = []
+    seen: set[str] = set()
+
+    loop = asyncio.get_event_loop()
+
+    class _Protocol(asyncio.DatagramProtocol):
+        def datagram_received(self, data: bytes, addr):
+            try:
+                parts = data.decode("latin-1").strip().split(",")
+                if len(parts) < 3:
+                    return
+                ip  = parts[0].strip()
+                mac = parts[1].strip()
+                serial_str = parts[2].strip()
+                if not ip or ip in seen or not serial_str.isdigit():
+                    return
+                seen.add(ip)
+                found.append({"ip": ip, "mac": mac, "serial": int(serial_str)})
+            except Exception:
+                pass
+
+        def error_received(self, exc):
+            pass
+
+        def connection_lost(self, exc):
+            pass
+
+    try:
+        transport, _ = await loop.create_datagram_endpoint(
+            _Protocol,
+            local_addr=("0.0.0.0", 0),
+            allow_broadcast=True,
+        )
+        transport.sendto(DISCOVERY_PAYLOAD, ("<broadcast>", DISCOVERY_PORT))
+        await asyncio.sleep(timeout)
+        transport.close()
+    except Exception as e:
+        _LOGGER.warning(f"UDP discovery error: {e}")
+
+    return found
+
+
+async def _fetch_logger_info(host: str) -> dict:
+    """
+    Fetch logger metadata from http://{host}/status.html (admin:admin).
+    Returns a dict with keys: serial, mac, ssid, rssi (all may be None).
+    """
+    import re
+    result: dict = {"serial": None, "mac": "", "ssid": "", "rssi": ""}
+    try:
+        reader, writer = await asyncio.wait_for(
+            asyncio.open_connection(host, 80), timeout=5
+        )
+        request = (
+            f"GET /status.html HTTP/1.0\r\n"
+            f"Host: {host}\r\n"
+            f"Authorization: Basic YWRtaW46YWRtaW4=\r\n"  # admin:admin
+            f"\r\n"
+        )
+        writer.write(request.encode())
+        await writer.drain()
+        data = b""
+        try:
+            while True:
+                chunk = await asyncio.wait_for(reader.read(4096), timeout=5)
+                if not chunk:
+                    break
+                data += chunk
+        except asyncio.TimeoutError:
+            pass
+        writer.close()
+        await writer.wait_closed()
+
+        text = data.decode("latin-1", errors="replace")
+
+        def _var(name: str) -> str:
+            m = re.search(rf'{name}\s*=\s*["\']?([^"\';\s]+)', text)
+            return m.group(1) if m else ""
+
+        sn = _var("webdata_sn")
+        result["serial"] = int(sn) if sn.isdigit() else None
+        result["mac"]    = _var("cover_sta_mac")
+        result["ssid"]   = _var("cover_sta_ssid")
+        rssi_raw         = _var("cover_sta_rssi")
+        # RSSI is typically a hex string like "0x48" or decimal dBm
+        if rssi_raw.startswith("0x"):
+            try:
+                rssi_int = int(rssi_raw, 16)
+                # Convert unsigned byte to signed dBm (e.g. 0xC8 → -56 dBm)
+                result["rssi"] = f"{rssi_int - 256} dBm" if rssi_int > 127 else f"{rssi_int} dBm"
+            except ValueError:
+                result["rssi"] = rssi_raw
+        elif rssi_raw:
+            result["rssi"] = f"{rssi_raw} dBm"
+
+    except Exception as e:
+        _LOGGER.debug(f"Logger info fetch failed: {e}")
+    return result
+
+
+async def _fetch_logger_serial(host: str) -> int | None:
+    """Convenience wrapper — returns only the serial number."""
+    return (await _fetch_logger_info(host))["serial"]
+
+
+class DeyeDriver(Driver):
+
+    async def on_init(self) -> None:
+        self.log("DeyeDriver init")
+
+    async def on_pair(self, session) -> None:
+        self.log("onPair started")
+
+        found: dict = {}           # stores {host, serial} after login
+        confirmed: dict = {}       # stores {model_id} after confirm step
+
+        async def on_login(data: dict) -> bool:
+            nonlocal found
+            host       = str(data.get("username", "")).strip()
+            serial_str = str(data.get("password", "")).strip()
+
+            # ── Auto-discovery when IP is left blank ──────────────────────────
+            if not host:
+                self.log("No IP entered — scanning network for Solarman loggers (UDP)...")
+                loggers = await _discover_loggers(timeout=3.0)
+                self.log(f"UDP scan found: {loggers}")
+                if not loggers:
+                    raise Exception(
+                        "No Solarman logger found on network. "
+                        "Enter the IP address manually."
+                    )
+                # Use first discovered logger — fetch additional info via HTTP
+                logger_info = await _fetch_logger_info(loggers[0]["ip"])
+                found = {
+                    "host":   loggers[0]["ip"],
+                    "serial": loggers[0]["serial"],
+                    "mac":    logger_info["mac"] or loggers[0].get("mac", ""),
+                    "ssid":   logger_info["ssid"],
+                    "rssi":   logger_info["rssi"],
+                }
+                self.log(f"Auto-discovered: {found}")
+                # Run detection so confirm_model.html loads instantly
+                detected_id, active_values = await _detect_model(found["host"], found["serial"])
+                self.log(f"Detection result: {detected_id}")
+                confirmed["model_id"] = detected_id
+                confirmed["active_values"] = active_values
+                return True
+
+            # ── Manual IP entry ───────────────────────────────────────────────
+            parts = host.split(".")
+            if len(parts) != 4 or not all(p.isdigit() and 0 <= int(p) <= 255 for p in parts):
+                raise Exception(f"Invalid IP address: {host}")
+
+            # Resolve serial
+            serial: int | None = None
+            if serial_str and serial_str.isdigit():
+                serial = int(serial_str)
+            else:
+                self.log(f"No serial — trying auto-detect via HTTP from {host}")
+                serial = await _fetch_logger_serial(host)
+
+                if serial is None:
+                    # Fallback: try UDP for this specific IP
+                    loggers = await _discover_loggers(timeout=2.0)
+                    match = next((l for l in loggers if l["ip"] == host), None)
+                    if match:
+                        serial = match["serial"]
+
+            if serial is None:
+                raise Exception(
+                    "Cannot auto-detect logger serial. "
+                    "Enter the serial number printed on the logger sticker."
+                )
+
+            # Test connection
+            client = SolarmanClient(host, serial)
+            ok = await client.test_connection()
+            if not ok:
+                raise Exception(
+                    f"Cannot connect to Solarman logger at {host}. "
+                    "Check IP, serial number, and that port 8899 is reachable."
+                )
+
+            found = {"host": host, "serial": serial}
+            self.log(f"login OK — host:{host} serial:{serial}")
+            # Run detection here so confirm_model.html loads instantly
+            self.log(f"Detecting model for {host}...")
+            detected_id, active_values = await _detect_model(host, serial)
+            self.log(f"Detection result: {detected_id}")
+            confirmed["model_id"] = detected_id
+            confirmed["active_values"] = active_values
+            return True
+
+        async def on_get_detected_model(data: dict = None) -> dict:
+            """Called by confirm_model.html on load — returns already-detected model."""
+            if not confirmed:
+                raise Exception("No logger found — go back and try again.")
+            return {"detected": confirmed["model_id"], "models": DEYE_MODELS}
+
+        async def on_confirm_model(data: dict) -> bool:
+            """Called when user clicks Confirm in confirm_model.html."""
+            model_id = data.get("model", "")
+            if model_id not in DEYE_MODELS:
+                raise Exception(f"Unknown model: {model_id}")
+            confirmed["model_id"] = model_id
+            self.log(f"Model confirmed by user: {model_id}")
+            return True
+
+        async def on_list_devices(data: dict = None) -> list:
+            if not found:
+                raise Exception("No logger found — go back and try again.")
+            if not confirmed:
+                raise Exception("No model confirmed — go back and try again.")
+
+            host         = found["host"]
+            serial       = found["serial"]
+            mac          = found.get("mac", "")
+            ssid         = found.get("ssid", "")
+            rssi         = found.get("rssi", "")
+            model_id     = confirmed["model_id"]
+            active_values = confirmed.get("active_values", {})
+
+            sensors = _load_sensors(model_id)
+
+            # Filter to sensors that returned non-zero data during detection.
+            # Production totals and status are always kept (may be 0 at night or on new devices).
+            _ALWAYS_KEEP = {"Today Production", "Total Production", "Running Status"}
+            if active_values:
+                def _keep(s: dict) -> bool:
+                    if s["name"] in _ALWAYS_KEEP:
+                        return True
+                    if "lookup" in s:
+                        return True
+                    return bool(active_values.get(s["name"]))
+                sensors = [s for s in sensors if _keep(s)]
+
+            caps, caps_opts = build_capabilities(sensors)
+            self.log(f"list_devices — model:{model_id} host:{host} active_caps:{len(caps)}")
+            return [{
+                "name": DEYE_MODELS[model_id],
+                "data": {"id": f"deye_{serial}"},
+                "capabilities": caps,
+                "capabilitiesOptions": caps_opts,
+                "settings": {
+                    "host":            host,
+                    "loggerSerial":    serial,
+                    "port":            8899,
+                    "slaveId":         1,
+                    "model":           model_id,
+                    "pollingInterval": 60,
+                    "loggerMac":       mac,
+                    "wifiSsid":        ssid,
+                    "wifiRssi":        rssi,
+                },
+            }]
+
+        session.set_handler("login", on_login)
+        session.set_handler("get_detected_model", on_get_detected_model)
+        session.set_handler("confirm_model", on_confirm_model)
+        session.set_handler("list_devices", on_list_devices)
+
+
+homey_export = DeyeDriver

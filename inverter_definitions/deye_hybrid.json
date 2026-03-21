@@ -1,0 +1,1174 @@
+{
+  "requests": [
+    {
+      "start": 3,
+      "end": 112,
+      "mb_functioncode": 3
+    },
+    {
+      "start": 150,
+      "end": 249,
+      "mb_functioncode": 3
+    },
+    {
+      "start": 250,
+      "end": 279,
+      "mb_functioncode": 3
+    }
+  ],
+  "parameters": [
+    {
+      "group": "solar",
+      "items": [
+        {
+          "name": "PV1 Power",
+          "class": "power",
+          "state_class": "measurement",
+          "uom": "W",
+          "scale": 1,
+          "rule": 1,
+          "registers": [
+            186
+          ],
+          "icon": "mdi:solar-power"
+        },
+        {
+          "name": "PV2 Power",
+          "class": "power",
+          "state_class": "measurement",
+          "uom": "W",
+          "scale": 1,
+          "rule": 1,
+          "registers": [
+            187
+          ],
+          "icon": "mdi:solar-power"
+        },
+        {
+          "name": "PV1 Voltage",
+          "class": "voltage",
+          "state_class": "measurement",
+          "uom": "V",
+          "scale": 0.1,
+          "rule": 1,
+          "registers": [
+            109
+          ],
+          "icon": "mdi:solar-power"
+        },
+        {
+          "name": "PV2 Voltage",
+          "class": "voltage",
+          "state_class": "measurement",
+          "uom": "V",
+          "scale": 0.1,
+          "rule": 1,
+          "registers": [
+            111
+          ],
+          "icon": "mdi:solar-power"
+        },
+        {
+          "name": "PV1 Current",
+          "class": "current",
+          "uom": "A",
+          "scale": 0.1,
+          "rule": 1,
+          "registers": [
+            110
+          ],
+          "icon": "mdi:solar-power"
+        },
+        {
+          "name": "PV2 Current",
+          "class": "current",
+          "state_class": "measurement",
+          "uom": "A",
+          "scale": 0.1,
+          "rule": 1,
+          "registers": [
+            112
+          ],
+          "icon": "mdi:solar-power"
+        },
+        {
+          "name": "Daily Production",
+          "class": "energy",
+          "state_class": "measurement",
+          "uom": "kWh",
+          "scale": 0.1,
+          "rule": 1,
+          "registers": [
+            108
+          ],
+          "icon": "mdi:solar-power"
+        },
+        {
+          "name": "Total Production",
+          "class": "energy",
+          "state_class": "total_increasing",
+          "uom": "kWh",
+          "scale": 0.1,
+          "rule": 3,
+          "registers": [
+            96,
+            97
+          ],
+          "icon": "mdi:solar-power"
+        },
+        {
+          "name": "Micro-inverter Power",
+          "class": "power",
+          "state_class": "measurement",
+          "uom": "W",
+          "scale": 1,
+          "rule": 1,
+          "registers": [
+            166
+          ],
+          "icon": "mdi:solar-power"
+        }
+      ]
+    },
+    {
+      "group": "Battery",
+      "items": [
+        {
+          "name": "Total Battery Charge",
+          "class": "energy",
+          "state_class": "total_increasing",
+          "uom": "kWh",
+          "scale": 0.1,
+          "rule": 3,
+          "registers": [
+            72,
+            73
+          ],
+          "icon": "mdi:battery-plus"
+        },
+        {
+          "name": "Total Battery Discharge",
+          "class": "energy",
+          "state_class": "total_increasing",
+          "uom": "kWh",
+          "scale": 0.1,
+          "rule": 3,
+          "registers": [
+            74,
+            75
+          ],
+          "icon": "mdi:battery-minus"
+        },
+        {
+          "name": "Daily Battery Charge",
+          "class": "energy",
+          "state_class": "total_increasing",
+          "uom": "kWh",
+          "scale": 0.1,
+          "rule": 1,
+          "registers": [
+            70
+          ],
+          "icon": "mdi:battery-plus"
+        },
+        {
+          "name": "Daily Battery Discharge",
+          "class": "energy",
+          "state_class": "total_increasing",
+          "uom": "kWh",
+          "scale": 0.1,
+          "rule": 1,
+          "registers": [
+            71
+          ],
+          "icon": "mdi:battery-minus"
+        },
+        {
+          "name": "Battery Status",
+          "class": "",
+          "state_class": "measurement",
+          "uom": "",
+          "scale": 1,
+          "rule": 1,
+          "registers": [
+            189
+          ],
+          "isstr": true,
+          "lookup": [
+            {
+              "key": 0,
+              "value": "Charge"
+            },
+            {
+              "key": 1,
+              "value": "Stand-by"
+            },
+            {
+              "key": 2,
+              "value": "Discharge"
+            }
+          ],
+          "icon": "mdi:battery"
+        },
+        {
+          "name": "Battery Power",
+          "class": "power",
+          "state_class": "measurement",
+          "uom": "W",
+          "scale": 1,
+          "rule": 2,
+          "registers": [
+            190
+          ],
+          "icon": "mdi:battery"
+        },
+        {
+          "name": "Battery Voltage",
+          "class": "voltage",
+          "state_class": "measurement",
+          "uom": "V",
+          "scale": 0.01,
+          "rule": 1,
+          "registers": [
+            183
+          ],
+          "icon": "mdi:battery"
+        },
+        {
+          "name": "Battery SOC",
+          "class": "battery",
+          "state_class": "measurement",
+          "uom": "%",
+          "scale": 1,
+          "rule": 1,
+          "registers": [
+            184
+          ],
+          "icon": "mdi:battery"
+        },
+        {
+          "name": "Battery Current",
+          "class": "current",
+          "state_class": "measurement",
+          "uom": "A",
+          "scale": 0.01,
+          "rule": 2,
+          "registers": [
+            191
+          ],
+          "icon": "mdi:battery"
+        },
+        {
+          "name": "Battery Temperature",
+          "class": "temperature",
+          "state_class": "measurement",
+          "uom": "\u00b0C",
+          "scale": 0.1,
+          "rule": 1,
+          "offset": 1000,
+          "registers": [
+            182
+          ],
+          "icon": "mdi:battery"
+        }
+      ]
+    },
+    {
+      "group": "Grid",
+      "items": [
+        {
+          "name": "Total Grid Power",
+          "class": "power",
+          "state_class": "measurement",
+          "uom": "W",
+          "scale": 1,
+          "rule": 2,
+          "registers": [
+            169
+          ],
+          "icon": "mdi:transmission-tower"
+        },
+        {
+          "name": "Grid Voltage L1",
+          "class": "voltage",
+          "state_class": "measurement",
+          "uom": "V",
+          "scale": 0.1,
+          "rule": 1,
+          "registers": [
+            150
+          ],
+          "icon": "mdi:transmission-tower"
+        },
+        {
+          "name": "Grid Current L1",
+          "class": "current",
+          "state_class": "measurement",
+          "uom": "A",
+          "scale": 0.01,
+          "rule": 1,
+          "registers": [
+            160
+          ],
+          "icon": "mdi:current-ac"
+        },
+        {
+          "name": "Grid Voltage L2",
+          "class": "voltage",
+          "state_class": "measurement",
+          "uom": "V",
+          "scale": 0.1,
+          "rule": 1,
+          "registers": [
+            151
+          ],
+          "icon": "mdi:transmission-tower"
+        },
+        {
+          "name": "Grid Current L2",
+          "class": "current",
+          "state_class": "measurement",
+          "uom": "A",
+          "scale": 0.01,
+          "rule": 1,
+          "registers": [
+            161
+          ],
+          "icon": "mdi:current-ac"
+        },
+        {
+          "name": "Internal CT L1 Power",
+          "class": "power",
+          "state_class": "measurement",
+          "uom": "W",
+          "scale": 1,
+          "rule": 2,
+          "registers": [
+            167
+          ],
+          "icon": "mdi:transmission-tower"
+        },
+        {
+          "name": "Internal CT L2 Power",
+          "class": "power",
+          "state_class": "measurement",
+          "uom": "W",
+          "scale": 1,
+          "rule": 2,
+          "registers": [
+            168
+          ],
+          "icon": "mdi:transmission-tower"
+        },
+        {
+          "name": "External CT L1 Power",
+          "class": "power",
+          "state_class": "measurement",
+          "uom": "W",
+          "scale": 1,
+          "rule": 2,
+          "registers": [
+            170
+          ],
+          "icon": "mdi:transmission-tower"
+        },
+        {
+          "name": "External CT L2 Power",
+          "class": "power",
+          "state_class": "measurement",
+          "uom": "W",
+          "scale": 1,
+          "rule": 2,
+          "registers": [
+            171
+          ],
+          "icon": "mdi:transmission-tower"
+        },
+        {
+          "name": "Daily Energy Bought",
+          "class": "energy",
+          "state_class": "total_increasing",
+          "uom": "kWh",
+          "scale": 0.1,
+          "rule": 1,
+          "registers": [
+            76
+          ],
+          "icon": "mdi:transmission-tower-export"
+        },
+        {
+          "name": "Total Energy Bought",
+          "class": "energy",
+          "state_class": "total_increasing",
+          "uom": "kWh",
+          "scale": 0.1,
+          "rule": 1,
+          "registers": [
+            78,
+            80
+          ],
+          "icon": "mdi:transmission-tower-export"
+        },
+        {
+          "name": "Daily Energy Sold",
+          "class": "energy",
+          "state_class": "total_increasing",
+          "uom": "kWh",
+          "scale": 0.1,
+          "rule": 1,
+          "registers": [
+            77
+          ],
+          "icon": "mdi:transmission-tower-import"
+        },
+        {
+          "name": "Total Energy Sold",
+          "class": "energy",
+          "state_class": "total_increasing",
+          "uom": "kWh",
+          "scale": 0.1,
+          "rule": 3,
+          "registers": [
+            81,
+            82
+          ],
+          "icon": "mdi:transmission-tower-import"
+        },
+        {
+          "name": "Total Grid Production",
+          "class": "energy",
+          "state_class": "total_increasing",
+          "uom": "kWh",
+          "scale": 0.1,
+          "rule": 4,
+          "registers": [
+            63,
+            64
+          ],
+          "icon": "mdi:transmission-tower"
+        }
+      ]
+    },
+    {
+      "group": "Upload",
+      "items": [
+        {
+          "name": "Total Load Power",
+          "class": "power",
+          "state_class": "measurement",
+          "uom": "W",
+          "scale": 1,
+          "rule": 1,
+          "registers": [
+            178
+          ],
+          "icon": "mdi:lightning-bolt-outline"
+        },
+        {
+          "name": "Load L1 Power",
+          "class": "power",
+          "state_class": "measurement",
+          "uom": "W",
+          "scale": 1,
+          "rule": 1,
+          "registers": [
+            176
+          ],
+          "icon": "mdi:lightning-bolt-outline"
+        },
+        {
+          "name": "Load L2 Power",
+          "class": "power",
+          "state_class": "measurement",
+          "uom": "W",
+          "scale": 1,
+          "rule": 1,
+          "registers": [
+            177
+          ],
+          "icon": "mdi:lightning-bolt-outline"
+        },
+        {
+          "name": "Load Voltage",
+          "class": "voltage",
+          "state_class": "measurement",
+          "uom": "V",
+          "scale": 0.1,
+          "rule": 1,
+          "registers": [
+            157
+          ],
+          "icon": "mdi:lightning-bolt-outline"
+        },
+        {
+          "name": "Daily Load Consumption",
+          "class": "energy",
+          "state_class": "total_increasing",
+          "uom": "kWh",
+          "scale": 0.1,
+          "rule": 1,
+          "registers": [
+            84
+          ],
+          "icon": "mdi:lightning-bolt-outline"
+        },
+        {
+          "name": "Total Load Consumption",
+          "class": "energy",
+          "state_class": "total_increasing",
+          "uom": "kWh",
+          "scale": 0.1,
+          "rule": 3,
+          "registers": [
+            85,
+            86
+          ],
+          "icon": "mdi:lightning-bolt-outline"
+        },
+        {
+          "name": "SmartLoad Enable Status",
+          "class": "",
+          "state_class": "",
+          "uom": "",
+          "scale": 1,
+          "rule": 1,
+          "registers": [
+            195
+          ],
+          "isstr": true,
+          "lookup": [
+            {
+              "key": 0,
+              "value": "OFF"
+            },
+            {
+              "key": 1,
+              "value": "ON"
+            }
+          ],
+          "icon": "mdi:lightning-bolt-outline"
+        }
+      ]
+    },
+    {
+      "group": "Inverter",
+      "items": [
+        {
+          "name": "Running Status",
+          "class": "",
+          "state_class": "",
+          "uom": "",
+          "scale": 1,
+          "rule": 1,
+          "registers": [
+            59
+          ],
+          "isstr": true,
+          "lookup": [
+            {
+              "key": 0,
+              "value": "Stand-by"
+            },
+            {
+              "key": 1,
+              "value": "Self-checking"
+            },
+            {
+              "key": 2,
+              "value": "Normal"
+            },
+            {
+              "key": 3,
+              "value": "FAULT"
+            }
+          ],
+          "icon": "mdi:home-lightning-bolt"
+        },
+        {
+          "name": "Total Power",
+          "class": "power",
+          "state_class": "measurement",
+          "uom": "W",
+          "scale": 1,
+          "rule": 2,
+          "registers": [
+            175
+          ],
+          "icon": "mdi:home-lightning-bolt"
+        },
+        {
+          "name": "Grid Frequency",
+          "class": "frequency",
+          "state_class": "measurement",
+          "uom": "Hz",
+          "scale": 0.01,
+          "rule": 1,
+          "registers": [
+            79
+          ],
+          "icon": "mdi:sine-wave"
+        },
+        {
+          "name": "Current L1",
+          "class": "current",
+          "state_class": "measurement",
+          "uom": "A",
+          "scale": 0.01,
+          "rule": 2,
+          "registers": [
+            164
+          ],
+          "icon": "mdi:home-lightning-bolt"
+        },
+        {
+          "name": "Current L2",
+          "class": "current",
+          "uom": "A",
+          "scale": 0.01,
+          "rule": 2,
+          "registers": [
+            165
+          ],
+          "icon": "mdi:home-lightning-bolt"
+        },
+        {
+          "name": "Inverter L1 Power",
+          "class": "power",
+          "state_class": "measurement",
+          "uom": "W",
+          "scale": 1,
+          "rule": 2,
+          "registers": [
+            173
+          ],
+          "icon": "mdi:home-lightning-bolt"
+        },
+        {
+          "name": "Inverter L2 Power",
+          "class": "power",
+          "state_class": "measurement",
+          "uom": "W",
+          "scale": 1,
+          "rule": 2,
+          "registers": [
+            174
+          ],
+          "icon": "mdi:home-lightning-bolt"
+        },
+        {
+          "name": "Load Frequency",
+          "class": "",
+          "state_class": "measurement",
+          "uom": "Hz",
+          "scale": 0.01,
+          "rule": 1,
+          "registers": [
+            192
+          ],
+          "icon": "mdi:sine-wave"
+        },
+        {
+          "name": "DC Temperature",
+          "class": "temperature",
+          "state_class": "measurement",
+          "uom": "\u00b0C",
+          "scale": 0.1,
+          "rule": 2,
+          "offset": 1000,
+          "registers": [
+            90
+          ],
+          "icon": "mdi:thermometer"
+        },
+        {
+          "name": "AC Temperature",
+          "class": "temperature",
+          "state_class": "measurement",
+          "uom": "\u00b0C",
+          "scale": 0.1,
+          "rule": 2,
+          "offset": 1000,
+          "registers": [
+            91
+          ],
+          "icon": "mdi:thermometer"
+        },
+        {
+          "name": "Inverter ID",
+          "class": "",
+          "state_class": "",
+          "uom": "",
+          "scale": 1,
+          "rule": 5,
+          "registers": [
+            3,
+            4,
+            5,
+            6,
+            7
+          ],
+          "isstr": true
+        },
+        {
+          "name": "Communication Board Version No.",
+          "class": "",
+          "state_class": "",
+          "uom": "",
+          "scale": 1,
+          "rule": 1,
+          "registers": [
+            14
+          ],
+          "isstr": true
+        },
+        {
+          "name": "Control Board Version No.",
+          "class": "",
+          "state_class": "",
+          "uom": "",
+          "scale": 1,
+          "rule": 1,
+          "registers": [
+            13
+          ],
+          "isstr": true
+        },
+        {
+          "name": "Grid-connected Status",
+          "class": "",
+          "state_class": "",
+          "uom": "",
+          "scale": 1,
+          "rule": 1,
+          "registers": [
+            194
+          ],
+          "isstr": true,
+          "lookup": [
+            {
+              "key": 0,
+              "value": "Off-Grid"
+            },
+            {
+              "key": 1,
+              "value": "On-Grid"
+            }
+          ]
+        },
+        {
+          "name": "Gen-connected Status",
+          "class": "",
+          "uom": "",
+          "state_class": "",
+          "scale": 1,
+          "rule": 1,
+          "registers": [
+            166
+          ],
+          "isstr": true,
+          "lookup": [
+            {
+              "key": 0,
+              "value": "none"
+            },
+            {
+              "key": 1,
+              "value": "On"
+            }
+          ]
+        },
+        {
+          "name": "Gen Power",
+          "class": "power",
+          "state_class": "measurement",
+          "uom": "W",
+          "scale": 1,
+          "rule": 1,
+          "registers": [
+            166
+          ]
+        },
+        {
+          "name": "Work Mode",
+          "class": "",
+          "state_class": "",
+          "uom": "",
+          "scale": 1,
+          "rule": 3,
+          "registers": [
+            244,
+            247
+          ],
+          "isstr": true,
+          "lookup": [
+            {
+              "key": 0,
+              "value": "Selling First"
+            },
+            {
+              "key": 1,
+              "value": "Zero-Export to Load&Solar Sell"
+            },
+            {
+              "key": 2,
+              "value": "Zero-Export to Home&Solar Sell"
+            },
+            {
+              "key": 3,
+              "value": "Zero-Export to Load"
+            },
+            {
+              "key": 4,
+              "value": "Zero-Export to Home"
+            }
+          ],
+          "icon": "mdi:home-lightning-bolt"
+        }
+      ]
+    },
+    {
+      "group": "Alert",
+      "items": [
+        {
+          "name": "Alert",
+          "class": "",
+          "state_class": "",
+          "uom": "",
+          "scale": 1,
+          "rule": 6,
+          "registers": [
+            101,
+            102,
+            103,
+            104,
+            105,
+            106
+          ]
+        }
+      ]
+    },
+    {
+      "group": "Time of Use",
+      "items": [
+        {
+          "name": "Time of use Time 1",
+          "class": "",
+          "state_class": "",
+          "uom": "",
+          "scale": 1,
+          "rule": 9,
+          "registers": [
+            250
+          ],
+          "icon": "mdi:timelapse"
+        },
+        {
+          "name": "Time of use Time 2",
+          "class": "",
+          "state_class": "",
+          "uom": "",
+          "scale": 1,
+          "rule": 9,
+          "registers": [
+            251
+          ],
+          "icon": "mdi:timelapse"
+        },
+        {
+          "name": "Time of Use Time 3",
+          "class": "",
+          "state_class": "",
+          "uom": "",
+          "scale": 1,
+          "rule": 9,
+          "registers": [
+            252
+          ],
+          "icon": "mdi:timelapse"
+        },
+        {
+          "name": "Time of Use Time 4",
+          "class": "",
+          "state_class": "",
+          "uom": "",
+          "scale": 1,
+          "rule": 9,
+          "registers": [
+            253
+          ],
+          "icon": "mdi:timelapse"
+        },
+        {
+          "name": "Time of Use Time 5",
+          "class": "",
+          "state_class": "",
+          "uom": "",
+          "scale": 1,
+          "rule": 9,
+          "registers": [
+            254
+          ],
+          "icon": "mdi:timelapse"
+        },
+        {
+          "name": "Time of Use Time 6",
+          "class": "",
+          "state_class": "",
+          "uom": "",
+          "scale": 1,
+          "rule": 9,
+          "registers": [
+            255
+          ],
+          "icon": "mdi:timelapse"
+        },
+        {
+          "name": "Time of Use Power 1",
+          "class": "",
+          "state_class": "",
+          "uom": "",
+          "scale": 1,
+          "rule": 1,
+          "registers": [
+            256
+          ],
+          "icon": "mdi:lightning-bolt-outline"
+        },
+        {
+          "name": "Time of Use Power 2",
+          "class": "",
+          "state_class": "",
+          "uom": "",
+          "scale": 1,
+          "rule": 1,
+          "registers": [
+            257
+          ],
+          "icon": "mdi:lightning-bolt-outline"
+        },
+        {
+          "name": "Time of Use Power 3",
+          "class": "",
+          "state_class": "",
+          "uom": "",
+          "scale": 1,
+          "rule": 1,
+          "registers": [
+            258
+          ],
+          "icon": "mdi:lightning-bolt-outline"
+        },
+        {
+          "name": "Time of Use Power 4",
+          "class": "",
+          "state_class": "",
+          "uom": "",
+          "scale": 1,
+          "rule": 1,
+          "registers": [
+            259
+          ],
+          "icon": "mdi:lightning-bolt-outline"
+        },
+        {
+          "name": "Time of Use Power 5",
+          "class": "",
+          "state_class": "",
+          "uom": "",
+          "scale": 1,
+          "rule": 1,
+          "registers": [
+            260
+          ],
+          "icon": "mdi:lightning-bolt-outline"
+        },
+        {
+          "name": "Time of Use Power 6",
+          "class": "",
+          "state_class": "",
+          "uom": "",
+          "scale": 1,
+          "rule": 1,
+          "registers": [
+            261
+          ],
+          "icon": "mdi:lightning-bolt-outline"
+        },
+        {
+          "name": "Time of Use SOC 1",
+          "class": "",
+          "state_class": "",
+          "uom": "",
+          "scale": 1,
+          "rule": 1,
+          "registers": [
+            268
+          ],
+          "icon": "mdi:battery"
+        },
+        {
+          "name": "Time of Use SOC 2",
+          "class": "",
+          "state_class": "",
+          "uom": "",
+          "scale": 1,
+          "rule": 1,
+          "registers": [
+            269
+          ],
+          "icon": "mdi:battery"
+        },
+        {
+          "name": "Time of Use SOC 3",
+          "class": "",
+          "state_class": "",
+          "uom": "",
+          "scale": 1,
+          "rule": 1,
+          "registers": [
+            270
+          ],
+          "icon": "mdi:battery"
+        },
+        {
+          "name": "Time of Use SOC 4",
+          "class": "",
+          "state_class": "",
+          "uom": "",
+          "scale": 1,
+          "rule": 1,
+          "registers": [
+            271
+          ],
+          "icon": "mdi:battery"
+        },
+        {
+          "name": "Time of Use SOC 5",
+          "class": "",
+          "state_class": "",
+          "uom": "",
+          "scale": 1,
+          "rule": 1,
+          "registers": [
+            272
+          ],
+          "icon": "mdi:battery"
+        },
+        {
+          "name": "Time of Use SOC 6",
+          "class": "",
+          "state_class": "",
+          "uom": "",
+          "scale": 1,
+          "rule": 1,
+          "registers": [
+            273
+          ],
+          "icon": "mdi:battery"
+        },
+        {
+          "name": "Time of Use Enable 1",
+          "class": "",
+          "state_class": "",
+          "uom": "",
+          "scale": 1,
+          "rule": 1,
+          "mask": 1,
+          "registers": [
+            274
+          ],
+          "icon": "mdi:checkbox-marked-outline"
+        },
+        {
+          "name": "Time of Use Enable 2",
+          "class": "",
+          "state_class": "",
+          "uom": "",
+          "scale": 1,
+          "rule": 1,
+          "mask": 1,
+          "registers": [
+            275
+          ],
+          "icon": "mdi:checkbox-marked-outline"
+        },
+        {
+          "name": "Time of Use Enable 3",
+          "class": "",
+          "state_class": "",
+          "uom": "",
+          "scale": 1,
+          "rule": 1,
+          "mask": 1,
+          "registers": [
+            276
+          ],
+          "icon": "mdi:checkbox-marked-outline"
+        },
+        {
+          "name": "Time of Use Enable 4",
+          "class": "",
+          "state_class": "",
+          "uom": "",
+          "scale": 1,
+          "rule": 1,
+          "mask": 1,
+          "registers": [
+            277
+          ],
+          "icon": "mdi:checkbox-marked-outline"
+        },
+        {
+          "name": "Time of Use Enable 5",
+          "class": "",
+          "state_class": "",
+          "uom": "",
+          "scale": 1,
+          "rule": 1,
+          "mask": 1,
+          "registers": [
+            278
+          ],
+          "icon": "mdi:checkbox-marked-outline"
+        },
+        {
+          "name": "Time of Use Enable 6",
+          "class": "",
+          "state_class": "",
+          "uom": "",
+          "scale": 1,
+          "rule": 1,
+          "mask": 1,
+          "registers": [
+            279
+          ],
+          "icon": "mdi:checkbox-marked-outline"
+        },
+        {
+          "name": "Time of use",
+          "class": "",
+          "state_class": "",
+          "uom": "",
+          "scale": 1,
+          "rule": 1,
+          "mask": 1,
+          "registers": [
+            248
+          ],
+          "icon": "mdi:checkbox-marked-outline",
+          "isstr": true,
+          "lookup": [
+            {
+              "key": 0,
+              "value": "Disable"
+            },
+            {
+              "key": 1,
+              "value": "Enable"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

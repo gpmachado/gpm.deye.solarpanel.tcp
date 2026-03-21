@@ -1,0 +1,9 @@
+python_packages/
+.homeybuild/
+*.pyc
+__pycache__/
+.DS_Store
+.claude/
+third_Party/
+test_registers.py
+test_connection.py

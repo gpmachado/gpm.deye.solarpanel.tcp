@@ -1,0 +1,253 @@
+{
+  "name": {
+    "en": "Deye Inverter",
+    "nl": "Deye Omvormer",
+    "de": "Deye Wechselrichter",
+    "fr": "Onduleur Deye",
+    "it": "Inverter Deye",
+    "sv": "Deye Växelriktare",
+    "no": "Deye Vekselretter",
+    "es": "Inversor Deye",
+    "da": "Deye Inverter",
+    "ru": "Инвертор Deye",
+    "pl": "Falownik Deye"
+  },
+  "class": "solarpanel",
+  "capabilities": [],
+  "platforms": ["local"],
+  "connectivity": ["lan"],
+  "mainCapability": "measure_power",
+  "energy": {
+    "measurePowerProducedCapability": "measure_power",
+    "meterPowerExportedCapability": "meter_power"
+  },
+  "images": {
+    "small":  "{{driverAssetsPath}}/images/small.png",
+    "large":  "{{driverAssetsPath}}/images/large.png",
+    "xlarge": "{{driverAssetsPath}}/images/xlarge.png"
+  },
+  "settings": [
+    {
+      "id": "host",
+      "type": "text",
+      "label": {
+        "en": "IP Address",
+        "nl": "IP-adres",
+        "de": "IP-Adresse",
+        "fr": "Adresse IP",
+        "it": "Indirizzo IP",
+        "sv": "IP-adress",
+        "no": "IP-adresse",
+        "es": "Dirección IP",
+        "da": "IP-adresse",
+        "ru": "IP-адрес",
+        "pl": "Adres IP"
+      },
+      "hint": {
+        "en": "Local IP of the Solarman logger (e.g. 192.168.1.100)",
+        "nl": "Lokaal IP-adres van de Solarman-logger (bv. 192.168.1.100)",
+        "de": "Lokale IP des Solarman-Loggers (z.B. 192.168.1.100)",
+        "fr": "IP locale du logger Solarman (ex. 192.168.1.100)",
+        "it": "IP locale del logger Solarman (es. 192.168.1.100)",
+        "sv": "Lokal IP för Solarman-loggern (t.ex. 192.168.1.100)",
+        "no": "Lokal IP til Solarman-loggeren (f.eks. 192.168.1.100)",
+        "es": "IP local del logger Solarman (p.ej. 192.168.1.100)",
+        "da": "Lokal IP på Solarman-loggeren (f.eks. 192.168.1.100)",
+        "ru": "Локальный IP логгера Solarman (например 192.168.1.100)",
+        "pl": "Lokalny IP loggera Solarman (np. 192.168.1.100)"
+      },
+      "placeholder": { "en": "192.168.1.100" },
+      "value": ""
+    },
+    {
+      "id": "loggerSerial",
+      "type": "number",
+      "label": {
+        "en": "Logger Serial Number",
+        "nl": "Serienummer logger",
+        "de": "Seriennummer des Loggers",
+        "fr": "Numéro de série du logger",
+        "it": "Numero di serie del logger",
+        "sv": "Loggers serienummer",
+        "no": "Loggerens serienummer",
+        "es": "Número de serie del logger",
+        "da": "Loggerens serienummer",
+        "ru": "Серийный номер логгера",
+        "pl": "Numer seryjny loggera"
+      },
+      "hint": {
+        "en": "Printed on the logger sticker. Detected automatically if left blank during pairing.",
+        "nl": "Staat op de sticker van de logger. Automatisch gedetecteerd als leeggelaten tijdens koppelen.",
+        "de": "Auf dem Logger-Aufkleber gedruckt. Wird automatisch erkannt, wenn beim Koppeln leer gelassen.",
+        "fr": "Imprimé sur l'autocollant du logger. Détecté automatiquement si laissé vide lors du couplage.",
+        "it": "Stampato sull'etichetta del logger. Rilevato automaticamente se lasciato vuoto durante l'associazione.",
+        "sv": "Tryckt på loggerens etikett. Detekteras automatiskt om det lämnas tomt under parkoppling.",
+        "no": "Trykket på loggerens klistremerke. Detekteres automatisk hvis det er tomt under parring.",
+        "es": "Impreso en la etiqueta del logger. Detectado automáticamente si se deja en blanco durante el emparejamiento.",
+        "da": "Trykt på loggerens klistermærke. Registreres automatisk, hvis det efterlades tomt under parring.",
+        "ru": "Напечатан на наклейке логгера. Определяется автоматически, если оставить пустым при сопряжении.",
+        "pl": "Wydrukowany na naklejce loggera. Wykrywany automatycznie, jeśli pozostawiony pusty podczas parowania."
+      },
+      "value": 0
+    },
+    {
+      "id": "model",
+      "type": "label",
+      "label": {
+        "en": "Inverter Model",
+        "nl": "Omvormermodel",
+        "de": "Wechselrichtermodell",
+        "fr": "Modèle d'onduleur",
+        "it": "Modello inverter",
+        "sv": "Växelriktarmodell",
+        "no": "Vekselrettermodell",
+        "es": "Modelo de inversor",
+        "da": "Invertermodel",
+        "ru": "Модель инвертора",
+        "pl": "Model falownika"
+      },
+      "value": "—"
+    },
+    {
+      "id": "loggerMac",
+      "type": "label",
+      "label": {
+        "en": "Logger MAC Address",
+        "nl": "MAC-adres logger",
+        "de": "Logger-MAC-Adresse",
+        "fr": "Adresse MAC du logger",
+        "it": "Indirizzo MAC del logger",
+        "sv": "Loggers MAC-adress",
+        "no": "Loggerens MAC-adresse",
+        "es": "Dirección MAC del logger",
+        "da": "Loggerens MAC-adresse",
+        "ru": "MAC-адрес логгера",
+        "pl": "Adres MAC loggera"
+      },
+      "value": "—"
+    },
+    {
+      "id": "wifiSsid",
+      "type": "label",
+      "label": {
+        "en": "Wi-Fi Network (SSID)",
+        "nl": "Wi-Fi-netwerk (SSID)",
+        "de": "WLAN-Netzwerk (SSID)",
+        "fr": "Réseau Wi-Fi (SSID)",
+        "it": "Rete Wi-Fi (SSID)",
+        "sv": "Wi-Fi-nätverk (SSID)",
+        "no": "Wi-Fi-nettverk (SSID)",
+        "es": "Red Wi-Fi (SSID)",
+        "da": "Wi-Fi-netværk (SSID)",
+        "ru": "Сеть Wi-Fi (SSID)",
+        "pl": "Sieć Wi-Fi (SSID)"
+      },
+      "value": "—"
+    },
+    {
+      "id": "wifiRssi",
+      "type": "label",
+      "label": {
+        "en": "Wi-Fi Signal Strength",
+        "nl": "Wi-Fi-signaalsterkte",
+        "de": "WLAN-Signalstärke",
+        "fr": "Force du signal Wi-Fi",
+        "it": "Potenza segnale Wi-Fi",
+        "sv": "Wi-Fi-signalstyrka",
+        "no": "Wi-Fi-signalstyrke",
+        "es": "Intensidad de señal Wi-Fi",
+        "da": "Wi-Fi-signalstyrke",
+        "ru": "Мощность сигнала Wi-Fi",
+        "pl": "Siła sygnału Wi-Fi"
+      },
+      "value": "—"
+    },
+    {
+      "type": "group",
+      "label": {
+        "en": "Advanced",
+        "nl": "Geavanceerd",
+        "de": "Erweitert",
+        "fr": "Avancé",
+        "it": "Avanzato",
+        "sv": "Avancerat",
+        "no": "Avansert",
+        "es": "Avanzado",
+        "da": "Avanceret",
+        "ru": "Дополнительно",
+        "pl": "Zaawansowane"
+      },
+      "children": [
+        {
+          "id": "port",
+          "type": "number",
+          "label": {
+            "en": "TCP Port",
+            "nl": "TCP-poort",
+            "de": "TCP-Port",
+            "fr": "Port TCP",
+            "it": "Porta TCP",
+            "sv": "TCP-port",
+            "no": "TCP-port",
+            "es": "Puerto TCP",
+            "da": "TCP-port",
+            "ru": "TCP-порт",
+            "pl": "Port TCP"
+          },
+          "value": 8899, "min": 1, "max": 65535
+        },
+        {
+          "id": "slaveId",
+          "type": "number",
+          "label": {
+            "en": "Modbus Slave ID",
+            "nl": "Modbus slave-ID",
+            "de": "Modbus-Slave-ID",
+            "fr": "ID esclave Modbus",
+            "it": "ID slave Modbus",
+            "sv": "Modbus slave-ID",
+            "no": "Modbus slave-ID",
+            "es": "ID esclavo Modbus",
+            "da": "Modbus slave-ID",
+            "ru": "Адрес устройства Modbus",
+            "pl": "ID urządzenia Modbus"
+          },
+          "value": 1, "min": 1, "max": 247
+        },
+        {
+          "id": "pollingInterval",
+          "type": "number",
+          "label": {
+            "en": "Polling Interval (seconds)",
+            "nl": "Pollinterval (seconden)",
+            "de": "Abfrageintervall (Sekunden)",
+            "fr": "Intervalle d'interrogation (secondes)",
+            "it": "Intervallo di polling (secondi)",
+            "sv": "Pollingintervall (sekunder)",
+            "no": "Pollingintervall (sekunder)",
+            "es": "Intervalo de consulta (segundos)",
+            "da": "Pollinginterval (sekunder)",
+            "ru": "Интервал опроса (секунды)",
+            "pl": "Interwał odpytywania (sekundy)"
+          },
+          "value": 60, "min": 30, "max": 3600
+        }
+      ]
+    }
+  ],
+  "pair": [
+    {
+      "id": "login",
+      "navigation": { "next": "list_devices" }
+    },
+    {
+      "id": "list_devices",
+      "template": "list_devices",
+      "navigation": { "next": "add_devices" }
+    },
+    {
+      "id": "add_devices",
+      "template": "add_devices"
+    }
+  ]
+}
