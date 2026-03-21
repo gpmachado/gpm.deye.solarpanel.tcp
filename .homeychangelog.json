@@ -1,14 +1,11 @@
 {
-  "1.1.0": {
-    "en": "Complete rewrite in Python using the Homey Pro Python runtime. Automatic UDP discovery — no IP address needed. Auto-detects inverter model by probing registers. Supports 5 Deye models: single-phase string (2/4 MPPT), single-phase hybrid, 3-phase string, and SG04LP3 3-phase hybrid. Night backoff using local sunrise/sunset. Tested on Deye SUN-9K-G03 with LSW3 logger."
-  },
   "1.0.1": {
     "en": "Node.js version. Manual IP and serial entry. Supports single-phase string inverters (2 and 4 MPPT)."
   },
   "1.2.0": {
     "en": "Complete rewrite in Python using the Homey Pro Python runtime. Automatic UDP discovery — no IP or serial needed. Auto-detects inverter model by probing registers. Dynamic capabilities — only sensors with real data are shown. Supports 4 models: string (2/4 MPPT), microinverter, hybrid, and SG04LP3 3-phase hybrid. Night backoff using local sunrise/sunset. Tested on Deye SUN-9K-G03 with LSW3 logger."
   },
-  "1.2.1": {
-    "en": "TCP Polling Fix"
+  "1.2.2": {
+    "en": "Fixed TCP polling on Homey Pro — replaced pysolarmanv5 with a built-in SolarmanV5 transport that avoids multiprocessing semaphores blocked by the Homey sandbox. Added Wi-Fi SSID and signal strength to device settings. Improved unavailability detection during daytime failures."
   }
 }
