@@ -1,6 +1,6 @@
 {
   "id": "gpm.deye.solarpanel.tcp",
-  "version": "1.2.2",
+  "version": "1.2.4",
   "compatibility": ">=13.0.0",
   "sdk": 3,
   "runtime": "python",
@@ -21,7 +21,6 @@
     "no": "Lokal integrasjon for Deye-vekselrettere via Solarman V5-protokoll (port 8899)",
     "es": "Integración local para inversores Deye mediante protocolo Solarman V5 (puerto 8899)",
     "da": "Lokal integration til Deye-invertere via Solarman V5-protokol (port 8899)",
-    "ru": "Локальная интеграция для инверторов Deye по протоколу Solarman V5 (порт 8899)",
     "pl": "Lokalna integracja dla falowników Deye przez protokół Solarman V5 (port 8899)"
   },
   "category": [

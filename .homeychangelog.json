@@ -7,5 +7,11 @@
   },
   "1.2.2": {
     "en": "Fixed TCP polling on Homey Pro — replaced pysolarmanv5 with a built-in SolarmanV5 transport that avoids multiprocessing semaphores blocked by the Homey sandbox. Added Wi-Fi SSID and signal strength to device settings. Improved unavailability detection during daytime failures."
+  },
+  "1.2.3": {
+    "en": "Localized pairing UI in 10 languages (EN, NL, DE, FR, IT, SV, NO, ES, DA, PL). Pair screens now use Homey i18n."
+  },
+  "1.2.4": {
+    "en": "Added full UI localization for pairing views"
   }
 }
