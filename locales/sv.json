@@ -1,0 +1,25 @@
+{
+  "pair": {
+    "ip_label": "Loggers IP-adress",
+    "ip_placeholder": "Lämna tomt för automatisk identifiering",
+    "ip_hint": "Lämna tomt för att skanna automatiskt. Eller ange IP-adressen från routerns enhetslista.",
+    "serial_label": "Loggers serienummer",
+    "serial_optional": "(valfritt)",
+    "serial_placeholder": "t.ex. 2304xxxxxxx — lämna tomt för automatisk identifiering",
+    "serial_hint": "Tryckt på Wi-Fi-loggerens etikett. Identifieras automatiskt om fältet är tomt.",
+    "connect_button": "Anslut",
+    "status_connecting": "Ansluter till __ip__...",
+    "status_scanning": "Söker efter Solarman-loggers på nätverket...",
+    "confirm": {
+      "title": "Bekräfta växelriktarmodell",
+      "status_detecting": "Identifierar växelriktarmodell...",
+      "status_no_data": "Kunde inte ladda modelldata. Tryck på Fortsätt för att använda den automatiskt identifierade modellen.",
+      "select_label": "Välj modell:",
+      "hint": "Automatisk identifiering läser live-register. Om den förvalda modellen verkar fel, välj rätt modell.",
+      "button": "Bekräfta och lägg till enhet",
+      "auto_detected": "(Automatiskt identifierad)",
+      "detected_badge": "Identifierad: ",
+      "status_preparing": "Förbereder enhet..."
+    }
+  }
+}

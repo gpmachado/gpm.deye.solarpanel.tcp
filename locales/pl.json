@@ -1,0 +1,25 @@
+{
+  "pair": {
+    "ip_label": "Adres IP loggera",
+    "ip_placeholder": "Pozostaw puste dla automatycznego wykrycia",
+    "ip_hint": "Pozostaw puste, aby skanować automatycznie. Lub wprowadź IP widoczne na liście urządzeń routera.",
+    "serial_label": "Numer seryjny loggera",
+    "serial_optional": "(opcjonalne)",
+    "serial_placeholder": "np. 2304xxxxxxx — pozostaw puste dla automatycznego wykrycia",
+    "serial_hint": "Wydrukowany na naklejce loggera Wi-Fi. Wykrywany automatycznie, jeśli pole jest puste.",
+    "connect_button": "Połącz",
+    "status_connecting": "Łączenie z __ip__...",
+    "status_scanning": "Skanowanie sieci w poszukiwaniu loggerów Solarman...",
+    "confirm": {
+      "title": "Potwierdź model falownika",
+      "status_detecting": "Wykrywanie modelu falownika...",
+      "status_no_data": "Nie można załadować danych modelu. Naciśnij Kontynuuj, aby użyć automatycznie wykrytego modelu.",
+      "select_label": "Wybierz model:",
+      "hint": "Automatyczne wykrywanie odczytuje rejestry na żywo. Jeśli wstępnie wybrany model wygląda na nieprawidłowy, wybierz właściwy.",
+      "button": "Potwierdź i dodaj urządzenie",
+      "auto_detected": "(Wykryto automatycznie)",
+      "detected_badge": "Wykryto: ",
+      "status_preparing": "Przygotowywanie urządzenia..."
+    }
+  }
+}

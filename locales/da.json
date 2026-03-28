@@ -1,0 +1,25 @@
+{
+  "pair": {
+    "ip_label": "Loggerens IP-adresse",
+    "ip_placeholder": "Lad feltet stå tomt for automatisk opdagelse",
+    "ip_hint": "Lad stå tomt for automatisk scanning. Eller indtast den IP, der vises i din routers enhedsliste.",
+    "serial_label": "Loggerens serienummer",
+    "serial_optional": "(valgfrit)",
+    "serial_placeholder": "f.eks. 2304xxxxxxx — lad stå tomt for automatisk opdagelse",
+    "serial_hint": "Trykt på Wi-Fi-loggerens klistermærke. Opdages automatisk, hvis feltet er tomt.",
+    "connect_button": "Tilslut",
+    "status_connecting": "Opretter forbindelse til __ip__...",
+    "status_scanning": "Søger efter Solarman-loggere på netværket...",
+    "confirm": {
+      "title": "Bekræft invertermodel",
+      "status_detecting": "Registrerer invertermodel...",
+      "status_no_data": "Kunne ikke indlæse modeldata. Tryk på Fortsæt for at bruge den automatisk registrerede model.",
+      "select_label": "Vælg model:",
+      "hint": "Automatisk registrering læser live-registre. Hvis den forudvalgte model ser forkert ud, vælg den korrekte.",
+      "button": "Bekræft og tilføj enhed",
+      "auto_detected": "(Automatisk registreret)",
+      "detected_badge": "Registreret: ",
+      "status_preparing": "Forbereder enhed..."
+    }
+  }
+}

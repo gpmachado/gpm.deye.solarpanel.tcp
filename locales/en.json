@@ -1,1 +1,25 @@
-{}
+{
+  "pair": {
+    "ip_label": "Logger IP Address",
+    "ip_placeholder": "Leave empty to auto-discover on network",
+    "ip_hint": "Leave empty to scan automatically. Or enter the IP shown in your router's device list.",
+    "serial_label": "Logger Serial Number",
+    "serial_optional": "(optional)",
+    "serial_placeholder": "e.g. 2304xxxxxxx — leave empty to auto-detect",
+    "serial_hint": "Printed on the sticker of the Wi-Fi logger. Detected automatically if blank.",
+    "connect_button": "Connect",
+    "status_connecting": "Connecting to __ip__...",
+    "status_scanning": "Scanning network for Solarman loggers...",
+    "confirm": {
+      "title": "Confirm Inverter Model",
+      "status_detecting": "Detecting inverter model...",
+      "status_no_data": "Could not load model data. Press Continue to use auto-detected model.",
+      "select_label": "Select model:",
+      "hint": "Auto-detection reads live registers. If the pre-selected model looks wrong, choose the correct one.",
+      "button": "Confirm & Add Device",
+      "auto_detected": "(Auto-detected)",
+      "detected_badge": "Detected: ",
+      "status_preparing": "Preparing device..."
+    }
+  }
+}

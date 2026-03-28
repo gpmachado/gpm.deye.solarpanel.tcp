@@ -1,0 +1,25 @@
+{
+  "pair": {
+    "ip_label": "IP-adresse til loggeren",
+    "ip_placeholder": "La stå tomt for automatisk oppdagelse",
+    "ip_hint": "La stå tomt for automatisk skanning. Eller skriv inn IP-adressen fra routerens enhetsliste.",
+    "serial_label": "Loggerens serienummer",
+    "serial_optional": "(valgfritt)",
+    "serial_placeholder": "f.eks. 2304xxxxxxx — la stå tomt for automatisk oppdagelse",
+    "serial_hint": "Trykket på Wi-Fi-loggerens klistremerke. Oppdages automatisk hvis feltet er tomt.",
+    "connect_button": "Koble til",
+    "status_connecting": "Kobler til __ip__...",
+    "status_scanning": "Søker etter Solarman-loggere på nettverket...",
+    "confirm": {
+      "title": "Bekreft vekselrettermodell",
+      "status_detecting": "Oppdager vekselrettermodell...",
+      "status_no_data": "Kunne ikke laste modelldata. Trykk Fortsett for å bruke den automatisk oppdagede modellen.",
+      "select_label": "Velg modell:",
+      "hint": "Automatisk oppdagelse leser live-registre. Hvis den forhåndsvalgte modellen ser feil ut, velg riktig modell.",
+      "button": "Bekreft og legg til enhet",
+      "auto_detected": "(Automatisk oppdaget)",
+      "detected_badge": "Oppdaget: ",
+      "status_preparing": "Forbereder enhet..."
+    }
+  }
+}

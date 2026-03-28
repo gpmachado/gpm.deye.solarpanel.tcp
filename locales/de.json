@@ -1,0 +1,25 @@
+{
+  "pair": {
+    "ip_label": "IP-Adresse des Loggers",
+    "ip_placeholder": "Leer lassen für automatische Erkennung",
+    "ip_hint": "Leer lassen zum automatischen Scannen. Oder geben Sie die IP aus der Geräteliste Ihres Routers ein.",
+    "serial_label": "Seriennummer des Loggers",
+    "serial_optional": "(optional)",
+    "serial_placeholder": "z.B. 2304xxxxxxx — leer lassen für automatische Erkennung",
+    "serial_hint": "Auf dem Aufkleber des WLAN-Loggers aufgedruckt. Wird automatisch erkannt, wenn das Feld leer ist.",
+    "connect_button": "Verbinden",
+    "status_connecting": "Verbindung zu __ip__...",
+    "status_scanning": "Netzwerk nach Solarman-Loggern durchsuchen...",
+    "confirm": {
+      "title": "Wechselrichtermodell bestätigen",
+      "status_detecting": "Wechselrichtermodell wird erkannt...",
+      "status_no_data": "Modelldaten konnten nicht geladen werden. Drücken Sie Weiter, um das automatisch erkannte Modell zu verwenden.",
+      "select_label": "Modell auswählen:",
+      "hint": "Die automatische Erkennung liest Live-Register. Falls das vorausgewählte Modell falsch erscheint, wählen Sie das richtige.",
+      "button": "Bestätigen und Gerät hinzufügen",
+      "auto_detected": "(Automatisch erkannt)",
+      "detected_badge": "Erkannt: ",
+      "status_preparing": "Gerät wird vorbereitet..."
+    }
+  }
+}

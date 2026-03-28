@@ -12,18 +12,24 @@
   </style>
 </head>
 <body>
-  <label for="ip">Logger IP Address</label>
-  <input id="ip" type="text" placeholder="Leave empty to auto-discover on network" autocomplete="off" />
-  <div class="hint">Leave empty to scan automatically. Or enter the IP shown in your router's device list.</div>
+  <label for="ip" data-i18n="pair.ip_label">Logger IP Address</label>
+  <input id="ip" type="text" autocomplete="off" />
+  <div class="hint" data-i18n="pair.ip_hint">Leave empty to scan automatically. Or enter the IP shown in your router's device list.</div>
 
-  <label for="serial" style="margin-top:14px;">Logger Serial Number <span style="font-weight:normal;color:#888">(optional)</span></label>
-  <input id="serial" type="text" placeholder="e.g. 2304xxxxxxx — leave empty to auto-detect" autocomplete="off" />
-  <div class="hint">Printed on the sticker of the Wi-Fi logger. Detected automatically if blank.</div>
+  <label for="serial" style="margin-top:14px;">
+    <span data-i18n="pair.serial_label">Logger Serial Number</span>
+    <span style="font-weight:normal;color:#888" data-i18n="pair.serial_optional"> (optional)</span>
+  </label>
+  <input id="serial" type="text" autocomplete="off" />
+  <div class="hint" data-i18n="pair.serial_hint">Printed on the sticker of the Wi-Fi logger. Detected automatically if blank.</div>
 
-  <button id="btn" onclick="connect()">Connect</button>
+  <button id="btn" onclick="connect()" data-i18n="pair.connect_button">Connect</button>
   <div class="status" id="status"></div>
 
   <script>
+    document.getElementById('ip').placeholder     = Homey.__('pair.ip_placeholder');
+    document.getElementById('serial').placeholder = Homey.__('pair.serial_placeholder');
+
     function connect() {
       var ip     = document.getElementById('ip').value.trim();
       var serial = document.getElementById('serial').value.trim();
@@ -31,7 +37,9 @@
       var status = document.getElementById('status');
 
       btn.disabled = true;
-      status.textContent = ip ? 'Connecting to ' + ip + '...' : 'Scanning network for Solarman loggers...';
+      status.textContent = ip
+        ? Homey.__('pair.status_connecting', { ip: ip })
+        : Homey.__('pair.status_scanning');
 
       Homey.emit('login', { username: ip, password: serial }, function(err) {
         if (err) {

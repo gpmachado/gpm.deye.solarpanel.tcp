@@ -1,0 +1,25 @@
+{
+  "pair": {
+    "ip_label": "Dirección IP del logger",
+    "ip_placeholder": "Dejar vacío para detección automática",
+    "ip_hint": "Dejar vacío para escanear automáticamente. O introduce la IP que aparece en la lista de dispositivos de tu router.",
+    "serial_label": "Número de serie del logger",
+    "serial_optional": "(opcional)",
+    "serial_placeholder": "p.ej. 2304xxxxxxx — dejar vacío para detección automática",
+    "serial_hint": "Impreso en la etiqueta del logger Wi-Fi. Se detecta automáticamente si el campo está en blanco.",
+    "connect_button": "Conectar",
+    "status_connecting": "Conectando a __ip__...",
+    "status_scanning": "Buscando loggers Solarman en la red...",
+    "confirm": {
+      "title": "Confirmar modelo de inversor",
+      "status_detecting": "Detectando modelo de inversor...",
+      "status_no_data": "No se pudieron cargar los datos del modelo. Pulse Continuar para usar el modelo detectado automáticamente.",
+      "select_label": "Seleccionar modelo:",
+      "hint": "La detección automática lee registros en tiempo real. Si el modelo preseleccionado parece incorrecto, elija el correcto.",
+      "button": "Confirmar y añadir dispositivo",
+      "auto_detected": "(Detectado automáticamente)",
+      "detected_badge": "Detectado: ",
+      "status_preparing": "Preparando dispositivo..."
+    }
+  }
+}

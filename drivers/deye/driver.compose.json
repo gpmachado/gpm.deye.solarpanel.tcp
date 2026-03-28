@@ -9,7 +9,6 @@
     "no": "Deye Vekselretter",
     "es": "Inversor Deye",
     "da": "Deye Inverter",
-    "ru": "Инвертор Deye",
     "pl": "Falownik Deye"
   },
   "class": "solarpanel",
@@ -40,7 +39,6 @@
         "no": "IP-adresse",
         "es": "Dirección IP",
         "da": "IP-adresse",
-        "ru": "IP-адрес",
         "pl": "Adres IP"
       },
       "hint": {
@@ -53,7 +51,6 @@
         "no": "Lokal IP til Solarman-loggeren (f.eks. 192.168.1.100)",
         "es": "IP local del logger Solarman (p.ej. 192.168.1.100)",
         "da": "Lokal IP på Solarman-loggeren (f.eks. 192.168.1.100)",
-        "ru": "Локальный IP логгера Solarman (например 192.168.1.100)",
         "pl": "Lokalny IP loggera Solarman (np. 192.168.1.100)"
       },
       "placeholder": { "en": "192.168.1.100" },
@@ -72,7 +69,6 @@
         "no": "Loggerens serienummer",
         "es": "Número de serie del logger",
         "da": "Loggerens serienummer",
-        "ru": "Серийный номер логгера",
         "pl": "Numer seryjny loggera"
       },
       "hint": {
@@ -85,7 +81,6 @@
         "no": "Trykket på loggerens klistremerke. Detekteres automatisk hvis det er tomt under parring.",
         "es": "Impreso en la etiqueta del logger. Detectado automáticamente si se deja en blanco durante el emparejamiento.",
         "da": "Trykt på loggerens klistermærke. Registreres automatisk, hvis det efterlades tomt under parring.",
-        "ru": "Напечатан на наклейке логгера. Определяется автоматически, если оставить пустым при сопряжении.",
         "pl": "Wydrukowany na naklejce loggera. Wykrywany automatycznie, jeśli pozostawiony pusty podczas parowania."
       },
       "value": 0
@@ -103,7 +98,6 @@
         "no": "Vekselrettermodell",
         "es": "Modelo de inversor",
         "da": "Invertermodel",
-        "ru": "Модель инвертора",
         "pl": "Model falownika"
       },
       "value": "—"
@@ -121,7 +115,6 @@
         "no": "Loggerens MAC-adresse",
         "es": "Dirección MAC del logger",
         "da": "Loggerens MAC-adresse",
-        "ru": "MAC-адрес логгера",
         "pl": "Adres MAC loggera"
       },
       "value": "—"
@@ -139,7 +132,6 @@
         "no": "Wi-Fi-nettverk (SSID)",
         "es": "Red Wi-Fi (SSID)",
         "da": "Wi-Fi-netværk (SSID)",
-        "ru": "Сеть Wi-Fi (SSID)",
         "pl": "Sieć Wi-Fi (SSID)"
       },
       "value": "—"
@@ -157,7 +149,6 @@
         "no": "Wi-Fi-signalstyrke",
         "es": "Intensidad de señal Wi-Fi",
         "da": "Wi-Fi-signalstyrke",
-        "ru": "Мощность сигнала Wi-Fi",
         "pl": "Siła sygnału Wi-Fi"
       },
       "value": "—"
@@ -174,7 +165,6 @@
         "no": "Avansert",
         "es": "Avanzado",
         "da": "Avanceret",
-        "ru": "Дополнительно",
         "pl": "Zaawansowane"
       },
       "children": [
@@ -191,7 +181,6 @@
             "no": "TCP-port",
             "es": "Puerto TCP",
             "da": "TCP-port",
-            "ru": "TCP-порт",
             "pl": "Port TCP"
           },
           "value": 8899, "min": 1, "max": 65535
@@ -209,7 +198,6 @@
             "no": "Modbus slave-ID",
             "es": "ID esclavo Modbus",
             "da": "Modbus slave-ID",
-            "ru": "Адрес устройства Modbus",
             "pl": "ID urządzenia Modbus"
           },
           "value": 1, "min": 1, "max": 247
@@ -227,7 +215,6 @@
             "no": "Pollingintervall (sekunder)",
             "es": "Intervalo de consulta (segundos)",
             "da": "Pollinginterval (sekunder)",
-            "ru": "Интервал опроса (секунды)",
             "pl": "Interwał odpytywania (sekundy)"
           },
           "value": 60, "min": 30, "max": 3600

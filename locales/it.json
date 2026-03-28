@@ -1,0 +1,25 @@
+{
+  "pair": {
+    "ip_label": "Indirizzo IP del logger",
+    "ip_placeholder": "Lasciare vuoto per il rilevamento automatico",
+    "ip_hint": "Lasciare vuoto per scansionare automaticamente. O inserire l'IP mostrato nella lista dispositivi del router.",
+    "serial_label": "Numero di serie del logger",
+    "serial_optional": "(opzionale)",
+    "serial_placeholder": "es. 2304xxxxxxx — lasciare vuoto per il rilevamento automatico",
+    "serial_hint": "Stampato sull'etichetta del logger Wi-Fi. Rilevato automaticamente se il campo è vuoto.",
+    "connect_button": "Connetti",
+    "status_connecting": "Connessione a __ip__...",
+    "status_scanning": "Scansione della rete per logger Solarman...",
+    "confirm": {
+      "title": "Conferma modello inverter",
+      "status_detecting": "Rilevamento modello inverter...",
+      "status_no_data": "Impossibile caricare i dati del modello. Premere Continua per usare il modello rilevato automaticamente.",
+      "select_label": "Seleziona modello:",
+      "hint": "Il rilevamento automatico legge i registri live. Se il modello preselezionato sembra errato, sceglierne uno corretto.",
+      "button": "Conferma e aggiungi dispositivo",
+      "auto_detected": "(Rilevato automaticamente)",
+      "detected_badge": "Rilevato: ",
+      "status_preparing": "Preparazione dispositivo..."
+    }
+  }
+}

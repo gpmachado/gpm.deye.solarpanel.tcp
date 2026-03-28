@@ -14,14 +14,14 @@
   </style>
 </head>
 <body>
-  <h3>Confirm Inverter Model</h3>
-  <div class="status" id="status">Detecting inverter model...</div>
+  <h3 data-i18n="pair.confirm.title">Confirm Inverter Model</h3>
+  <div class="status" id="status" data-i18n="pair.confirm.status_detecting">Detecting inverter model...</div>
   <div id="content" style="display:none">
     <div class="detected-badge" id="badge"></div>
-    <label for="model">Select model:</label>
+    <label for="model" data-i18n="pair.confirm.select_label">Select model:</label>
     <select id="model"></select>
-    <div class="hint">Auto-detection reads live registers. If the pre-selected model looks wrong, choose the correct one.</div>
-    <button id="btn" onclick="confirm_model()">Confirm &amp; Add Device</button>
+    <div class="hint" data-i18n="pair.confirm.hint">Auto-detection reads live registers. If the pre-selected model looks wrong, choose the correct one.</div>
+    <button id="btn" onclick="confirm_model()" data-i18n="pair.confirm.button">Confirm &amp; Add Device</button>
   </div>
 
   <script>
@@ -32,7 +32,7 @@
       try { data = JSON.parse(localStorage.getItem('deye_pairing')); } catch(e) {}
 
       if (!data || !data.detected || !data.models) {
-        document.getElementById('status').textContent = 'Could not load model data. Press Continue to use auto-detected model.';
+        document.getElementById('status').textContent = Homey.__('pair.confirm.status_no_data');
         return;
       }
 
@@ -45,12 +45,12 @@
         var opt = document.createElement('option');
         opt.value = mid;
         opt.textContent = data.models[mid];
-        if (mid === detected) opt.textContent += ' (Auto-detected)';
+        if (mid === detected) opt.textContent += ' ' + Homey.__('pair.confirm.auto_detected');
         sel.appendChild(opt);
       });
       sel.value = detected;
 
-      document.getElementById('badge').textContent = 'Detected: ' + data.models[detected];
+      document.getElementById('badge').textContent = Homey.__('pair.confirm.detected_badge') + data.models[detected];
       document.getElementById('status').textContent = '';
       document.getElementById('content').style.display = 'block';
     });
@@ -59,7 +59,7 @@
       var model = document.getElementById('model').value;
       var btn   = document.getElementById('btn');
       btn.disabled = true;
-      document.getElementById('status').textContent = 'Preparing device...';
+      document.getElementById('status').textContent = Homey.__('pair.confirm.status_preparing');
       Homey.emit('confirm_model', { model: model }, function(err) {
         if (err) {
           document.getElementById('status').textContent = err.message || String(err);

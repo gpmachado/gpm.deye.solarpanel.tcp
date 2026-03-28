@@ -1,0 +1,25 @@
+{
+  "pair": {
+    "ip_label": "Adresse IP du logger",
+    "ip_placeholder": "Laisser vide pour la détection automatique",
+    "ip_hint": "Laisser vide pour scanner automatiquement. Ou entrez l'IP affichée dans la liste des appareils de votre routeur.",
+    "serial_label": "Numéro de série du logger",
+    "serial_optional": "(optionnel)",
+    "serial_placeholder": "ex. 2304xxxxxxx — laisser vide pour la détection automatique",
+    "serial_hint": "Imprimé sur l'autocollant du logger Wi-Fi. Détecté automatiquement si le champ est vide.",
+    "connect_button": "Connecter",
+    "status_connecting": "Connexion à __ip__...",
+    "status_scanning": "Recherche de loggers Solarman sur le réseau...",
+    "confirm": {
+      "title": "Confirmer le modèle d'onduleur",
+      "status_detecting": "Détection du modèle d'onduleur...",
+      "status_no_data": "Impossible de charger les données du modèle. Appuyez sur Continuer pour utiliser le modèle détecté automatiquement.",
+      "select_label": "Sélectionner le modèle :",
+      "hint": "La détection automatique lit les registres en direct. Si le modèle présélectionné semble incorrect, choisissez le bon.",
+      "button": "Confirmer et ajouter l'appareil",
+      "auto_detected": "(Détecté automatiquement)",
+      "detected_badge": "Détecté : ",
+      "status_preparing": "Préparation de l'appareil..."
+    }
+  }
+}

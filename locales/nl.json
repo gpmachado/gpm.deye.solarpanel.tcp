@@ -1,0 +1,25 @@
+{
+  "pair": {
+    "ip_label": "IP-adres van de logger",
+    "ip_placeholder": "Leeg laten voor automatische detectie",
+    "ip_hint": "Leeg laten om automatisch te scannen. Of voer het IP in dat in de apparatenlijst van uw router staat.",
+    "serial_label": "Serienummer van de logger",
+    "serial_optional": "(optioneel)",
+    "serial_placeholder": "bijv. 2304xxxxxxx — leeg laten voor automatische detectie",
+    "serial_hint": "Gedrukt op de sticker van de Wi-Fi-logger. Automatisch gedetecteerd als het veld leeg is.",
+    "connect_button": "Verbinden",
+    "status_connecting": "Verbinding maken met __ip__...",
+    "status_scanning": "Netwerk scannen op Solarman-loggers...",
+    "confirm": {
+      "title": "Omvormermodel bevestigen",
+      "status_detecting": "Omvormermodel detecteren...",
+      "status_no_data": "Kan modelgegevens niet laden. Druk op Doorgaan om het automatisch gedetecteerde model te gebruiken.",
+      "select_label": "Selecteer model:",
+      "hint": "Automatische detectie leest live-registers. Als het voorgeselecteerde model onjuist lijkt, kies dan het juiste.",
+      "button": "Bevestigen en apparaat toevoegen",
+      "auto_detected": "(Automatisch gedetecteerd)",
+      "detected_badge": "Gedetecteerd: ",
+      "status_preparing": "Apparaat voorbereiden..."
+    }
+  }
+}
