@@ -217,7 +217,7 @@
             "da": "Pollinginterval (sekunder)",
             "pl": "Interwał odpytywania (sekundy)"
           },
-          "value": 60, "min": 30, "max": 3600
+          "value": 60, "min": 35, "max": 3600
         }
       ]
     }

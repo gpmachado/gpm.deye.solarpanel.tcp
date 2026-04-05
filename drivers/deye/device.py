@@ -44,11 +44,10 @@ class DeyeDevice(Device):
         # Refresh Wi-Fi info in settings (non-blocking — failure is silent)
         asyncio.create_task(self._refresh_wifi_info(host))
 
-    async def on_settings(self, event) -> None:
-        changed = event.get("changedKeys", [])
-        if any(k in changed for k in ("host", "loggerSerial", "port", "slaveId", "model")):
+    async def on_settings(self, old_settings, new_settings, changed_keys) -> None:
+        if any(k in changed_keys for k in ("host", "loggerSerial", "port", "slaveId", "model")):
             self._build_client()
-        if "pollingInterval" in changed:
+        if "pollingInterval" in changed_keys:
             self._start_polling()
 
     async def on_deleted(self) -> None:
@@ -79,7 +78,7 @@ class DeyeDevice(Device):
 
     def _start_polling(self) -> None:
         self._stop_polling()
-        interval = max(30, int(self.get_setting("pollingInterval") or 60))
+        interval = max(35, int(self.get_setting("pollingInterval") or 60))
         self._poll_task = asyncio.create_task(self._poll_loop(interval))
         self._poll_task.add_done_callback(self._on_poll_task_done)
 
