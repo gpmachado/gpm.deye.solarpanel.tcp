@@ -13,5 +13,11 @@
   },
   "1.2.4": {
     "en": "Added full UI localization for pairing views"
+  },
+  "1.2.5": {
+    "en": "Fixed settings not being applied — polling interval and connection settings now update correctly."
+  },
+  "1.2.6": {
+    "en": "Rebuilt Python packages with latest runtime for improved compatibility."
   }
 }
