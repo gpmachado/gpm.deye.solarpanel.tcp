@@ -7,3 +7,4 @@ __pycache__/
 third_Party/
 test_registers.py
 test_connection.py
+package-lock.json
