@@ -19,5 +19,8 @@
   },
   "1.2.6": {
     "en": "Rebuilt Python packages with latest runtime for improved compatibility."
+  },
+  "1.2.7": {
+    "en": "Fixed Energy Dashboard for hybrid inverters: battery now visible in the energy overview, and solar production correctly shows PV input power (PV1+PV2) instead of AC output which includes battery discharge."
   }
 }
