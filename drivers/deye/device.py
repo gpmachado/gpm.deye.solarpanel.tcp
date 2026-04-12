@@ -137,6 +137,16 @@ class DeyeDevice(Device):
             if cap_id == "measure_power" and isinstance(value, (int, float)):
                 self._last_power_w = float(value)
 
+        # For hybrid models: override measure_power with total PV production (PV1+PV2).
+        # AC output includes battery discharge and is misleading for Energy Dashboard.
+        if self.has_capability("measure_power.battery") and self.has_capability("measure_power"):
+            pv_total = 0.0
+            for sname, cid in self._sensor_cap_map.items():
+                if cid in ("measure_power.pv1", "measure_power.pv2"):
+                    pv_total += float(values.get(sname) or 0)
+            await self._set("measure_power", pv_total)
+            self._last_power_w = pv_total
+
     async def _handle_poll_error(self, err: Exception) -> None:
         self._consecutive_errors += 1
 
