@@ -22,5 +22,8 @@
   },
   "1.2.7": {
     "en": "Fixed Energy Dashboard for hybrid inverters: battery now visible in the energy overview, and solar production correctly shows PV input power (PV1+PV2) instead of AC output (which includes battery discharge)."
+  },
+  "1.2.8": {
+    "en": "Two-device architecture for hybrid inverters: inverter and battery now appear as separate devices in Homey, enabling proper Energy Dashboard integration (battery SOC, charge/discharge energy). Battery device keeps polling through the night while the inverter goes offline. Added flow cards: triggers for solar production started/stopped, grid lost/restored, and data updated (with power, daily production, battery SOC and grid power tokens). Conditions: is solar producing, is battery charging, is feeding to grid. Re-pairing required for all existing devices."
   }
 }

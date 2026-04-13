@@ -1,7 +1,7 @@
 {
   "_comment": "This file is generated. Please edit .homeycompose/app.json instead.",
   "id": "gpm.deye.solarpanel.tcp",
-  "version": "1.2.7",
+  "version": "1.2.8",
   "compatibility": ">=13.0.0",
   "sdk": 3,
   "runtime": "python",
@@ -45,6 +45,242 @@
     "pysolarmanv5",
     "astral"
   ],
+  "flow": {
+    "triggers": [
+      {
+        "id": "data_updated",
+        "title": {
+          "en": "Inverter data updated",
+          "nl": "Omvormergegevens bijgewerkt",
+          "de": "Wechselrichterdaten aktualisiert",
+          "fr": "Données de l'onduleur mises à jour",
+          "it": "Dati inverter aggiornati",
+          "sv": "Växelriktardata uppdaterad",
+          "no": "Vekselretter-data oppdatert",
+          "es": "Datos del inversor actualizados",
+          "da": "Inverterdata opdateret",
+          "pl": "Dane falownika zaktualizowane"
+        },
+        "hint": {
+          "en": "Triggered on every successful poll (every 60 s by default). Use tokens to read current values."
+        },
+        "args": [
+          {
+            "type": "device",
+            "name": "device",
+            "filter": "driver_id=deye&capabilities=measure_power"
+          }
+        ],
+        "tokens": [
+          {
+            "name": "power",
+            "type": "number",
+            "title": {
+              "en": "Power (W)"
+            }
+          },
+          {
+            "name": "daily_production",
+            "type": "number",
+            "title": {
+              "en": "Daily Production (kWh)"
+            }
+          },
+          {
+            "name": "battery_soc",
+            "type": "number",
+            "title": {
+              "en": "Battery SOC (%)"
+            }
+          },
+          {
+            "name": "grid_power",
+            "type": "number",
+            "title": {
+              "en": "Grid Power (W)"
+            }
+          }
+        ]
+      },
+      {
+        "id": "grid_lost",
+        "title": {
+          "en": "Grid connection lost",
+          "nl": "Netstroom verloren",
+          "de": "Netzverbindung verloren",
+          "fr": "Connexion au réseau perdue",
+          "it": "Connessione alla rete persa",
+          "sv": "Nätanslutning förlorad",
+          "no": "Nettilkobling mistet",
+          "es": "Conexión a la red perdida",
+          "da": "Nettilslutning mistet",
+          "pl": "Utrata połączenia z siecią"
+        },
+        "hint": {
+          "en": "Triggered when the inverter reports a grid outage (hybrid models only)."
+        },
+        "args": [
+          {
+            "type": "device",
+            "name": "device",
+            "filter": "driver_id=deye&capabilities=measure_power.battery"
+          }
+        ]
+      },
+      {
+        "id": "grid_restored",
+        "title": {
+          "en": "Grid connection restored",
+          "nl": "Netstroom hersteld",
+          "de": "Netzverbindung wiederhergestellt",
+          "fr": "Connexion au réseau rétablie",
+          "it": "Connessione alla rete ripristinata",
+          "sv": "Nätanslutning återställd",
+          "no": "Nettilkobling gjenopprettet",
+          "es": "Conexión a la red restablecida",
+          "da": "Nettilslutning genoprettet",
+          "pl": "Połączenie z siecią przywrócone"
+        },
+        "hint": {
+          "en": "Triggered when the inverter reports grid power has returned (hybrid models only)."
+        },
+        "args": [
+          {
+            "type": "device",
+            "name": "device",
+            "filter": "driver_id=deye&capabilities=measure_power.battery"
+          }
+        ]
+      },
+      {
+        "id": "solar_production_started",
+        "title": {
+          "en": "Solar production started",
+          "nl": "Zonneproductie gestart",
+          "de": "Solarproduktion gestartet",
+          "fr": "Production solaire démarrée",
+          "it": "Produzione solare avviata",
+          "sv": "Solproduktion startad",
+          "no": "Solproduksjon startet",
+          "es": "Producción solar iniciada",
+          "da": "Solproduktion startet",
+          "pl": "Produkcja solarna rozpoczęta"
+        },
+        "hint": {
+          "en": "Triggered when the inverter starts producing power (e.g. at sunrise)."
+        },
+        "args": [
+          {
+            "type": "device",
+            "name": "device",
+            "filter": "driver_id=deye&capabilities=measure_power"
+          }
+        ],
+        "tokens": [
+          {
+            "name": "power",
+            "type": "number",
+            "title": {
+              "en": "Power (W)"
+            }
+          }
+        ]
+      },
+      {
+        "id": "solar_production_stopped",
+        "title": {
+          "en": "Solar production stopped",
+          "nl": "Zonneproductie gestopt",
+          "de": "Solarproduktion gestoppt",
+          "fr": "Production solaire arrêtée",
+          "it": "Produzione solare fermata",
+          "sv": "Solproduktion stoppad",
+          "no": "Solproduksjon stoppet",
+          "es": "Producción solar detenida",
+          "da": "Solproduktion stoppet",
+          "pl": "Produkcja solarna zatrzymana"
+        },
+        "hint": {
+          "en": "Triggered when the inverter stops producing power (e.g. at sunset or on a fault)."
+        },
+        "args": [
+          {
+            "type": "device",
+            "name": "device",
+            "filter": "driver_id=deye&capabilities=measure_power"
+          }
+        ]
+      }
+    ],
+    "conditions": [
+      {
+        "id": "is_battery_charging",
+        "title": {
+          "en": "Battery !{{is|is not}} charging",
+          "nl": "Batterij !{{wordt|wordt niet}} opgeladen",
+          "de": "Batterie !{{wird|wird nicht}} geladen",
+          "fr": "La batterie !{{est|n'est pas}} en charge",
+          "it": "La batteria !{{è|non è}} in carica",
+          "sv": "Batteriet !{{laddas|laddas inte}}",
+          "no": "Batteriet !{{lades|lades ikke}}",
+          "es": "La batería !{{está|no está}} cargando",
+          "da": "Batteriet !{{oplades|oplades ikke}}",
+          "pl": "Bateria !{{ładuje się|nie ładuje się}}"
+        },
+        "args": [
+          {
+            "type": "device",
+            "name": "device",
+            "filter": "driver_id=deye&capabilities=measure_power.battery"
+          }
+        ]
+      },
+      {
+        "id": "is_grid_feeding",
+        "title": {
+          "en": "Inverter !{{is|is not}} feeding power to the grid",
+          "nl": "Omvormer !{{voedt|voedt niet}} het net",
+          "de": "Wechselrichter !{{speist|speist nicht}} ins Netz",
+          "fr": "L'onduleur !{{injecte|n'injecte pas}} sur le réseau",
+          "it": "L'inverter !{{sta|non sta}} immettendo in rete",
+          "sv": "Växelriktaren !{{matar|matar inte}} elnätet",
+          "no": "Vekselretteren !{{mater|mater ikke}} nettet",
+          "es": "El inversor !{{está|no está}} inyectando a la red",
+          "da": "Inverteren !{{leverer|leverer ikke}} til nettet",
+          "pl": "Falownik !{{zasila|nie zasila}} sieć"
+        },
+        "args": [
+          {
+            "type": "device",
+            "name": "device",
+            "filter": "driver_id=deye&capabilities=measure_power.grid"
+          }
+        ]
+      },
+      {
+        "id": "is_solar_producing",
+        "title": {
+          "en": "Solar production !{{is|is not}} active",
+          "nl": "Zonneproductie !{{is|is niet}} actief",
+          "de": "Solarproduktion !{{ist|ist nicht}} aktiv",
+          "fr": "La production solaire !{{est|n'est pas}} active",
+          "it": "La produzione solare !{{è|non è}} attiva",
+          "sv": "Solproduktion !{{är|är inte}} aktiv",
+          "no": "Solproduksjon !{{er|er ikke}} aktiv",
+          "es": "La producción solar !{{está|no está}} activa",
+          "da": "Solproduktion !{{er|er ikke}} aktiv",
+          "pl": "Produkcja solarna !{{jest|nie jest}} aktywna"
+        },
+        "args": [
+          {
+            "type": "device",
+            "name": "device",
+            "filter": "driver_id=deye&capabilities=measure_power"
+          }
+        ]
+      }
+    ]
+  },
   "drivers": [
     {
       "name": {
@@ -70,10 +306,7 @@
       "mainCapability": "measure_power",
       "energy": {
         "measurePowerProducedCapability": "measure_power",
-        "meterPowerExportedCapability": "meter_power",
-        "batteries": [
-          "INTERNAL"
-        ]
+        "meterPowerExportedCapability": "meter_power"
       },
       "images": {
         "small": "/drivers/deye/assets/images/small.png",
