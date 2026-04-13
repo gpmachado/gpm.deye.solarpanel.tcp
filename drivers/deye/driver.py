@@ -12,7 +12,7 @@ import socket
 
 from homey.driver import Driver
 from app.lib.solarman_client import SolarmanClient
-from app.lib.capability_map import build_capabilities
+from app.lib.capability_map import build_capabilities, BATTERY_CAPS
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -357,24 +357,73 @@ class DeyeDriver(Driver):
                 sensors = [s for s in sensors if _keep(s)]
 
             caps, caps_opts = build_capabilities(sensors)
-            self.log(f"list_devices — model:{model_id} host:{host} active_caps:{len(caps)}")
-            return [{
+
+            inverter_caps = [c for c in caps if c not in BATTERY_CAPS]
+            battery_caps  = [c for c in caps if c in BATTERY_CAPS]
+            inverter_opts = {k: v for k, v in caps_opts.items() if k not in BATTERY_CAPS}
+            battery_opts  = {k: v for k, v in caps_opts.items() if k in BATTERY_CAPS}
+
+            # Add measure_power.solar for inverters with PV sub-capabilities.
+            # Points Energy Dashboard to solar-only production (not AC output).
+            pv_caps = [c for c in inverter_caps if c.startswith("measure_power.pv")]
+            if pv_caps:
+                inverter_caps = ["measure_power.solar"] + inverter_caps
+                inverter_opts["measure_power.solar"] = {"title": {"en": "Solar Power (Total PV)"}}
+            produced_cap = "measure_power.solar" if pv_caps else "measure_power"
+
+            base_settings = {
+                "host":            host,
+                "loggerSerial":    serial,
+                "port":            8899,
+                "slaveId":         1,
+                "model":           model_id,
+                "pollingInterval": 60,
+                "loggerMac":       mac,
+                "wifiSsid":        ssid,
+                "wifiRssi":        rssi,
+            }
+
+            self.log(f"list_devices — model:{model_id} host:{host} "
+                     f"inverter_caps:{len(inverter_caps)} battery_caps:{len(battery_caps)}")
+
+            devices = [{
                 "name": DEYE_MODELS[model_id],
-                "data": {"id": f"deye_{serial}"},
-                "capabilities": caps,
-                "capabilitiesOptions": caps_opts,
-                "settings": {
-                    "host":            host,
-                    "loggerSerial":    serial,
-                    "port":            8899,
-                    "slaveId":         1,
-                    "model":           model_id,
-                    "pollingInterval": 60,
-                    "loggerMac":       mac,
-                    "wifiSsid":        ssid,
-                    "wifiRssi":        rssi,
+                "data": {"id": f"deye_{serial}_inverter"},
+                "capabilities": inverter_caps,
+                "capabilitiesOptions": inverter_opts,
+                "energy": {
+                    "measurePowerProducedCapability": produced_cap,
+                    "meterPowerExportedCapability":   "meter_power",
                 },
+                "settings": {**base_settings, "device_type": "inverter"},
             }]
+
+            if battery_caps:
+                batt_caps_final = list(battery_caps)
+                batt_opts_final = dict(battery_opts)
+                # Energy Dashboard needs measure_power to track charge/discharge flow
+                if "measure_power.battery" in batt_caps_final and "measure_power" not in batt_caps_final:
+                    batt_caps_final.insert(0, "measure_power")
+                    batt_opts_final["measure_power"] = {"title": {"en": "Battery Power"}}
+
+                devices.append({
+                    "name": f"{DEYE_MODELS[model_id]} — Battery",
+                    "data": {"id": f"deye_{serial}_battery"},
+                    "class": "battery",
+                    "capabilities": batt_caps_final,
+                    "capabilitiesOptions": batt_opts_final,
+                    "energy": {
+                        "homeBattery": True,
+                        "meterPowerImportedCapability": "meter_power.battery_charged",
+                        "meterPowerExportedCapability": "meter_power.battery_discharged",
+                    },
+                    "settings": {**base_settings, "device_type": "battery"},
+                })
+                self.log(f"Battery device — caps:{batt_caps_final}")
+            else:
+                self.log("No battery caps detected — battery device skipped")
+
+            return devices
 
         session.set_handler("login", on_login)
         session.set_handler("get_detected_model", on_get_detected_model)

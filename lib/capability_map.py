@@ -150,6 +150,18 @@ def build_capabilities(sensors: list) -> tuple[list, dict]:
     return capabilities, options
 
 
+# Capabilities that belong to the battery device (not the inverter).
+# Used at pairing to split sensors into two devices.
+BATTERY_CAPS: frozenset[str] = frozenset({
+    "measure_battery",
+    "measure_power.battery",
+    "measure_voltage.battery",
+    "measure_current.battery",
+    "meter_power.battery_charged",
+    "meter_power.battery_discharged",
+})
+
+
 def get_sensor_capability_map(sensors: list) -> dict[str, str]:
     """
     Returns {sensor_name: homey_capability_id} for use during polling.

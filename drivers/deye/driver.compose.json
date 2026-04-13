@@ -18,8 +18,7 @@
   "mainCapability": "measure_power",
   "energy": {
     "measurePowerProducedCapability": "measure_power",
-    "meterPowerExportedCapability": "meter_power",
-    "batteries": ["INTERNAL"]
+    "meterPowerExportedCapability": "meter_power"
   },
   "images": {
     "small":  "{{driverAssetsPath}}/images/small.png",
