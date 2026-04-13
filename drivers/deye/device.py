@@ -10,7 +10,6 @@ the battery device keeps polling through the night to track SOC and discharge.
 import asyncio
 import logging
 import os
-import time
 from datetime import datetime, timezone
 from zoneinfo import ZoneInfo
 
@@ -58,7 +57,6 @@ class DeyeDevice(Device):
 
     _sensor_cap_map: dict = {}
     _consecutive_errors: int = 0
-    _backoff_until: float = 0.0
     _last_power_w: float = 0.0
     _is_battery: bool = False
     _was_producing: bool = False
@@ -128,17 +126,27 @@ class DeyeDevice(Device):
 
     # ── Value handler ─────────────────────────────────────────────────────────
 
+    def _is_string_night(self) -> bool:
+        """True when this is a non-hybrid inverter device during night hours."""
+        return not self._is_battery and not self.get_setting("is_hybrid") and self._is_night_time()
+
     async def _on_values(self, values: dict | None) -> None:
         if values is None:
+            # For string/micro inverters: logger loses power at night — expected, not an error
+            if self._is_string_night():
+                self._consecutive_errors = 0
+                await self._apply_zeros()
+                await self.set_available()
+                self.log("night offline (expected) — logger without power")
+                return
             await self._handle_error()
             return
 
-        # Night backoff — inverter only
-        if not self._is_battery and self._is_night_time():
+        # Night backoff — inverter only, and only for non-hybrid (hybrid stays on 24/7 via battery)
+        if self._is_string_night():
             self._consecutive_errors = 0
             await self._apply_zeros()
             await self.set_available()
-            self._backoff_until = time.monotonic() + _BACKOFF_NIGHT
             sr, ss = self._get_sunrise_sunset()
             self.log(f"night offline (expected) — backing off 30 min "
                      f"| sunrise≈{sr:.2f}h sunset≈{ss:.2f}h")
