@@ -1,0 +1,22 @@
+{
+  "id": "is_grid_feeding",
+  "title": {
+    "en": "Inverter !{{is|is not}} feeding power to the grid",
+    "nl": "Omvormer !{{voedt|voedt niet}} het net",
+    "de": "Wechselrichter !{{speist|speist nicht}} ins Netz",
+    "fr": "L'onduleur !{{injecte|n'injecte pas}} sur le réseau",
+    "it": "L'inverter !{{sta|non sta}} immettendo in rete",
+    "sv": "Växelriktaren !{{matar|matar inte}} elnätet",
+    "no": "Vekselretteren !{{mater|mater ikke}} nettet",
+    "es": "El inversor !{{está|no está}} inyectando a la red",
+    "da": "Inverteren !{{leverer|leverer ikke}} til nettet",
+    "pl": "Falownik !{{zasila|nie zasila}} sieć"
+  },
+  "args": [
+    {
+      "type": "device",
+      "name": "device",
+      "filter": "driver_id=deye&capabilities=measure_power.grid"
+    }
+  ]
+}

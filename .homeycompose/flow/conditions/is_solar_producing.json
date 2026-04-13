@@ -1,0 +1,22 @@
+{
+  "id": "is_solar_producing",
+  "title": {
+    "en": "Solar production !{{is|is not}} active",
+    "nl": "Zonneproductie !{{is|is niet}} actief",
+    "de": "Solarproduktion !{{ist|ist nicht}} aktiv",
+    "fr": "La production solaire !{{est|n'est pas}} active",
+    "it": "La produzione solare !{{è|non è}} attiva",
+    "sv": "Solproduktion !{{är|är inte}} aktiv",
+    "no": "Solproduksjon !{{er|er ikke}} aktiv",
+    "es": "La producción solar !{{está|no está}} activa",
+    "da": "Solproduktion !{{er|er ikke}} aktiv",
+    "pl": "Produkcja solarna !{{jest|nie jest}} aktywna"
+  },
+  "args": [
+    {
+      "type": "device",
+      "name": "device",
+      "filter": "driver_id=deye&capabilities=measure_power"
+    }
+  ]
+}

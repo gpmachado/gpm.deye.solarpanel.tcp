@@ -1,0 +1,25 @@
+{
+  "id": "grid_lost",
+  "title": {
+    "en": "Grid connection lost",
+    "nl": "Netstroom verloren",
+    "de": "Netzverbindung verloren",
+    "fr": "Connexion au réseau perdue",
+    "it": "Connessione alla rete persa",
+    "sv": "Nätanslutning förlorad",
+    "no": "Nettilkobling mistet",
+    "es": "Conexión a la red perdida",
+    "da": "Nettilslutning mistet",
+    "pl": "Utrata połączenia z siecią"
+  },
+  "hint": {
+    "en": "Triggered when the inverter reports a grid outage (hybrid models only)."
+  },
+  "args": [
+    {
+      "type": "device",
+      "name": "device",
+      "filter": "driver_id=deye&capabilities=measure_power.battery"
+    }
+  ]
+}

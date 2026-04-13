@@ -61,6 +61,8 @@ class DeyeDevice(Device):
     _backoff_until: float = 0.0
     _last_power_w: float = 0.0
     _is_battery: bool = False
+    _was_producing: bool = False
+    _grid_was_available: bool = True
 
     # ── Lifecycle ─────────────────────────────────────────────────────────────
 
@@ -182,6 +184,55 @@ class DeyeDevice(Device):
                 if self.has_capability("measure_power"):
                     await self._set("measure_power", pv_total)
                     self._last_power_w = pv_total
+
+            # ── Flow triggers ──────────────────────────────────────────────
+            await self._fire_flow_triggers(values)
+
+    async def _fire_flow_triggers(self, values: dict) -> None:
+        """Fire flow triggers based on state transitions detected in poll values."""
+        power = float(self._last_power_w or 0)
+        is_producing = power > 5.0
+
+        # Solar production started / stopped
+        if is_producing and not self._was_producing:
+            self._was_producing = True
+            await self._trigger("solar_production_started", {"power": power})
+        elif not is_producing and self._was_producing:
+            self._was_producing = False
+            await self._trigger("solar_production_stopped", {})
+
+        # Grid lost / restored (hybrid only — needs Grid-connected Status sensor)
+        grid_status = values.get("Grid-connected Status") or values.get("Grid Connected Status")
+        if grid_status is not None:
+            grid_available = str(grid_status).lower() == "on-grid"
+            if not grid_available and self._grid_was_available:
+                self._grid_was_available = False
+                await self._trigger("grid_lost", {})
+            elif grid_available and not self._grid_was_available:
+                self._grid_was_available = True
+                await self._trigger("grid_restored", {})
+
+        # Data updated — fires every successful poll with current values as tokens
+        tokens = {"power": power, "daily_production": 0.0, "battery_soc": 0.0, "grid_power": 0.0}
+        for sname, cap in self._sensor_cap_map.items():
+            v = values.get(sname)
+            if v is None:
+                continue
+            if cap == "meter_power.today":
+                tokens["daily_production"] = float(v)
+            elif cap == "measure_battery":
+                tokens["battery_soc"] = float(v)
+            elif cap == "measure_power.grid":
+                tokens["grid_power"] = float(v)
+        await self._trigger("data_updated", tokens)
+
+    async def _trigger(self, card_id: str, tokens: dict) -> None:
+        """Fire a flow trigger card."""
+        try:
+            card = self.homey.flow.get_trigger_card(card_id)
+            await card.trigger(self, tokens, {})
+        except Exception as e:
+            _LOGGER.debug(f"Flow trigger '{card_id}' failed: {e}")
 
     async def _handle_error(self) -> None:
         self._consecutive_errors += 1

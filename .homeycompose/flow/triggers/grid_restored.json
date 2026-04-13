@@ -1,0 +1,25 @@
+{
+  "id": "grid_restored",
+  "title": {
+    "en": "Grid connection restored",
+    "nl": "Netstroom hersteld",
+    "de": "Netzverbindung wiederhergestellt",
+    "fr": "Connexion au réseau rétablie",
+    "it": "Connessione alla rete ripristinata",
+    "sv": "Nätanslutning återställd",
+    "no": "Nettilkobling gjenopprettet",
+    "es": "Conexión a la red restablecida",
+    "da": "Nettilslutning genoprettet",
+    "pl": "Połączenie z siecią przywrócone"
+  },
+  "hint": {
+    "en": "Triggered when the inverter reports grid power has returned (hybrid models only)."
+  },
+  "args": [
+    {
+      "type": "device",
+      "name": "device",
+      "filter": "driver_id=deye&capabilities=measure_power.battery"
+    }
+  ]
+}

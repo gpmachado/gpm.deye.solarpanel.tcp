@@ -1,0 +1,22 @@
+{
+  "id": "is_battery_charging",
+  "title": {
+    "en": "Battery !{{is|is not}} charging",
+    "nl": "Batterij !{{wordt|wordt niet}} opgeladen",
+    "de": "Batterie !{{wird|wird nicht}} geladen",
+    "fr": "La batterie !{{est|n'est pas}} en charge",
+    "it": "La batteria !{{è|non è}} in carica",
+    "sv": "Batteriet !{{laddas|laddas inte}}",
+    "no": "Batteriet !{{lades|lades ikke}}",
+    "es": "La batería !{{está|no está}} cargando",
+    "da": "Batteriet !{{oplades|oplades ikke}}",
+    "pl": "Bateria !{{ładuje się|nie ładuje się}}"
+  },
+  "args": [
+    {
+      "type": "device",
+      "name": "device",
+      "filter": "driver_id=deye&capabilities=measure_power.battery"
+    }
+  ]
+}

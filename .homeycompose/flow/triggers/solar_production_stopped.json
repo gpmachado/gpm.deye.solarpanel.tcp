@@ -1,0 +1,25 @@
+{
+  "id": "solar_production_stopped",
+  "title": {
+    "en": "Solar production stopped",
+    "nl": "Zonneproductie gestopt",
+    "de": "Solarproduktion gestoppt",
+    "fr": "Production solaire arrêtée",
+    "it": "Produzione solare fermata",
+    "sv": "Solproduktion stoppad",
+    "no": "Solproduksjon stoppet",
+    "es": "Producción solar detenida",
+    "da": "Solproduktion stoppet",
+    "pl": "Produkcja solarna zatrzymana"
+  },
+  "hint": {
+    "en": "Triggered when the inverter stops producing power (e.g. at sunset or on a fault)."
+  },
+  "args": [
+    {
+      "type": "device",
+      "name": "device",
+      "filter": "driver_id=deye&capabilities=measure_power"
+    }
+  ]
+}

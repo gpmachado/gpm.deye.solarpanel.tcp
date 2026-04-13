@@ -1,0 +1,32 @@
+{
+  "id": "solar_production_started",
+  "title": {
+    "en": "Solar production started",
+    "nl": "Zonneproductie gestart",
+    "de": "Solarproduktion gestartet",
+    "fr": "Production solaire démarrée",
+    "it": "Produzione solare avviata",
+    "sv": "Solproduktion startad",
+    "no": "Solproduksjon startet",
+    "es": "Producción solar iniciada",
+    "da": "Solproduktion startet",
+    "pl": "Produkcja solarna rozpoczęta"
+  },
+  "hint": {
+    "en": "Triggered when the inverter starts producing power (e.g. at sunrise)."
+  },
+  "args": [
+    {
+      "type": "device",
+      "name": "device",
+      "filter": "driver_id=deye&capabilities=measure_power"
+    }
+  ],
+  "tokens": [
+    {
+      "name": "power",
+      "type": "number",
+      "title": { "en": "Power (W)" }
+    }
+  ]
+}
