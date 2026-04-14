@@ -1,6 +1,6 @@
 {
   "id": "gpm.deye.solarpanel.tcp",
-  "version": "1.2.11",
+  "version": "1.2.13",
   "compatibility": ">=13.0.0",
   "sdk": 3,
   "runtime": "python",
@@ -9,7 +9,7 @@
     "local"
   ],
   "name": {
-    "en": "Deye Inverter (Local - Solarman V5)"
+    "en": "Deye Inverter (Local)"
   },
   "description": {
     "en": "Local integration for Deye inverters using Solarman V5 protocol (port 8899)",

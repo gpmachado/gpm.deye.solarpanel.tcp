@@ -1,6 +1,6 @@
 """
-Deye universal driver — supports all 5 Deye inverter models via Solarman V5.
-Model selection: present all 5 options; user picks the correct one.
+Deye universal driver — supports all 4 Deye inverter models via Solarman V5.
+Model selection: present all 4 options; user picks the correct one.
 Capabilities are built dynamically from the selected YAML definition.
 """
 
@@ -46,7 +46,7 @@ async def _detect_model(host: str, serial: int, port: int = 8899) -> tuple[str, 
     """
     Auto-detect the inverter model by reading all register sets and scoring each model.
     Scoring: +2 for each non-zero value from measure_power/meter_power caps, +1 for other non-zero values.
-    Returns (model_id, parsed_values) for the best-scoring model (falls back to 'deye_4mppt').
+    Returns (model_id, parsed_values) for the best-scoring model (falls back to 'deye_string').
     """
     from app.lib.parser import ParameterParser
     from app.lib.capability_map import get_sensor_capability_map
@@ -345,13 +345,20 @@ class DeyeDriver(Driver):
             sensors = _load_sensors(model_id)
 
             # Filter to sensors that returned non-zero data during detection.
-            # Production totals and status are always kept (may be 0 at night or on new devices).
+            # Always keep: production totals, status sensors, lookup-based sensors,
+            # and cumulative energy meters (may be 0 on new devices or at pairing time).
             _ALWAYS_KEEP = {"Today Production", "Total Production", "Running Status"}
+            _METER_KEYWORDS = ("energy", "production", "charged", "discharged",
+                               "import", "export", "buy", "sell")
             if active_values:
                 def _keep(s: dict) -> bool:
                     if s["name"] in _ALWAYS_KEEP:
                         return True
                     if "lookup" in s:
+                        return True
+                    # Cumulative energy counters are always meaningful even when 0
+                    name_lower = s["name"].lower()
+                    if any(kw in name_lower for kw in _METER_KEYWORDS):
                         return True
                     return bool(active_values.get(s["name"]))
                 sensors = [s for s in sensors if _keep(s)]

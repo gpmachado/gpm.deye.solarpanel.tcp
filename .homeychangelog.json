@@ -1,4 +1,7 @@
 {
+  "1.2.13": {
+    "en": "Added Battery Temperature and Battery Status (Charging/Discharging/Standby) capabilities to the battery device. Fixed flow condition 'Is battery charging?' — was firing inverted due to raw Deye signal polarity. String/micro inverters no longer show a warning triangle at night — device tile stays clean with 0W and today's production total. Pairing now includes cumulative energy capabilities (grid import/export, battery charged/discharged) even when their value is 0 at pairing time. App renamed to Deye Inverter (Local)."
+  },
   "1.0.1": {
     "en": "Node.js version. Manual IP and serial entry. Supports single-phase string inverters (2 and 4 MPPT)."
   },
@@ -34,5 +37,8 @@
   },
   "1.2.11": {
     "en": "Stability fix: reverted to built-in SolarmanV5 transport to prevent app crashes on Homey Pro. Hybrid inverters no longer show zeroed values at night. String/micro inverters no longer marked as unavailable when the logger loses power after sunset. Re-pairing required for hybrid inverters."
+  },
+  "1.2.12": {
+    "en": "Fixed zombie device callbacks causing app crashes (SharedPoller unsubscribe used identity check instead of equality). Fixed set_unavailable being called on every failed poll instead of once on transition. Fixed wrong logger serial used when detaching poller after settings change. Hybrid inverters now detected by model name — no re-pairing required. Added set_warning for night offline on string/micro inverters. Added Battery Status and Battery Temperature capabilities."
   }
 }

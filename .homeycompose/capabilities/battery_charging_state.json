@@ -1,0 +1,24 @@
+{
+  "type": "enum",
+  "title": {
+    "en": "Battery Status",
+    "nl": "Batterijstatus",
+    "de": "Batteriestatus",
+    "fr": "État de la batterie",
+    "it": "Stato batteria",
+    "sv": "Batteristatus",
+    "no": "Batteristatus",
+    "es": "Estado de la batería",
+    "da": "Batteristatus",
+    "pl": "Status baterii"
+  },
+  "values": [
+    { "id": "charge",    "title": { "en": "Charging",     "nl": "Opladen",       "de": "Laden",          "fr": "Charge",       "it": "In carica",    "sv": "Laddning",    "no": "Lader",       "es": "Cargando",     "da": "Oplader",     "pl": "Ładowanie"     } },
+    { "id": "discharge", "title": { "en": "Discharging",  "nl": "Ontladen",      "de": "Entladen",       "fr": "Décharge",     "it": "In scarica",   "sv": "Urladdning",  "no": "Lader ut",    "es": "Descargando",  "da": "Aflader",     "pl": "Rozładowanie"  } },
+    { "id": "standby",   "title": { "en": "Standby",      "nl": "Stand-by",      "de": "Bereitschaft",   "fr": "Veille",       "it": "In attesa",    "sv": "Standby",     "no": "Standby",     "es": "En espera",    "da": "Standby",     "pl": "Czuwanie"      } }
+  ],
+  "getable": true,
+  "setable": false,
+  "uiComponent": "sensor",
+  "insights": false
+}

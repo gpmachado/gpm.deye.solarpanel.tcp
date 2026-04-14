@@ -67,11 +67,15 @@ _NAME_RULES: list[tuple[str, str, str]] = [
     (r'battery.+discharg.+energy|energy.+battery.+discharg|total.+discharg',
                                                'meter_power.battery_discharged', 'Battery Discharged Energy'),
 
-    # Temperature
+    # Temperature — battery-specific before generic
+    (r'battery.+temp|temp.+battery',           'measure_temperature.battery', 'Battery Temperature'),
     (r'temp',                                  'measure_temperature',   'Temperature'),
 
     # Frequency
     (r'freq',                                  'measure_frequency',     'Grid Frequency'),
+
+    # Battery charging state (lookup: Charge / Stand-by / Discharge)
+    (r'battery.+status|status.+battery',       'battery_charging_state', 'Battery Status'),
 
     # Battery SOC
     (r'soc|state.of.charge|battery.+level',   'measure_battery',       'Battery SOC'),
@@ -157,6 +161,8 @@ BATTERY_CAPS: frozenset[str] = frozenset({
     "measure_power.battery",
     "measure_voltage.battery",
     "measure_current.battery",
+    "measure_temperature.battery",
+    "battery_charging_state",
     "meter_power.battery_charged",
     "meter_power.battery_discharged",
 })

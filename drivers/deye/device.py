@@ -144,7 +144,6 @@ class DeyeDevice(Device):
             if self._is_string_night():
                 self._consecutive_errors = 0
                 await self._apply_zeros()
-                await self.set_available()
                 self.log("night offline (expected) — logger without power")
                 return
             await self._handle_error()
@@ -154,13 +153,13 @@ class DeyeDevice(Device):
         if self._is_string_night():
             self._consecutive_errors = 0
             await self._apply_zeros()
-            await self.set_available()
             sr, ss = self._get_sunrise_sunset()
             self.log(f"night offline (expected) — backing off 30 min "
                      f"| sunrise≈{sr:.2f}h sunset≈{ss:.2f}h")
             return
 
         self._consecutive_errors = 0
+        await self._clear_warning()
         if self._is_unavailable:
             self._is_unavailable = False
             await self.set_available()
@@ -177,6 +176,14 @@ class DeyeDevice(Device):
 
             if cap_id == "alarm_generic":
                 coerced = str(value).lower() in ("fault", "alarm", "warning")
+            elif cap_id == "battery_charging_state":
+                v_lower = str(value).lower()
+                if "discharge" in v_lower:
+                    coerced = "discharge"
+                elif "charge" in v_lower:
+                    coerced = "charge"
+                else:
+                    coerced = "standby"
             else:
                 coerced = value
 
@@ -251,6 +258,13 @@ class DeyeDevice(Device):
             await card.trigger(self, tokens, {})
         except Exception as e:
             _LOGGER.debug(f"Flow trigger '{card_id}' failed: {e}")
+
+    _has_warning: bool = False
+
+    async def _clear_warning(self) -> None:
+        if self._has_warning:
+            self._has_warning = False
+            await self.unset_warning()
 
     async def _handle_error(self) -> None:
         self._consecutive_errors += 1

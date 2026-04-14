@@ -22,8 +22,14 @@ class MyApp(App):
             device = args.get("device")
             if not device:
                 return False
-            bat = device.get_capability_value("measure_power.battery") or 0
-            return float(bat) > 0
+            # battery_charging_state is the authoritative source (normalized enum)
+            status = device.get_capability_value("battery_charging_state")
+            if status is not None:
+                return status == "charge"
+            # Fallback: measure_power on the battery device is already normalized
+            # (positive = charging, per Homey convention) — NOT the raw Deye value
+            power = device.get_capability_value("measure_power") or 0
+            return float(power) > 0
 
         async def _is_grid_feeding(args, state):
             device = args.get("device")
