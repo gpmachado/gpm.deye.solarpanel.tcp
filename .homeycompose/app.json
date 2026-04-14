@@ -41,7 +41,6 @@
   "homepage": "https://github.com/gpmachado/gpm.deye.solarpanel.tcp",
   "support": "https://github.com/gpmachado/gpm.deye.solarpanel.tcp/issues",
   "pythonPackages": [
-    "astral",
-    "pysolarmanv5"
+    "astral"
   ]
 }

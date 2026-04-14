@@ -50,7 +50,7 @@ async def _detect_model(host: str, serial: int, port: int = 8899) -> tuple[str, 
     """
     from app.lib.parser import ParameterParser
     from app.lib.capability_map import get_sensor_capability_map
-    from pysolarmanv5 import PySolarmanV5Async  # monkey-patch already applied via solarman_client import
+    from app.lib.v5_transport import V5Transport
 
     best_model  = "deye_string"
     best_score  = -1

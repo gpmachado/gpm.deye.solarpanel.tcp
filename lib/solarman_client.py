@@ -1,33 +1,14 @@
 """
 Async Solarman inverter client for Homey Python runtime.
-Uses PySolarmanV5Async with monkey-patch for Homey sandbox compatibility.
-The Homey sandbox blocks POSIX semaphores (sem_open → ENOSYS). pysolarmanv5
-uses multiprocessing.Event internally which triggers this. We replace it with
-a pure-Python mock before the library is imported.
+Uses V5Transport (pure asyncio) — required by the Homey sandbox.
 Logic adapted from home_assistant_solarman (MIT License).
 """
 
 import asyncio
 import json
 import logging
-import multiprocessing
 
-# ── Homey sandbox compatibility ───────────────────────────────────────────────
-# Must be applied BEFORE importing pysolarmanv5, so that
-# `from multiprocessing import Event` inside the library gets our mock.
-
-class _MockEvent:
-    """Pure-Python replacement for multiprocessing.Event (no POSIX semaphores)."""
-    def __init__(self):      self._flag = False
-    def is_set(self):        return self._flag
-    def set(self):           self._flag = True
-    def clear(self):         self._flag = False
-    def wait(self, timeout=None): return self._flag
-
-multiprocessing.Event = _MockEvent
-# ─────────────────────────────────────────────────────────────────────────────
-
-from pysolarmanv5 import PySolarmanV5Async
+from app.lib.v5_transport import V5Transport
 from app.lib.parser import ParameterParser
 
 log = logging.getLogger(__name__)
@@ -43,7 +24,7 @@ class SolarmanClient:
         self._serial = int(serial)
         self._port = port
         self._slave_id = slave_id
-        self._modbus: PySolarmanV5Async | None = None
+        self._modbus: V5Transport | None = None
         self._parameter_definition: dict | None = None
 
     def load_definition(self, json_path: str) -> None:
@@ -56,13 +37,12 @@ class SolarmanClient:
         if self._modbus:
             return
         log.debug(f"Connecting to {self._host}:{self._port} serial={self._serial}")
-        self._modbus = PySolarmanV5Async(
+        self._modbus = V5Transport(
             self._host,
             self._serial,
             port=self._port,
-            mb_slave_id=self._slave_id,
-            auto_reconnect=False,
-            socket_timeout=8,
+            slave=self._slave_id,
+            timeout=8.0,
         )
         await self._modbus.connect()
 
