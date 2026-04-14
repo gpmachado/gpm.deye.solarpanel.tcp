@@ -25,5 +25,11 @@
   },
   "1.2.8": {
     "en": "Two-device architecture for hybrid inverters: inverter and battery now appear as separate devices in Homey, enabling proper Energy Dashboard integration (battery SOC, charge/discharge energy). Battery device keeps polling through the night while the inverter goes offline. Added flow cards: triggers for solar production started/stopped, grid lost/restored, and data updated (with power, daily production, battery SOC and grid power tokens). Conditions: is solar producing, is battery charging, is feeding to grid. Re-pairing required for all existing devices."
+  },
+  "1.2.9": {
+    "en": "Restored pysolarmanv5 library with a sandbox compatibility patch (fixes multiprocessing semaphore error on Homey Pro). Fixed hybrid inverter night backoff — hybrid stays online 24/7 via battery and no longer shows zeroed values at night. Fixed string/micro inverters being incorrectly marked as unavailable when the logger loses power at night (expected behaviour). Re-pairing required for hybrid inverters to apply the night fix."
+  },
+  "1.2.10": {
+    "en": "Reverted to built-in V5 transport — pysolarmanv5 caused app crashes on Homey Pro (background task exception in Python 3.14). All fixes from 1.2.9 are preserved: hybrid night backoff, string/micro night handling, and is_hybrid flag. Re-pairing required for hybrid inverters."
   }
 }
