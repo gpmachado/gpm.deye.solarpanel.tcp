@@ -43,5 +43,8 @@
   },
   "1.2.14": {
     "en": "Added Battery Temperature and Battery Status (Charging/Discharging/Standby) capabilities to the battery device. Fixed flow condition \"Is battery charging?\" — was firing inverted due to raw Deye signal polarity. String/micro inverters no longer show a warning triangle at night — device tile stays clean with 0W and today's production total. Pairing now includes cumulative energy capabilities (grid import/export, battery charged/discharged) even when their value is 0 at pairing time. App renamed to Deye Inverter (Local)."
+  },
+  "1.3.0": {
+    "en": "dded Grid Meter as a third device (class: sensor) for hybrid and string inverters. Tracks cumulative grid import and grid export energy, enabling the Homey Energy Dashboard to display how much energy you buy from and sell to the grid — without needing a separate Shelly or P1 meter. Re-pairing required to add the Grid Meter device"
   }
 }
