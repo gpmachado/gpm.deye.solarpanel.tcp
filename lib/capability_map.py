@@ -54,13 +54,18 @@ _NAME_RULES: list[tuple[str, str, str]] = [
     (r'\bl3\b.+curr|curr.+\bl3\b',            'measure_current.l3',    'L3 Current'),
     (r'grid.+curr|curr.+grid|ac.+curr',        'measure_current.grid',  'Grid Current'),
 
-    # Energy meters (order matters: daily before total)
-    (r'daily|today',                           'meter_power.today',           'Daily Production'),
-    (r'total.+prod|lifetime|total.+energy(?!.+buy|.+sell|.+import|.+export)',
+    # Energy meters (order matters: specific before generic)
+    # daily/today only for solar production — exclude grid/battery/load daily values
+    (r'(?:daily|today)(?!.*export|.*import|.*buy|.*bought|.*sell|.*sold|.*battery|.*grid|.*load)',
+                                               'meter_power.today',           'Daily Production'),
+    # Total production — exclude rows that mention grid buy/sell/import/export
+    (r'total.+prod|lifetime|total.+energy(?!.+(?:buy|bought|sell|sold|import|export))',
                                                'meter_power',                 'Total Production'),
-    (r'grid.+import|import.+energy|energy.+import|energy.+buy|total.+buy',
+    # Grid import: total/grid prefixed or energy+import (excludes daily variants)
+    (r'(?:total|grid).+(?:buy|bought|import)|import.+energy|energy.+import',
                                                'meter_power.grid_import',     'Grid Import Energy'),
-    (r'grid.+export|export.+energy|energy.+export|energy.+sell|total.+sell',
+    # Grid export: total/grid prefixed or energy+export (excludes daily variants)
+    (r'(?:total|grid).+(?:sell|sold|export)|export.+energy|energy.+export',
                                                'meter_power.grid_export',     'Grid Export Energy'),
     (r'battery.+charg.+energy|energy.+battery.+charg|total.+charg',
                                                'meter_power.battery_charged', 'Battery Charged Energy'),
@@ -166,6 +171,22 @@ BATTERY_CAPS: frozenset[str] = frozenset({
     "meter_power.battery_charged",
     "meter_power.battery_discharged",
 })
+
+
+# Capabilities that belong to the grid meter device.
+# At pairing these are remapped to standard Homey energy cap names.
+GRID_METER_CAPS: frozenset[str] = frozenset({
+    "meter_power.grid_import",
+    "meter_power.grid_export",
+    "measure_power.grid",
+})
+
+# Remap from internal cap IDs to the names expected by Homey Energy for a cumulative sensor.
+GRID_CAP_REMAP: dict[str, str] = {
+    "meter_power.grid_import": "meter_power",
+    "meter_power.grid_export": "meter_power.exported",
+    # measure_power.grid stays as-is on the grid meter device
+}
 
 
 def get_sensor_capability_map(sensors: list) -> dict[str, str]:

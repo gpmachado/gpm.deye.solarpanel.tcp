@@ -12,7 +12,7 @@ import socket
 
 from homey.driver import Driver
 from app.lib.solarman_client import SolarmanClient
-from app.lib.capability_map import build_capabilities, BATTERY_CAPS
+from app.lib.capability_map import build_capabilities, BATTERY_CAPS, GRID_METER_CAPS, GRID_CAP_REMAP
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -365,10 +365,12 @@ class DeyeDriver(Driver):
 
             caps, caps_opts = build_capabilities(sensors)
 
-            inverter_caps = [c for c in caps if c not in BATTERY_CAPS]
+            inverter_caps = [c for c in caps if c not in BATTERY_CAPS and c not in GRID_METER_CAPS]
             battery_caps  = [c for c in caps if c in BATTERY_CAPS]
-            inverter_opts = {k: v for k, v in caps_opts.items() if k not in BATTERY_CAPS}
+            grid_caps_raw = [c for c in caps if c in GRID_METER_CAPS]
+            inverter_opts = {k: v for k, v in caps_opts.items() if k not in BATTERY_CAPS and k not in GRID_METER_CAPS}
             battery_opts  = {k: v for k, v in caps_opts.items() if k in BATTERY_CAPS}
+            grid_opts_raw = {k: v for k, v in caps_opts.items() if k in GRID_METER_CAPS}
 
             # Add measure_power.solar for inverters with PV sub-capabilities.
             # Points Energy Dashboard to solar-only production (not AC output).
@@ -391,7 +393,8 @@ class DeyeDriver(Driver):
             }
 
             self.log(f"list_devices — model:{model_id} host:{host} "
-                     f"inverter_caps:{len(inverter_caps)} battery_caps:{len(battery_caps)}")
+                     f"inverter_caps:{len(inverter_caps)} battery_caps:{len(battery_caps)} "
+                     f"grid_caps:{len(grid_caps_raw)}")
 
             devices = [{
                 "name": DEYE_MODELS[model_id],
@@ -429,6 +432,35 @@ class DeyeDriver(Driver):
                 self.log(f"Battery device — caps:{batt_caps_final}")
             else:
                 self.log("No battery caps detected — battery device skipped")
+
+            if grid_caps_raw:
+                # Remap internal cap IDs to standard Homey Energy names for a cumulative sensor
+                grid_caps_final = [GRID_CAP_REMAP.get(c, c) for c in grid_caps_raw]
+                grid_opts_final = {GRID_CAP_REMAP.get(k, k): v for k, v in grid_opts_raw.items()}
+                # Fix titles for remapped caps
+                if "meter_power" in grid_opts_final:
+                    grid_opts_final["meter_power"]["title"]["en"] = "Grid Import Energy"
+                if "meter_power.exported" in grid_opts_final:
+                    grid_opts_final["meter_power.exported"] = {"title": {"en": "Grid Export Energy"}}
+                if "measure_power.grid" in grid_opts_final:
+                    grid_opts_final["measure_power.grid"]["title"]["en"] = "Grid Power"
+
+                devices.append({
+                    "name": f"{DEYE_MODELS[model_id]} — Grid",
+                    "data": {"id": f"deye_{serial}_grid"},
+                    "class": "sensor",
+                    "capabilities": grid_caps_final,
+                    "capabilitiesOptions": grid_opts_final,
+                    "energy": {
+                        "cumulative": True,
+                        "cumulativeImportedCapability": "meter_power",
+                        "cumulativeExportedCapability": "meter_power.exported",
+                    },
+                    "settings": {**base_settings, "device_type": "grid_meter"},
+                })
+                self.log(f"Grid meter device — caps:{grid_caps_final}")
+            else:
+                self.log("No grid caps detected — grid meter device skipped")
 
             return devices
 

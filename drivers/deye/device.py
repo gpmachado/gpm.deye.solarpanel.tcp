@@ -17,7 +17,7 @@ from astral import LocationInfo
 from astral.sun import sun
 
 from homey.device import Device
-from app.lib.capability_map import get_sensor_capability_map, BATTERY_CAPS
+from app.lib.capability_map import get_sensor_capability_map, BATTERY_CAPS, GRID_METER_CAPS, GRID_CAP_REMAP
 from app.lib import shared_poller as _poller_mod
 
 _LOGGER = logging.getLogger(__name__)
@@ -59,6 +59,7 @@ class DeyeDevice(Device):
     _consecutive_errors: int = 0
     _last_power_w: float = 0.0
     _is_battery: bool = False
+    _is_grid_meter: bool = False
     _was_producing: bool = False
     _grid_was_available: bool = True
     _is_unavailable: bool = False
@@ -66,9 +67,11 @@ class DeyeDevice(Device):
     # ── Lifecycle ─────────────────────────────────────────────────────────────
 
     async def on_init(self) -> None:
-        self._is_battery = (self.get_setting("device_type") == "battery")
+        device_type = self.get_setting("device_type") or "inverter"
+        self._is_battery    = (device_type == "battery")
+        self._is_grid_meter = (device_type == "grid_meter")
         host = self.get_setting("host") or ""
-        self.log(f"DeyeDevice init — type={'battery' if self._is_battery else 'inverter'} host={host}")
+        self.log(f"DeyeDevice init — type={device_type} host={host}")
         self._build_sensor_map()
         self._attach_poller()
         if not self._is_battery:
@@ -100,7 +103,26 @@ class DeyeDevice(Device):
             sensors = [item
                        for group in definition.get("parameters", [])
                        for item in group.get("items", [])]
-            self._sensor_cap_map = get_sensor_capability_map(sensors)
+            raw_map = get_sensor_capability_map(sensors)
+
+            # Filter and remap by device type so each device only processes its own caps
+            if self._is_grid_meter:
+                self._sensor_cap_map = {
+                    sensor: GRID_CAP_REMAP.get(cap, cap)
+                    for sensor, cap in raw_map.items()
+                    if cap in GRID_METER_CAPS
+                }
+            elif self._is_battery:
+                self._sensor_cap_map = {
+                    sensor: cap for sensor, cap in raw_map.items()
+                    if cap in BATTERY_CAPS
+                }
+            else:
+                self._sensor_cap_map = {
+                    sensor: cap for sensor, cap in raw_map.items()
+                    if cap not in BATTERY_CAPS and cap not in GRID_METER_CAPS
+                }
+
             self.log(f"Sensor map: {len(self._sensor_cap_map)} sensors, model={model}")
         except Exception as e:
             _LOGGER.error(f"Failed to build sensor map: {e}")
@@ -132,7 +154,7 @@ class DeyeDevice(Device):
     def _is_string_night(self) -> bool:
         """True when this is a string/micro inverter device during night hours.
         Hybrid models stay online 24/7 — detected via model name, not a flag."""
-        if self._is_battery:
+        if self._is_battery or self._is_grid_meter:
             return False
         model = str(self.get_setting("model") or "")
         is_hybrid = "hybrid" in model.lower() or model == "deye_sg04lp3"
@@ -165,9 +187,8 @@ class DeyeDevice(Device):
             await self.set_available()
 
         for sensor_name, cap_id in self._sensor_cap_map.items():
-            # Battery device only gets BATTERY_CAPS; inverter gets everything else
-            if self._is_battery != (cap_id in BATTERY_CAPS):
-                continue
+            # sensor_cap_map is pre-filtered per device type in _build_sensor_map
+            # has_capability guard below covers any edge cases
             value = values.get(sensor_name)
             if value is None:
                 continue
@@ -198,6 +219,8 @@ class DeyeDevice(Device):
             if "Battery Power" in values and self.has_capability("measure_power"):
                 raw = values.get("Battery Power") or 0
                 await self._set("measure_power", -float(raw))
+        elif self._is_grid_meter:
+            pass  # grid meter: no post-processing, caps already set in the loop above
         else:
             # Inverter: override measure_power with total PV (solar production only).
             # AC output includes battery discharge and overstates solar.
