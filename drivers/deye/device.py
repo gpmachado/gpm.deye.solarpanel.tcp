@@ -61,6 +61,7 @@ class DeyeDevice(Device):
     _is_battery: bool = False
     _was_producing: bool = False
     _grid_was_available: bool = True
+    _is_unavailable: bool = False
 
     # ── Lifecycle ─────────────────────────────────────────────────────────────
 
@@ -77,7 +78,9 @@ class DeyeDevice(Device):
         changed_keys = event.get("changedKeys", [])
         if any(k in changed_keys for k in
                ("host", "loggerSerial", "port", "slaveId", "model", "pollingInterval")):
-            self._detach_poller()
+            old_serial = int((event.get("oldSettings") or {}).get("loggerSerial") or
+                             self.get_setting("loggerSerial") or 0)
+            self._detach_poller(serial_override=old_serial)
             self._build_sensor_map()
             self._attach_poller()
 
@@ -120,15 +123,20 @@ class DeyeDevice(Device):
         poller.subscribe(self._on_values)
         self.log(f"Subscribed to SharedPoller serial={serial}")
 
-    def _detach_poller(self) -> None:
-        serial = int(self.get_setting("loggerSerial") or 0)
+    def _detach_poller(self, serial_override: int | None = None) -> None:
+        serial = serial_override if serial_override is not None else int(self.get_setting("loggerSerial") or 0)
         _poller_mod.release(serial, self._on_values)
 
     # ── Value handler ─────────────────────────────────────────────────────────
 
     def _is_string_night(self) -> bool:
-        """True when this is a non-hybrid inverter device during night hours."""
-        return not self._is_battery and not self.get_setting("is_hybrid") and self._is_night_time()
+        """True when this is a string/micro inverter device during night hours.
+        Hybrid models stay online 24/7 — detected via model name, not a flag."""
+        if self._is_battery:
+            return False
+        model = str(self.get_setting("model") or "")
+        is_hybrid = "hybrid" in model.lower() or model == "deye_sg04lp3"
+        return not is_hybrid and self._is_night_time()
 
     async def _on_values(self, values: dict | None) -> None:
         if values is None:
@@ -153,7 +161,9 @@ class DeyeDevice(Device):
             return
 
         self._consecutive_errors = 0
-        await self.set_available()
+        if self._is_unavailable:
+            self._is_unavailable = False
+            await self.set_available()
 
         for sensor_name, cap_id in self._sensor_cap_map.items():
             # Battery device only gets BATTERY_CAPS; inverter gets everything else
@@ -245,9 +255,12 @@ class DeyeDevice(Device):
     async def _handle_error(self) -> None:
         self._consecutive_errors += 1
 
-        if self._consecutive_errors >= _ERROR_THRESHOLD:
-            self.log(f"poll failed {self._consecutive_errors}x during daytime")
+        if self._consecutive_errors == _ERROR_THRESHOLD:
+            self.log(f"poll failed {self._consecutive_errors}x during daytime — marking unavailable")
+            self._is_unavailable = True
             await self.set_unavailable("Connection failed")
+        elif self._consecutive_errors > _ERROR_THRESHOLD:
+            pass  # already unavailable — do not spam set_unavailable on every poll
         else:
             self.log(f"poll error {self._consecutive_errors}/{_ERROR_THRESHOLD}")
 

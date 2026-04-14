@@ -62,7 +62,7 @@ class SharedPoller:
         self._ensure_running()
 
     def unsubscribe(self, cb) -> None:
-        self._subscribers = [s for s in self._subscribers if s is not cb]
+        self._subscribers = [s for s in self._subscribers if s != cb]
 
     def has_subscribers(self) -> bool:
         return bool(self._subscribers)
