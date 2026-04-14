@@ -31,5 +31,8 @@
   },
   "1.2.10": {
     "en": "Reverted to built-in V5 transport — pysolarmanv5 caused app crashes on Homey Pro (background task exception in Python 3.14). All fixes from 1.2.9 are preserved: hybrid night backoff, string/micro night handling, and is_hybrid flag. Re-pairing required for hybrid inverters."
+  },
+  "1.2.11": {
+    "en": "Stability fix: reverted to built-in SolarmanV5 transport to prevent app crashes on Homey Pro. Hybrid inverters no longer show zeroed values at night. String/micro inverters no longer marked as unavailable when the logger loses power after sunset. Re-pairing required for hybrid inverters."
   }
 }
