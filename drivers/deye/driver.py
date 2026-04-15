@@ -457,6 +457,12 @@ class DeyeDriver(Driver):
                 if "measure_power.grid" in grid_opts_final:
                     grid_opts_final["measure_power.grid"]["title"]["en"] = "Grid Power"
 
+                # Add base measure_power cap so Homey Energy can track live grid consumption.
+                # measurePowerConsumedCapability requires a base measure_power (not a sub-cap).
+                if "measure_power.grid" in grid_caps_final and "measure_power" not in grid_caps_final:
+                    grid_caps_final = ["measure_power"] + grid_caps_final
+                    grid_opts_final["measure_power"] = {"title": {"en": "Grid Power (Live)"}}
+
                 devices.append({
                     "name": f"{DEYE_MODELS[model_id]} — Grid",
                     "icon": "/drivers/deye/assets/icon_inverter.svg",
@@ -468,6 +474,7 @@ class DeyeDriver(Driver):
                         "cumulative": True,
                         "cumulativeImportedCapability": "meter_power",
                         "cumulativeExportedCapability": "meter_power.exported",
+                        "measurePowerConsumedCapability": "measure_power",
                     },
                     "settings": {**base_settings, "device_type": "grid_meter"},
                 })

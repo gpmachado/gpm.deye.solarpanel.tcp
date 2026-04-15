@@ -73,6 +73,28 @@ class DeyeDevice(Device):
         host = self.get_setting("host") or ""
         self.log(f"DeyeDevice init — type={device_type} host={host}")
         self._build_sensor_map()
+
+        # Grid meters paired before v1.3.2 don't have measure_power — add it now.
+        # Required for measurePowerConsumedCapability (live grid W in Homey Energy Dashboard).
+        if (self._is_grid_meter
+                and self.has_capability("measure_power.grid")
+                and not self.has_capability("measure_power")):
+            try:
+                await self.addCapability("measure_power")
+                self.log("Added measure_power cap to grid meter (upgraded from pre-1.3.2)")
+            except Exception as e:
+                _LOGGER.warning(f"Could not add measure_power to grid meter: {e}")
+
+        # Initialise synthetic inverter caps to 0 so Energy Dashboard never shows null
+        # before the first successful poll.
+        if not self._is_battery and not self._is_grid_meter:
+            for cap in ("measure_power.solar", "measure_power.load", "measure_power"):
+                if self.has_capability(cap):
+                    try:
+                        await self._set(cap, 0)
+                    except Exception:
+                        pass
+
         self._attach_poller()
         if not self._is_battery:
             asyncio.create_task(self._refresh_wifi_info(host))
@@ -234,7 +256,12 @@ class DeyeDevice(Device):
                 raw = values.get("Battery Power") or 0
                 await self._set("measure_power", -float(raw))
         elif self._is_grid_meter:
-            pass  # grid meter: no post-processing, caps already set in the loop above
+            # Mirror live grid power to base measure_power for measurePowerConsumedCapability.
+            # Homey Energy reads measure_power to display instantaneous grid consumption (W).
+            if self.has_capability("measure_power"):
+                grid_pwr = values.get("Total Grid Power")
+                if grid_pwr is not None:
+                    await self._set("measure_power", float(grid_pwr))
         else:
             # Inverter: override measure_power with total PV (solar production only).
             # AC output includes battery discharge and overstates solar.
