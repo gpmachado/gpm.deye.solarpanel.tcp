@@ -57,7 +57,10 @@ async def _detect_model(host: str, serial: int, port: int = 8899) -> tuple[str, 
     from app.lib.v5_transport import V5Transport
 
     best_model  = "deye_string"
-    best_score  = -1
+    # Start at 0: a model must have at least one non-zero sensor value to override
+    # the default. Prevents night-time probes (all zeros) from picking the wrong model
+    # just because one model's registers happen to connect without error.
+    best_score  = 0
     best_values: dict = {}
 
     for model_id in DEYE_MODELS:
