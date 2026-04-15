@@ -81,14 +81,26 @@ class DeyeDevice(Device):
         changed_keys = event.get("changedKeys", [])
         if any(k in changed_keys for k in
                ("host", "loggerSerial", "port", "slaveId", "model", "pollingInterval")):
-            old_serial = int((event.get("oldSettings") or {}).get("loggerSerial") or
-                             self.get_setting("loggerSerial") or 0)
-            self._detach_poller(serial_override=old_serial)
+            self._detach_poller()
             self._build_sensor_map()
             self._attach_poller()
+            
+            # Restart Wi-Fi info task if IP was changed (only for main/inverter device)
+            if "host" in changed_keys and not self._is_battery:
+                host = self.get_setting("host") or ""
+                asyncio.create_task(self._refresh_wifi_info(host))
 
     async def on_deleted(self) -> None:
         self._detach_poller()
+
+    def _safe_int(self, key: str, default: int) -> int:
+        val = self.get_setting(key)
+        if not val:
+            return default
+        try:
+            return int(val)
+        except (ValueError, TypeError):
+            return default
 
     # ── Sensor map ────────────────────────────────────────────────────────────
 
@@ -136,21 +148,20 @@ class DeyeDevice(Device):
     def _poller_cfg(self) -> dict:
         return {
             "host":     self.get_setting("host") or "",
-            "port":     int(self.get_setting("port") or 8899),
-            "slave_id": int(self.get_setting("slaveId") or 1),
+            "port":     self._safe_int("port", 8899),
+            "slave_id": self._safe_int("slaveId", 1),
             "model":    self.get_setting("model") or "deye_string",
-            "interval": max(35, int(self.get_setting("pollingInterval") or 60)),
+            "interval": max(35, self._safe_int("pollingInterval", 60)),
         }
 
     def _attach_poller(self) -> None:
-        serial = int(self.get_setting("loggerSerial") or 0)
+        serial = self._safe_int("loggerSerial", 0)
         poller = _poller_mod.get_or_create(serial, **self._poller_cfg())
         poller.subscribe(self._on_values)
         self.log(f"Subscribed to SharedPoller serial={serial}")
 
     def _detach_poller(self, serial_override: int | None = None) -> None:
-        serial = serial_override if serial_override is not None else int(self.get_setting("loggerSerial") or 0)
-        _poller_mod.release(serial, self._on_values)
+        _poller_mod.release_callback(self._on_values)
 
     # ── Value handler ─────────────────────────────────────────────────────────
 

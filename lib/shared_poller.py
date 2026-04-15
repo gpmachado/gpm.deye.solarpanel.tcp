@@ -31,6 +31,18 @@ def release(serial: int, callback) -> None:
             _registry.pop(serial, None)
 
 
+def release_callback(callback) -> None:
+    """Blind detach — removes callback from every poller in the registry.
+    Used by device._detach_poller() so a corrupted or missing serial setting
+    never leaves a zombie callback running after device deletion or reconfigure."""
+    for serial in list(_registry):
+        p = _registry[serial]
+        p.unsubscribe(callback)
+        if not p.has_subscribers():
+            p.stop()
+            _registry.pop(serial, None)
+
+
 class SharedPoller:
 
     def __init__(self, serial: int):
@@ -97,9 +109,11 @@ class SharedPoller:
         _LOGGER.info(f"SharedPoller stop serial={self.serial}")
 
     async def _poll(self) -> None:
-        if not self._client:
-            self._client = self._build_client()
         try:
+            if not self._client:
+                # _build_client does file I/O — keep inside try so FileNotFoundError
+                # or JSON parse errors don't escape and kill the background task.
+                self._client = self._build_client()
             values = await self._client.read_all()
         except Exception as e:
             _LOGGER.warning(f"SharedPoller poll error serial={self.serial}: {e}")

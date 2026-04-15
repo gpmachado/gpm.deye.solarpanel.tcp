@@ -19,7 +19,7 @@
     {
       "type": "device",
       "name": "device",
-      "filter": "driver_id=deye&capabilities=measure_power"
+      "filter": "driver_id=deye&capabilities=meter_power.today"
     }
   ],
   "tokens": [
