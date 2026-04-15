@@ -409,6 +409,7 @@ class DeyeDriver(Driver):
 
             devices = [{
                 "name": DEYE_MODELS[model_id],
+                "icon": "/drivers/deye/assets/icon_inverter.svg",
                 "data": {"id": f"deye_{serial}_inverter"},
                 "capabilities": inverter_caps,
                 "capabilitiesOptions": inverter_opts,
@@ -458,6 +459,7 @@ class DeyeDriver(Driver):
 
                 devices.append({
                     "name": f"{DEYE_MODELS[model_id]} — Grid",
+                    "icon": "/drivers/deye/assets/icon_inverter.svg",
                     "data": {"id": f"deye_{serial}_grid"},
                     "class": "sensor",
                     "capabilities": grid_caps_final,
