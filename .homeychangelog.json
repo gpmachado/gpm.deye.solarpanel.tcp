@@ -52,5 +52,8 @@
   },
   "1.3.0": {
     "en": "dded Grid Meter as a third device (class: sensor) for hybrid and string inverters. Tracks cumulative grid import and grid export energy, enabling the Homey Energy Dashboard to display how much energy you buy from and sell to the grid — without needing a separate Shelly or P1 meter. Re-pairing required to add the Grid Meter device"
+  },
+  "1.3.3": {
+    "en": "Fixed night backoff incorrectly triggering when Homey timezone is unavailable — inverter no longer shows 0W/0V during the day for users in timezones where clock.get_timezone() returns None (e.g. Brazil UTC-3). Night detection now safely disabled if geolocation or timezone data is missing."
   }
 }
