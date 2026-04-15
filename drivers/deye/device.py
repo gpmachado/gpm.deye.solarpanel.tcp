@@ -344,35 +344,43 @@ class DeyeDevice(Device):
 
     # ── Night detection (astral) ──────────────────────────────────────────────
 
-    def _get_sunrise_sunset(self) -> tuple[float, float]:
-        """Returns (sunrise, sunset) as decimal local hours."""
+    def _get_sunrise_sunset(self) -> tuple[float, float] | None:
+        """Returns (sunrise, sunset) as decimal local hours, or None if unavailable.
+        Returns None instead of raising so callers can safely disable night backoff."""
         try:
             lat     = self.homey.geolocation.get_latitude()
             lng     = self.homey.geolocation.get_longitude()
             tz_name = self.homey.clock.get_timezone()
             if not lat or not lng:
-                raise ValueError("no geolocation")
+                _LOGGER.warning("Night backoff disabled — Homey geolocation not set")
+                return None
             loc = LocationInfo(latitude=lat, longitude=lng, timezone=tz_name)
             s   = sun(loc.observer, tzinfo=ZoneInfo(tz_name))
-            return (
-                s["sunrise"].hour + s["sunrise"].minute / 60,
-                s["sunset"].hour  + s["sunset"].minute  / 60,
-            )
-        except Exception:
-            return (6.0, 19.0)
+            sr  = s["sunrise"].hour + s["sunrise"].minute / 60
+            ss  = s["sunset"].hour  + s["sunset"].minute  / 60
+            self.log(f"Sun times: sunrise={sr:.2f}h sunset={ss:.2f}h tz={tz_name}")
+            return (sr, ss)
+        except Exception as e:
+            _LOGGER.warning(f"Night backoff disabled — sun calculation failed: {e}")
+            return None
 
     def _is_night_time(self) -> bool:
-        """True when outside solar window + 30-minute buffer on each side."""
+        """True when outside solar window + 30-minute buffer on each side.
+        Returns False (assume daytime) if geolocation or timezone is unavailable —
+        safer than a hardcoded fallback that may fire incorrectly."""
+        times = self._get_sunrise_sunset()
+        if times is None:
+            return False  # location unknown — never apply night backoff
+        sunrise, sunset = times
         try:
-            sunrise, sunset = self._get_sunrise_sunset()
             tz_name = self.homey.clock.get_timezone()
             now     = datetime.now(timezone.utc)
             local   = now.astimezone(ZoneInfo(tz_name)) if tz_name else now
             local_h = local.hour + local.minute / 60
             return local_h < (sunrise - 0.5) or local_h >= (sunset + 0.5)
-        except Exception:
-            h = datetime.now().hour
-            return h < 6 or h >= 19
+        except Exception as e:
+            _LOGGER.warning(f"Night time check failed ({e}) — assuming daytime")
+            return False
 
     # ── Apply zeros ───────────────────────────────────────────────────────────
 
