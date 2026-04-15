@@ -24,6 +24,10 @@ DEYE_MODELS: dict[str, str] = {
     "deye_sg04lp3": "Deye SG04LP3 Hybrid 3-phase — SUN-8/10/12K",
 }
 
+# Only hybrid models get a separate Grid Meter device.
+# String/micro inverters show grid caps directly on the main inverter tile.
+HYBRID_MODELS: frozenset[str] = frozenset({"deye_hybrid", "deye_sg04lp3"})
+
 _INVERTER_DEFS_DIR = os.path.join(os.path.dirname(__file__), "..", "..", "inverter_definitions")
 
 
@@ -365,12 +369,19 @@ class DeyeDriver(Driver):
 
             caps, caps_opts = build_capabilities(sensors)
 
-            inverter_caps = [c for c in caps if c not in BATTERY_CAPS and c not in GRID_METER_CAPS]
+            # Hybrid models get a separate Grid Meter device — grid caps are split off.
+            # String/micro inverters keep grid caps on the main inverter tile (no grid device).
+            is_hybrid = model_id in HYBRID_MODELS
+
             battery_caps  = [c for c in caps if c in BATTERY_CAPS]
-            grid_caps_raw = [c for c in caps if c in GRID_METER_CAPS]
-            inverter_opts = {k: v for k, v in caps_opts.items() if k not in BATTERY_CAPS and k not in GRID_METER_CAPS}
+            grid_caps_raw = [c for c in caps if c in GRID_METER_CAPS] if is_hybrid else []
+            inverter_caps = [c for c in caps
+                             if c not in BATTERY_CAPS and (not is_hybrid or c not in GRID_METER_CAPS)]
             battery_opts  = {k: v for k, v in caps_opts.items() if k in BATTERY_CAPS}
-            grid_opts_raw = {k: v for k, v in caps_opts.items() if k in GRID_METER_CAPS}
+            grid_opts_raw = ({k: v for k, v in caps_opts.items() if k in GRID_METER_CAPS}
+                             if is_hybrid else {})
+            inverter_opts = {k: v for k, v in caps_opts.items()
+                             if k not in BATTERY_CAPS and (not is_hybrid or k not in GRID_METER_CAPS)}
 
             # Add measure_power.solar for inverters with PV sub-capabilities.
             # Points Energy Dashboard to solar-only production (not AC output).

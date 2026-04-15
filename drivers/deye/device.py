@@ -118,9 +118,12 @@ class DeyeDevice(Device):
                     if cap in BATTERY_CAPS
                 }
             else:
+                # Hybrid models: exclude GRID_METER_CAPS (they live on the grid meter device).
+                # String/micro inverters: keep grid caps on the main inverter tile (no grid device).
+                is_hybrid = "hybrid" in model.lower() or model == "deye_sg04lp3"
                 self._sensor_cap_map = {
                     sensor: cap for sensor, cap in raw_map.items()
-                    if cap not in BATTERY_CAPS and cap not in GRID_METER_CAPS
+                    if cap not in BATTERY_CAPS and (not is_hybrid or cap not in GRID_METER_CAPS)
                 }
 
             self.log(f"Sensor map: {len(self._sensor_cap_map)} sensors, model={model}")
