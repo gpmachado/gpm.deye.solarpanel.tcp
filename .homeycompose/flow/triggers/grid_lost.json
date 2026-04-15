@@ -19,7 +19,7 @@
     {
       "type": "device",
       "name": "device",
-      "filter": "driver_id=deye&capabilities=measure_power.battery"
+      "filter": "driver_id=deye&capabilities=measure_power.solar"
     }
   ]
 }

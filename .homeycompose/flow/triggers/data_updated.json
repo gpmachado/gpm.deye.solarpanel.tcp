@@ -13,7 +13,7 @@
     "pl": "Dane falownika zaktualizowane"
   },
   "hint": {
-    "en": "Triggered on every successful poll (every 60 s by default). Use tokens to read current values."
+    "en": "Triggered on every successful poll (every 60 s by default). Use tokens to read current values. Note: grid_power token is only populated for string inverters — on hybrid models, grid power is tracked by the Grid Meter device."
   },
   "args": [
     {
