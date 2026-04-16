@@ -513,7 +513,7 @@ class DeyeDriver(Driver):
         Only updates device settings (model, host). Does NOT add or remove
         capabilities — changing between string and hybrid still requires re-pairing.
         """
-        self.log(f"onRepair started for device {device.id}")
+        self.log(f"onRepair started for device {device.get_id()}")
 
         async def on_get_current(data=None) -> dict:
             return {
