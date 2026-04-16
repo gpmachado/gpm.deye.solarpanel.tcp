@@ -19,7 +19,22 @@
       "button": "Conferma e aggiungi dispositivo",
       "auto_detected": "(Rilevato automaticamente)",
       "detected_badge": "Rilevato: ",
-      "status_preparing": "Preparazione dispositivo..."
+      "status_preparing": "Preparazione dispositivo...",
+      "hint_confident": "Rilevato con alta confidenza — verifica o modifica sotto se necessario.",
+      "hint_uncertain": "Rilevamento incerto (nessun dato live trovato). Seleziona il modello corretto."
     }
+  },
+  "repair": {
+    "title": "Ripara connessione inverter",
+    "note": "Il passaggio tra modelli string e ibridi richiede il re-pairing per aggiungere o rimuovere dispositivi.",
+    "model_label": "Modello inverter",
+    "detect_button": "Rileva di nuovo",
+    "detecting": "Rilevamento in corso…",
+    "detected_badge": "Rilevato: ",
+    "detected_uncertain": "Nessun dato live — predefinito: ",
+    "ip_label": "Indirizzo IP del logger",
+    "ip_hint": "L'IP locale del logger Wi-Fi Solarman (porta 8899).",
+    "save_button": "Salva",
+    "saving": "Salvataggio…"
   }
 }

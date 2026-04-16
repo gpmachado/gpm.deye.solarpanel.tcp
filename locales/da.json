@@ -19,7 +19,22 @@
       "button": "Bekræft og tilføj enhed",
       "auto_detected": "(Automatisk registreret)",
       "detected_badge": "Registreret: ",
-      "status_preparing": "Forbereder enhed..."
+      "status_preparing": "Forbereder enhed...",
+      "hint_confident": "Registreret med høj sikkerhed — bekræft eller skift nedenfor hvis nødvendigt.",
+      "hint_uncertain": "Registrering usikker (ingen live-data fundet). Vælg venligst den korrekte model."
     }
+  },
+  "repair": {
+    "title": "Reparer inverterforbindelsen",
+    "note": "Skift mellem string- og hybridmodeller kræver ny parring for at tilføje eller fjerne enheder.",
+    "model_label": "Invertermodel",
+    "detect_button": "Registrér igen",
+    "detecting": "Kører registrering…",
+    "detected_badge": "Registreret: ",
+    "detected_uncertain": "Ingen live-data — standard: ",
+    "ip_label": "Loggerens IP-adresse",
+    "ip_hint": "Den lokale IP på din Solarman Wi-Fi-logger (port 8899).",
+    "save_button": "Gem",
+    "saving": "Gemmer…"
   }
 }

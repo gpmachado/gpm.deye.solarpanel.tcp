@@ -19,7 +19,22 @@
       "button": "Bekräfta och lägg till enhet",
       "auto_detected": "(Automatiskt identifierad)",
       "detected_badge": "Identifierad: ",
-      "status_preparing": "Förbereder enhet..."
+      "status_preparing": "Förbereder enhet...",
+      "hint_confident": "Identifierad med hög säkerhet — verifiera eller ändra nedan om det behövs.",
+      "hint_uncertain": "Identifiering osäker (ingen live-data hittades). Välj rätt modell."
     }
+  },
+  "repair": {
+    "title": "Reparera växelriktarens anslutning",
+    "note": "Att byta mellan string- och hybridmodeller kräver ny parkoppling för att lägga till eller ta bort enheter.",
+    "model_label": "Växelriktarmodell",
+    "detect_button": "Identifiera igen",
+    "detecting": "Identifiering pågår…",
+    "detected_badge": "Identifierad: ",
+    "detected_uncertain": "Ingen live-data — standard: ",
+    "ip_label": "Loggers IP-adress",
+    "ip_hint": "Den lokala IP-adressen för din Solarman Wi-Fi-logger (port 8899).",
+    "save_button": "Spara",
+    "saving": "Sparar…"
   }
 }

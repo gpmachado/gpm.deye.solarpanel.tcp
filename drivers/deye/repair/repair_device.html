@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    body { font-family: sans-serif; padding: 20px; }
+    h3 { margin: 0 0 14px 0; font-size: 16px; }
+    .section { margin-bottom: 18px; }
+    label { display: block; margin-bottom: 5px; font-weight: bold; font-size: 13px; }
+    select, input[type="text"] {
+      width: 100%; padding: 8px; box-sizing: border-box;
+      font-size: 14px; border: 1px solid #ccc; border-radius: 4px; background: white;
+    }
+    .hint  { font-size: 12px; color: #888; margin-top: 5px; }
+    .note  { font-size: 12px; color: #b45309; background: #fffbeb;
+             border: 1px solid #fcd34d; border-radius: 4px;
+             padding: 8px 10px; margin-bottom: 16px; }
+    .badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-size: 12px; padding: 4px 10px; border-radius: 12px;
+      margin-bottom: 10px; font-weight: 600;
+    }
+    .badge-ok   { background: #e8f5e9; color: #2e7d32; }
+    .badge-warn { background: #fff3e0; color: #e65100; }
+    .badge-info { background: #e3f2fd; color: #1565c0; }
+    .row-detect {
+      display: flex; gap: 8px; margin-bottom: 6px;
+    }
+    .row-detect button {
+      white-space: nowrap; padding: 8px 14px;
+      background: #1565c0; color: white; border: none;
+      border-radius: 4px; font-size: 13px; cursor: pointer;
+      flex-shrink: 0;
+    }
+    .row-detect button:disabled { background: #aaa; cursor: default; }
+    #detect-status { font-size: 12px; color: #555; min-height: 18px; margin-top: 4px; }
+    button.primary {
+      width: 100%; padding: 10px; margin-top: 8px;
+      background: #E84D0E; color: white; border: none;
+      border-radius: 4px; font-size: 14px; cursor: pointer;
+    }
+    button.primary:disabled { background: #aaa; cursor: default; }
+    .status { margin-top: 10px; font-size: 13px; color: #555; text-align: center; min-height: 20px; }
+    #err    { color: #c62828; margin-top: 8px; font-size: 13px; }
+  </style>
+</head>
+<body>
+  <h3 data-i18n="repair.title">Repair Inverter Connection</h3>
+
+  <div class="note" id="note" data-i18n="repair.note">
+    Changing between string and hybrid models requires re-pairing to add or remove devices.
+  </div>
+
+  <div class="section">
+    <label data-i18n="repair.model_label">Inverter Model</label>
+    <div class="row-detect">
+      <select id="model"></select>
+      <button id="detect-btn" onclick="runDetection()">
+        <span data-i18n="repair.detect_button">Re-detect</span>
+      </button>
+    </div>
+    <div id="detect-status"></div>
+    <div id="detect-badge"></div>
+  </div>
+
+  <div class="section">
+    <label for="host" data-i18n="repair.ip_label">Logger IP Address</label>
+    <input type="text" id="host" placeholder="192.168.1.100" />
+    <div class="hint" data-i18n="repair.ip_hint">The local IP of your Solarman Wi-Fi logger (port 8899).</div>
+  </div>
+
+  <button class="primary" id="save-btn" onclick="doSave()">
+    <span data-i18n="repair.save_button">Save</span>
+  </button>
+  <div class="status" id="save-status"></div>
+  <div id="err"></div>
+
+  <script>
+    Homey.ready(function() {
+      // Translate static i18n elements
+      document.querySelectorAll('[data-i18n]').forEach(function(el) {
+        var key = el.getAttribute('data-i18n');
+        var t   = Homey.__(key);
+        if (t && t !== key) el.textContent = t;
+      });
+
+      Homey.emit('get_current', null, function(err, data) {
+        if (err || !data) {
+          document.getElementById('err').textContent = err ? (err.message || String(err)) : 'Failed to load device info.';
+          return;
+        }
+        // Populate model dropdown
+        var sel      = document.getElementById('model');
+        var current  = data.model || 'deye_string';
+        var models   = data.models || {};
+        Object.keys(models).forEach(function(mid) {
+          var opt = document.createElement('option');
+          opt.value       = mid;
+          opt.textContent = models[mid];
+          sel.appendChild(opt);
+        });
+        sel.value = current;
+
+        // Populate IP input
+        document.getElementById('host').value = data.host || '';
+      });
+    });
+
+    function runDetection() {
+      var btn        = document.getElementById('detect-btn');
+      var statusEl   = document.getElementById('detect-status');
+      var badgeEl    = document.getElementById('detect-badge');
+      btn.disabled   = true;
+      badgeEl.innerHTML = '';
+      statusEl.textContent = Homey.__('repair.detecting') || 'Running detection…';
+
+      Homey.emit('run_detection', null, function(err, data) {
+        btn.disabled = false;
+        if (err) {
+          statusEl.textContent = err.message || String(err);
+          return;
+        }
+        statusEl.textContent = '';
+        // Pre-select detected model in dropdown
+        var sel = document.getElementById('model');
+        if (data.detected && sel.querySelector('option[value="' + data.detected + '"]')) {
+          sel.value = data.detected;
+        }
+        // Show badge
+        var badge = document.createElement('div');
+        var modelName = (data.models || {})[data.detected] || data.detected;
+        if (data.auto_confirmed) {
+          badge.className   = 'badge badge-ok';
+          badge.textContent = '✓ ' + (Homey.__('repair.detected_badge') || 'Detected: ') + modelName;
+        } else {
+          badge.className   = 'badge badge-warn';
+          badge.textContent = '⚠ ' + (Homey.__('repair.detected_uncertain') || 'No live data — default: ') + modelName;
+        }
+        badgeEl.appendChild(badge);
+      });
+    }
+
+    function doSave() {
+      var saveBtn  = document.getElementById('save-btn');
+      var statusEl = document.getElementById('save-status');
+      var errEl    = document.getElementById('err');
+      var model    = document.getElementById('model').value;
+      var host     = document.getElementById('host').value.trim();
+
+      saveBtn.disabled     = true;
+      errEl.textContent    = '';
+      statusEl.textContent = Homey.__('repair.saving') || 'Saving…';
+
+      Homey.emit('save_repair', { model: model, host: host }, function(err) {
+        if (err) {
+          saveBtn.disabled     = false;
+          statusEl.textContent = '';
+          errEl.textContent    = err.message || String(err);
+        } else {
+          statusEl.textContent = '';
+          Homey.done();
+        }
+      });
+    }
+  </script>
+</body>
+</html>

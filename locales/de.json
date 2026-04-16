@@ -19,7 +19,22 @@
       "button": "Bestätigen und Gerät hinzufügen",
       "auto_detected": "(Automatisch erkannt)",
       "detected_badge": "Erkannt: ",
-      "status_preparing": "Gerät wird vorbereitet..."
+      "status_preparing": "Gerät wird vorbereitet...",
+      "hint_confident": "Mit hoher Sicherheit erkannt — überprüfen oder unten ändern, falls nötig.",
+      "hint_uncertain": "Erkennung unsicher (keine Live-Daten gefunden). Bitte das richtige Modell auswählen."
     }
+  },
+  "repair": {
+    "title": "Wechselrichterverbindung reparieren",
+    "note": "Das Wechseln zwischen String- und Hybridmodellen erfordert erneutes Koppeln, um Geräte hinzuzufügen oder zu entfernen.",
+    "model_label": "Wechselrichtermodell",
+    "detect_button": "Erneut erkennen",
+    "detecting": "Erkennung läuft…",
+    "detected_badge": "Erkannt: ",
+    "detected_uncertain": "Keine Live-Daten — Standard: ",
+    "ip_label": "IP-Adresse des Loggers",
+    "ip_hint": "Die lokale IP des Solarman Wi-Fi-Loggers (Port 8899).",
+    "save_button": "Speichern",
+    "saving": "Wird gespeichert…"
   }
 }

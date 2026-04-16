@@ -46,11 +46,12 @@ def _load_sensors(model_id: str) -> list:
     return sensors
 
 
-async def _detect_model(host: str, serial: int, port: int = 8899) -> tuple[str, dict]:
+async def _detect_model(host: str, serial: int, port: int = 8899) -> tuple[str, dict, int]:
     """
     Auto-detect the inverter model by reading all register sets and scoring each model.
     Scoring: +2 for each non-zero value from measure_power/meter_power caps, +1 for other non-zero values.
-    Returns (model_id, parsed_values) for the best-scoring model (falls back to 'deye_string').
+    Returns (model_id, parsed_values, best_score) for the best-scoring model (falls back to 'deye_string').
+    A score of 0 means no live data was found (night-time / logger offline).
     """
     from app.lib.parser import ParameterParser
     from app.lib.capability_map import get_sensor_capability_map
@@ -116,7 +117,7 @@ async def _detect_model(host: str, serial: int, port: int = 8899) -> tuple[str, 
         await asyncio.sleep(1)  # brief pause between probes — let logger recover
 
     _LOGGER.info(f"Detected model: {best_model} (score={best_score})")
-    return best_model, best_values
+    return best_model, best_values, best_score
 
 
 async def _discover_loggers(timeout: float = 3.0) -> list[dict]:
@@ -269,10 +270,11 @@ class DeyeDriver(Driver):
                 }
                 self.log(f"Auto-discovered: {found}")
                 # Run detection so confirm_model.html loads instantly
-                detected_id, active_values = await _detect_model(found["host"], found["serial"])
-                self.log(f"Detection result: {detected_id}")
+                detected_id, active_values, det_score = await _detect_model(found["host"], found["serial"])
+                self.log(f"Detection result: {detected_id} (score={det_score})")
                 confirmed["model_id"] = detected_id
                 confirmed["active_values"] = active_values
+                confirmed["score"] = det_score
                 return True
 
             # ── Manual IP entry ───────────────────────────────────────────────
@@ -314,17 +316,22 @@ class DeyeDriver(Driver):
             self.log(f"login OK — host:{host} serial:{serial}")
             # Run detection here so confirm_model.html loads instantly
             self.log(f"Detecting model for {host}...")
-            detected_id, active_values = await _detect_model(host, serial)
-            self.log(f"Detection result: {detected_id}")
+            detected_id, active_values, det_score = await _detect_model(host, serial)
+            self.log(f"Detection result: {detected_id} (score={det_score})")
             confirmed["model_id"] = detected_id
             confirmed["active_values"] = active_values
+            confirmed["score"] = det_score
             return True
 
         async def on_get_detected_model(data: dict = None) -> dict:
             """Called by confirm_model.html on load — returns already-detected model."""
             if not confirmed:
                 raise Exception("No logger found — go back and try again.")
-            return {"detected": confirmed["model_id"], "models": DEYE_MODELS}
+            return {
+                "detected":      confirmed["model_id"],
+                "models":        DEYE_MODELS,
+                "auto_confirmed": confirmed.get("score", 0) > 0,
+            }
 
         async def on_confirm_model(data: dict) -> bool:
             """Called when user clicks Confirm in confirm_model.html."""
@@ -491,6 +498,59 @@ class DeyeDriver(Driver):
         session.set_handler("get_detected_model", on_get_detected_model)
         session.set_handler("confirm_model", on_confirm_model)
         session.set_handler("list_devices", on_list_devices)
+
+    async def on_repair(self, session, device) -> None:
+        """
+        Repair flow — lets the user re-detect the model or fix the logger IP
+        without removing and re-adding the device.
+        Only updates device settings (model, host). Does NOT add or remove
+        capabilities — changing between string and hybrid still requires re-pairing.
+        """
+        self.log(f"onRepair started for device {device.id}")
+
+        async def on_get_current(data=None) -> dict:
+            return {
+                "host":   device.get_setting("host") or "",
+                "model":  device.get_setting("model") or "deye_string",
+                "models": DEYE_MODELS,
+            }
+
+        async def on_run_detection(data=None) -> dict:
+            host   = device.get_setting("host") or ""
+            serial = int(str(device.get_setting("loggerSerial") or "0").strip() or 0)
+            if not host:
+                raise Exception("No IP configured — enter an IP address and save first.")
+            self.log(f"Repair: running detection on {host} serial={serial}")
+            detected, _, score = await _detect_model(host, serial)
+            self.log(f"Repair detection: {detected} (score={score})")
+            return {
+                "detected":      detected,
+                "models":        DEYE_MODELS,
+                "auto_confirmed": score > 0,
+            }
+
+        async def on_save_repair(data: dict) -> bool:
+            model = str(data.get("model", "")).strip()
+            host  = str(data.get("host",  "")).strip()
+            if model and model not in DEYE_MODELS:
+                raise Exception(f"Unknown model: {model}")
+            new_settings: dict = {}
+            if model:
+                new_settings["model"] = model
+            if host:
+                parts = host.split(".")
+                if len(parts) != 4 or not all(p.isdigit() and 0 <= int(p) <= 255 for p in parts):
+                    raise Exception(f"Invalid IP address: {host}")
+                new_settings["host"] = host
+            if not new_settings:
+                raise Exception("Nothing to save.")
+            self.log(f"Repair: applying settings {new_settings}")
+            await device.set_settings(new_settings)
+            return True
+
+        session.set_handler("get_current",   on_get_current)
+        session.set_handler("run_detection", on_run_detection)
+        session.set_handler("save_repair",   on_save_repair)
 
 
 homey_export = DeyeDriver

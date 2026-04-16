@@ -19,7 +19,22 @@
       "button": "Confirm & Add Device",
       "auto_detected": "(Auto-detected)",
       "detected_badge": "Detected: ",
-      "status_preparing": "Preparing device..."
+      "status_preparing": "Preparing device...",
+      "hint_confident": "Detected with high confidence — verify or change below if needed.",
+      "hint_uncertain": "Detection uncertain (no live data found). Please select the correct model."
     }
+  },
+  "repair": {
+    "title": "Repair Inverter Connection",
+    "note": "Changing between string and hybrid models requires re-pairing to add or remove devices.",
+    "model_label": "Inverter Model",
+    "detect_button": "Re-detect",
+    "detecting": "Running detection…",
+    "detected_badge": "Detected: ",
+    "detected_uncertain": "No live data — default: ",
+    "ip_label": "Logger IP Address",
+    "ip_hint": "The local IP of your Solarman Wi-Fi logger (port 8899).",
+    "save_button": "Save",
+    "saving": "Saving…"
   }
 }

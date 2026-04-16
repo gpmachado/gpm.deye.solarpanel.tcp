@@ -19,7 +19,22 @@
       "button": "Bevestigen en apparaat toevoegen",
       "auto_detected": "(Automatisch gedetecteerd)",
       "detected_badge": "Gedetecteerd: ",
-      "status_preparing": "Apparaat voorbereiden..."
+      "status_preparing": "Apparaat voorbereiden...",
+      "hint_confident": "Met hoge zekerheid gedetecteerd — controleer of wijzig hieronder indien nodig.",
+      "hint_uncertain": "Detectie onzeker (geen live data gevonden). Selecteer het juiste model."
     }
+  },
+  "repair": {
+    "title": "Omvormerverbinding herstellen",
+    "note": "Wisselen tussen string- en hybride modellen vereist opnieuw koppelen om apparaten toe te voegen of te verwijderen.",
+    "model_label": "Omvormermodel",
+    "detect_button": "Opnieuw detecteren",
+    "detecting": "Detectie uitvoeren…",
+    "detected_badge": "Gedetecteerd: ",
+    "detected_uncertain": "Geen live data — standaard: ",
+    "ip_label": "IP-adres van de logger",
+    "ip_hint": "Het lokale IP-adres van uw Solarman Wi-Fi-logger (poort 8899).",
+    "save_button": "Opslaan",
+    "saving": "Opslaan…"
   }
 }

@@ -8,3 +8,9 @@ third_Party/
 test_registers.py
 test_connection.py
 package-lock.json
+
+ha/
+TIMEZONE_DIAGNOSIS.md
+HA_BASELINE_COMPARISON.md
+INVERTER_DEFINITIONS_COMPARISON.md
+DEYE_HA_ENTITY_GAPS.md

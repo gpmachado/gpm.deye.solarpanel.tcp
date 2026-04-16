@@ -225,6 +225,10 @@
   "pair": [
     {
       "id": "login",
+      "navigation": { "next": "confirm_model" }
+    },
+    {
+      "id": "confirm_model",
       "navigation": { "next": "list_devices" }
     },
     {
@@ -236,5 +240,8 @@
       "id": "add_devices",
       "template": "add_devices"
     }
+  ],
+  "repair": [
+    { "id": "repair_device" }
   ]
 }

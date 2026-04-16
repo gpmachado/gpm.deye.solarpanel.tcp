@@ -3,67 +3,107 @@
 <head>
   <style>
     body { font-family: sans-serif; padding: 20px; }
-    label { display: block; margin-bottom: 6px; font-weight: bold; }
-    select { width: 100%; padding: 8px; box-sizing: border-box; font-size: 14px; border: 1px solid #ccc; border-radius: 4px; background: white; }
-    .hint { font-size: 12px; color: #888; margin-top: 6px; }
-    .detected-badge { display: inline-block; background: #e8f5e9; color: #2e7d32; font-size: 12px; padding: 3px 8px; border-radius: 12px; margin-bottom: 12px; }
-    button { margin-top: 18px; width: 100%; padding: 10px; background: #E84D0E; color: white; border: none; border-radius: 4px; font-size: 14px; cursor: pointer; }
-    button:disabled { background: #aaa; }
+    h3 { margin: 0 0 14px 0; font-size: 16px; }
+    .badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-size: 12px; padding: 4px 10px; border-radius: 12px;
+      margin-bottom: 14px; font-weight: 600;
+    }
+    .badge-ok   { background: #e8f5e9; color: #2e7d32; }
+    .badge-warn { background: #fff3e0; color: #e65100; }
+    label { display: block; margin-bottom: 6px; font-weight: bold; font-size: 13px; }
+    select {
+      width: 100%; padding: 8px; box-sizing: border-box;
+      font-size: 14px; border: 1px solid #ccc; border-radius: 4px; background: white;
+    }
+    .hint { font-size: 12px; color: #888; margin-top: 6px; margin-bottom: 4px; }
+    button {
+      margin-top: 18px; width: 100%; padding: 10px;
+      background: #E84D0E; color: white; border: none;
+      border-radius: 4px; font-size: 14px; cursor: pointer;
+    }
+    button:disabled { background: #aaa; cursor: default; }
     .status { margin-top: 12px; font-size: 13px; color: #555; text-align: center; min-height: 20px; }
-    h3 { margin: 0 0 12px 0; font-size: 16px; }
+    #content { display: none; }
   </style>
 </head>
 <body>
   <h3 data-i18n="pair.confirm.title">Confirm Inverter Model</h3>
+
   <div class="status" id="status" data-i18n="pair.confirm.status_detecting">Detecting inverter model...</div>
-  <div id="content" style="display:none">
-    <div class="detected-badge" id="badge"></div>
+
+  <div id="content">
+    <div class="badge" id="badge"></div>
+    <br>
     <label for="model" data-i18n="pair.confirm.select_label">Select model:</label>
     <select id="model"></select>
-    <div class="hint" data-i18n="pair.confirm.hint">Auto-detection reads live registers. If the pre-selected model looks wrong, choose the correct one.</div>
-    <button id="btn" onclick="confirm_model()" data-i18n="pair.confirm.button">Confirm &amp; Add Device</button>
+    <div class="hint" id="model-hint" data-i18n="pair.confirm.hint">
+      Auto-detection reads live registers. If the pre-selected model looks wrong, choose the correct one.
+    </div>
+    <button id="btn" onclick="doConfirm()" data-i18n="pair.confirm.button">Confirm &amp; Continue</button>
   </div>
 
+  <div class="status" id="err"></div>
+
   <script>
-    var MODEL_LABELS = {};
-
     Homey.ready(function() {
-      var data = null;
-      try { data = JSON.parse(localStorage.getItem('deye_pairing')); } catch(e) {}
+      Homey.emit('get_detected_model', null, function(err, data) {
+        var statusEl  = document.getElementById('status');
+        var contentEl = document.getElementById('content');
+        var badgeEl   = document.getElementById('badge');
+        var sel       = document.getElementById('model');
+        var hintEl    = document.getElementById('model-hint');
 
-      if (!data || !data.detected || !data.models) {
-        document.getElementById('status').textContent = Homey.__('pair.confirm.status_no_data');
-        return;
-      }
+        if (err || !data) {
+          statusEl.textContent = Homey.__('pair.confirm.status_no_data');
+          return;
+        }
 
-      MODEL_LABELS = data.models;
-      var detected = data.detected;
-      var sel = document.getElementById('model');
+        // Build model dropdown — detected model first
+        var detected = data.detected;
+        var ordered  = [detected].concat(
+          Object.keys(data.models).filter(function(k) { return k !== detected; })
+        );
+        ordered.forEach(function(mid) {
+          var opt = document.createElement('option');
+          opt.value = mid;
+          opt.textContent = data.models[mid];
+          if (mid === detected) {
+            opt.textContent += ' ' + Homey.__('pair.confirm.auto_detected');
+          }
+          sel.appendChild(opt);
+        });
+        sel.value = detected;
 
-      var ordered = [detected].concat(Object.keys(data.models).filter(function(k) { return k !== detected; }));
-      ordered.forEach(function(mid) {
-        var opt = document.createElement('option');
-        opt.value = mid;
-        opt.textContent = data.models[mid];
-        if (mid === detected) opt.textContent += ' ' + Homey.__('pair.confirm.auto_detected');
-        sel.appendChild(opt);
+        // Badge: green = confident, orange = uncertain
+        if (data.auto_confirmed) {
+          badgeEl.className   = 'badge badge-ok';
+          badgeEl.textContent = '✓ ' + Homey.__('pair.confirm.detected_badge') + data.models[detected];
+          hintEl.textContent  = Homey.__('pair.confirm.hint_confident');
+        } else {
+          badgeEl.className   = 'badge badge-warn';
+          badgeEl.textContent = '⚠ ' + Homey.__('pair.confirm.hint_uncertain');
+          hintEl.textContent  = Homey.__('pair.confirm.hint');
+        }
+
+        statusEl.textContent    = '';
+        contentEl.style.display = 'block';
       });
-      sel.value = detected;
-
-      document.getElementById('badge').textContent = Homey.__('pair.confirm.detected_badge') + data.models[detected];
-      document.getElementById('status').textContent = '';
-      document.getElementById('content').style.display = 'block';
     });
 
-    function confirm_model() {
+    function doConfirm() {
       var model = document.getElementById('model').value;
       var btn   = document.getElementById('btn');
-      btn.disabled = true;
+      var err   = document.getElementById('err');
+      btn.disabled      = true;
+      err.textContent   = '';
       document.getElementById('status').textContent = Homey.__('pair.confirm.status_preparing');
-      Homey.emit('confirm_model', { model: model }, function(err) {
-        if (err) {
-          document.getElementById('status').textContent = err.message || String(err);
-          btn.disabled = false;
+
+      Homey.emit('confirm_model', { model: model }, function(e) {
+        if (e) {
+          err.textContent  = e.message || String(e);
+          btn.disabled     = false;
+          document.getElementById('status').textContent = '';
         } else {
           Homey.nextView();
         }

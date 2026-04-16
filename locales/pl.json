@@ -19,7 +19,22 @@
       "button": "Potwierdź i dodaj urządzenie",
       "auto_detected": "(Wykryto automatycznie)",
       "detected_badge": "Wykryto: ",
-      "status_preparing": "Przygotowywanie urządzenia..."
+      "status_preparing": "Przygotowywanie urządzenia...",
+      "hint_confident": "Wykryto z dużą pewnością — w razie potrzeby zweryfikuj lub zmień poniżej.",
+      "hint_uncertain": "Wykrywanie niepewne (nie znaleziono danych na żywo). Wybierz właściwy model."
     }
+  },
+  "repair": {
+    "title": "Napraw połączenie falownika",
+    "note": "Zmiana między modelami string i hybrydowymi wymaga ponownego parowania w celu dodania lub usunięcia urządzeń.",
+    "model_label": "Model falownika",
+    "detect_button": "Wykryj ponownie",
+    "detecting": "Wykrywanie w toku…",
+    "detected_badge": "Wykryto: ",
+    "detected_uncertain": "Brak danych na żywo — domyślnie: ",
+    "ip_label": "Adres IP loggera",
+    "ip_hint": "Lokalny adres IP loggera Wi-Fi Solarman (port 8899).",
+    "save_button": "Zapisz",
+    "saving": "Zapisywanie…"
   }
 }

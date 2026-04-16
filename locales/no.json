@@ -19,7 +19,22 @@
       "button": "Bekreft og legg til enhet",
       "auto_detected": "(Automatisk oppdaget)",
       "detected_badge": "Oppdaget: ",
-      "status_preparing": "Forbereder enhet..."
+      "status_preparing": "Forbereder enhet...",
+      "hint_confident": "Oppdaget med høy sikkerhet — bekreft eller endre nedenfor ved behov.",
+      "hint_uncertain": "Oppdagelse usikker (ingen live-data funnet). Velg riktig modell."
     }
+  },
+  "repair": {
+    "title": "Reparer vekselrettertilkobling",
+    "note": "Bytte mellom string- og hybridmodeller krever ny parring for å legge til eller fjerne enheter.",
+    "model_label": "Vekselrettermodell",
+    "detect_button": "Oppdag på nytt",
+    "detecting": "Kjører oppdagelse…",
+    "detected_badge": "Oppdaget: ",
+    "detected_uncertain": "Ingen live-data — standard: ",
+    "ip_label": "Loggerens IP-adresse",
+    "ip_hint": "Den lokale IP-adressen til din Solarman Wi-Fi-logger (port 8899).",
+    "save_button": "Lagre",
+    "saving": "Lagrer…"
   }
 }

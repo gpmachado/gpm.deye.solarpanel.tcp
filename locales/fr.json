@@ -19,7 +19,22 @@
       "button": "Confirmer et ajouter l'appareil",
       "auto_detected": "(Détecté automatiquement)",
       "detected_badge": "Détecté : ",
-      "status_preparing": "Préparation de l'appareil..."
+      "status_preparing": "Préparation de l'appareil...",
+      "hint_confident": "Détecté avec grande confiance — vérifiez ou modifiez ci-dessous si nécessaire.",
+      "hint_uncertain": "Détection incertaine (aucune donnée en direct). Veuillez sélectionner le modèle correct."
     }
+  },
+  "repair": {
+    "title": "Réparer la connexion de l'onduleur",
+    "note": "Passer entre les modèles string et hybride nécessite un nouveau couplage pour ajouter ou supprimer des appareils.",
+    "model_label": "Modèle d'onduleur",
+    "detect_button": "Re-détecter",
+    "detecting": "Détection en cours…",
+    "detected_badge": "Détecté : ",
+    "detected_uncertain": "Pas de données en direct — par défaut : ",
+    "ip_label": "Adresse IP du logger",
+    "ip_hint": "L'IP locale de votre logger Wi-Fi Solarman (port 8899).",
+    "save_button": "Enregistrer",
+    "saving": "Enregistrement…"
   }
 }

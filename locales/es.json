@@ -19,7 +19,22 @@
       "button": "Confirmar y añadir dispositivo",
       "auto_detected": "(Detectado automáticamente)",
       "detected_badge": "Detectado: ",
-      "status_preparing": "Preparando dispositivo..."
+      "status_preparing": "Preparando dispositivo...",
+      "hint_confident": "Detectado con alta confianza — verifica o cambia a continuación si es necesario.",
+      "hint_uncertain": "Detección incierta (no se encontraron datos en vivo). Selecciona el modelo correcto."
     }
+  },
+  "repair": {
+    "title": "Reparar conexión del inversor",
+    "note": "Cambiar entre modelos string e híbridos requiere volver a emparejar para añadir o eliminar dispositivos.",
+    "model_label": "Modelo de inversor",
+    "detect_button": "Re-detectar",
+    "detecting": "Ejecutando detección…",
+    "detected_badge": "Detectado: ",
+    "detected_uncertain": "Sin datos en vivo — predeterminado: ",
+    "ip_label": "Dirección IP del logger",
+    "ip_hint": "La IP local de tu logger Wi-Fi Solarman (puerto 8899).",
+    "save_button": "Guardar",
+    "saving": "Guardando…"
   }
 }
