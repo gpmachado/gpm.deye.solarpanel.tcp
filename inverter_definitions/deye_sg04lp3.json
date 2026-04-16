@@ -255,15 +255,13 @@
           "uom": "\u00b0C",
           "scale": 0.1,
           "rule": 1,
-          "offset": 1000,
           "registers": [
             586
           ],
           "icon": "mdi:battery-thermometer",
           "validation": {
-            "min": 1,
-            "max": 99,
-            "invalidate_all": null
+            "min": -20,
+            "max": 99
           }
         }
       ]
@@ -651,7 +649,6 @@
           "uom": "\u00b0C",
           "scale": 0.1,
           "rule": 2,
-          "offset": 1000,
           "registers": [
             540
           ],
@@ -664,7 +661,6 @@
           "uom": "\u00b0C",
           "scale": 0.1,
           "rule": 2,
-          "offset": 1000,
           "registers": [
             541
           ],
