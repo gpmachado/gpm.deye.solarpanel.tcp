@@ -521,19 +521,17 @@
         {
           "id": "login",
           "navigation": {
-            "next": "list_devices"
-          }
-        },
-        {
-          "id": "list_devices",
-          "template": "list_devices",
-          "navigation": {
             "next": "add_devices"
           }
         },
         {
           "id": "add_devices",
           "template": "add_devices"
+        }
+      ],
+      "repair": [
+        {
+          "id": "repair_device"
         }
       ],
       "id": "deye"
