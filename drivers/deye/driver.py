@@ -122,12 +122,17 @@ async def _detect_model(host: str, serial: int, port: int = 8899) -> tuple[str, 
 
 async def _discover_loggers(timeout: float = 3.0) -> list[dict]:
     """
-    UDP broadcast discovery — identical to ha-solarman scanner.py and Node.js scanLoggers.js.
-    Sends "WIFIKIT-214028-READ" to port 48899, collects "IP,MAC,Serial" replies.
-    Returns list of {ip, mac, serial}.
+    UDP broadcast discovery — sends both known probe payloads to port 48899.
+
+    Two payloads are used (matching davidrapan/ha-solarman scanner.py):
+      1. "WIFIKIT-214028-READ"   — standard Solarman Wi-Fi stick (LSW-3/LSE-3)
+      2. "HF-A11ASSISTHREAD"     — HF-A11 module used in some older/OEM loggers
+
+    Both are broadcast; replies are "IP,MAC,Serial" CSV strings.
+    Returns deduplicated list of {ip, mac, serial}.
     """
-    DISCOVERY_PORT    = 48899
-    DISCOVERY_PAYLOAD = b"WIFIKIT-214028-READ"
+    DISCOVERY_PORT     = 48899
+    DISCOVERY_PAYLOADS = [b"WIFIKIT-214028-READ", b"HF-A11ASSISTHREAD"]
     found: list[dict] = []
     seen: set[str] = set()
 
@@ -161,7 +166,9 @@ async def _discover_loggers(timeout: float = 3.0) -> list[dict]:
             local_addr=("0.0.0.0", 0),
             allow_broadcast=True,
         )
-        transport.sendto(DISCOVERY_PAYLOAD, ("<broadcast>", DISCOVERY_PORT))
+        for payload in DISCOVERY_PAYLOADS:
+            transport.sendto(payload, ("<broadcast>", DISCOVERY_PORT))
+            await asyncio.sleep(0.1)   # small gap so HF-A11 has time to arm
         await asyncio.sleep(timeout)
         transport.close()
     except Exception as e:
