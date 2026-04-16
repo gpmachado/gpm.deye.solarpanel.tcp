@@ -1,5 +1,11 @@
 {
   "pair": {
+    "intro": {
+      "subtitle":      "Scan your local network for the Solarman logger",
+      "scan_button":   "Scan Network",
+      "manual_toggle": "Enter IP address manually"
+    },
+    "status_detecting": "Detecting inverter model…",
     "ip_label": "Logger IP Address",
     "ip_placeholder": "Leave empty to auto-discover on network",
     "ip_hint": "Leave empty to scan automatically. Or enter the IP shown in your router's device list.",

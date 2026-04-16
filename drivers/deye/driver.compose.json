@@ -224,8 +224,7 @@
   ],
   "pair": [
     {
-      "id": "login",
-      "navigation": { "next": "add_devices" }
+      "id": "login"
     },
     {
       "id": "add_devices",

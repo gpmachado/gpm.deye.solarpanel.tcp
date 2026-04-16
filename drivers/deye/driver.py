@@ -52,6 +52,10 @@ async def _detect_model(host: str, serial: int, port: int = 8899) -> tuple[str, 
     Scoring: +2 for each non-zero value from measure_power/meter_power caps, +1 for other non-zero values.
     Returns (model_id, parsed_values, best_score) for the best-scoring model (falls back to 'deye_string').
     A score of 0 means no live data was found (night-time / logger offline).
+
+    Each model probe is capped at 10 s total (asyncio.wait_for) so that models with many
+    register groups (e.g. deye_sg04lp3 has 7 requests × 5 s timeout each) cannot block
+    the pairing wizard for minutes.
     """
     from app.lib.parser import ParameterParser
     from app.lib.capability_map import get_sensor_capability_map
@@ -59,10 +63,46 @@ async def _detect_model(host: str, serial: int, port: int = 8899) -> tuple[str, 
 
     best_model  = "deye_string"
     # Start at 0: a model must have at least one non-zero sensor value to override
-    # the default. Prevents night-time probes (all zeros) from picking the wrong model
-    # just because one model's registers happen to connect without error.
+    # the default. Prevents night-time probes (all zeros) from picking the wrong model.
     best_score  = 0
     best_values: dict = {}
+
+    async def _probe(model_id: str, definition: dict) -> tuple[dict, int]:
+        """Connect and read all register groups for one model. Returns (values, score)."""
+        m = V5Transport(host, serial, port=port, slave=1, timeout=5.0)
+        await m.connect()
+        try:
+            params = ParameterParser(definition)
+            for req in definition["requests"]:
+                start, end, fc = req["start"], req["end"], req["mb_functioncode"]
+                length = end - start + 1
+                try:
+                    if fc == 3:
+                        raw = await m.read_holding_registers(register_addr=start, quantity=length)
+                    else:
+                        raw = await m.read_input_registers(register_addr=start, quantity=length)
+                    params.parse(raw, start, length)
+                except Exception as req_e:
+                    _LOGGER.debug(f"Model probe {model_id} request [{start}-{end}] skipped: {req_e}")
+        finally:
+            await m.disconnect()
+
+        values = params.get_result()
+        cap_map = get_sensor_capability_map(list(
+            item
+            for group in definition.get("parameters", [])
+            for item in group.get("items", [])
+        ))
+        score = 0
+        for sensor_name, cap_id in cap_map.items():
+            val = values.get(sensor_name)
+            if val is None or val == 0:
+                continue
+            if cap_id in ("measure_power", "meter_power"):
+                score += 2
+            else:
+                score += 1
+        return values, score
 
     for model_id in DEYE_MODELS:
         path = _yaml_path(model_id)
@@ -70,51 +110,20 @@ async def _detect_model(host: str, serial: int, port: int = 8899) -> tuple[str, 
             definition = json.load(f)
 
         try:
-            m = V5Transport(host, serial, port=port, slave=1, timeout=8.0)
-            await m.connect()
-            try:
-                params = ParameterParser(definition)
-                for req in definition["requests"]:
-                    start, end, fc = req["start"], req["end"], req["mb_functioncode"]
-                    length = end - start + 1
-                    try:
-                        if fc == 3:
-                            data = await m.read_holding_registers(register_addr=start, quantity=length)
-                        else:
-                            data = await m.read_input_registers(register_addr=start, quantity=length)
-                        params.parse(data, start, length)
-                    except Exception as req_e:
-                        _LOGGER.debug(f"Model probe {model_id} request [{start}-{end}] skipped: {req_e}")
-            finally:
-                await m.disconnect()
-
-            values = params.get_result()
-            cap_map = get_sensor_capability_map(list(
-                item
-                for group in definition.get("parameters", [])
-                for item in group.get("items", [])
-            ))
-
-            score = 0
-            for sensor_name, cap_id in cap_map.items():
-                val = values.get(sensor_name)
-                if val is None or val == 0:
-                    continue
-                if cap_id in ("measure_power", "meter_power"):
-                    score += 2
-                else:
-                    score += 1
-
+            values, score = await asyncio.wait_for(
+                _probe(model_id, definition), timeout=10.0
+            )
             _LOGGER.info(f"Model probe {model_id}: score={score}")
             if score > best_score:
                 best_score = score
                 best_model = model_id
                 best_values = values
-
+        except asyncio.TimeoutError:
+            _LOGGER.warning(f"Model probe {model_id} timed out after 10 s — skipped")
         except Exception as e:
             _LOGGER.debug(f"Model probe {model_id} failed: {e}")
 
-        await asyncio.sleep(1)  # brief pause between probes — let logger recover
+        await asyncio.sleep(0.3)  # brief pause between probes — let logger recover
 
     _LOGGER.info(f"Detected model: {best_model} (score={best_score})")
     return best_model, best_values, best_score
@@ -251,7 +260,12 @@ class DeyeDriver(Driver):
         found: dict = {}           # stores {host, serial} after login
         confirmed: dict = {}       # stores {model_id} after confirm step
 
-        async def on_login(data: dict) -> bool:
+        async def on_login(data: dict) -> dict:
+            """
+            Fast path: discover logger + verify connectivity. No model detection here.
+            Returns {host, serial} so login.html can show the tile immediately.
+            Model detection runs in on_get_detected_model (called next by login.html).
+            """
             nonlocal found
             host       = str(data.get("username", "")).strip()
             serial_str = str(data.get("password", "")).strip()
@@ -276,13 +290,7 @@ class DeyeDriver(Driver):
                     "rssi":   logger_info["rssi"],
                 }
                 self.log(f"Auto-discovered: {found}")
-                # Run detection so confirm_model.html loads instantly
-                detected_id, active_values, det_score = await _detect_model(found["host"], found["serial"])
-                self.log(f"Detection result: {detected_id} (score={det_score})")
-                confirmed["model_id"] = detected_id
-                confirmed["active_values"] = active_values
-                confirmed["score"] = det_score
-                return True
+                return {"host": found["host"], "serial": found["serial"]}
 
             # ── Manual IP entry ───────────────────────────────────────────────
             parts = host.split(".")
@@ -310,7 +318,7 @@ class DeyeDriver(Driver):
                     "Enter the serial number printed on the logger sticker."
                 )
 
-            # Test connection
+            # Quick connectivity test before returning to the UI
             client = SolarmanClient(host, serial)
             ok = await client.test_connection()
             if not ok:
@@ -321,25 +329,29 @@ class DeyeDriver(Driver):
 
             found = {"host": host, "serial": serial}
             self.log(f"login OK — host:{host} serial:{serial}")
-            # Run detection here so confirm_model.html loads instantly
-            self.log(f"Detecting model for {host}...")
-            detected_id, active_values, det_score = await _detect_model(host, serial)
-            self.log(f"Detection result: {detected_id} (score={det_score})")
-            confirmed["model_id"] = detected_id
-            confirmed["active_values"] = active_values
-            confirmed["score"] = det_score
-            return True
+            return {"host": found["host"], "serial": found["serial"]}
 
         async def on_get_detected_model(data: dict = None) -> dict:
-            """Called by login.html after scan — returns detected model + logger info for tile."""
-            if not confirmed:
+            """
+            Called by login.html right after the tile appears.
+            Runs model detection (may take up to ~45 s) and returns the result.
+            login.html shows an inline 'Detecting model…' spinner while waiting.
+            """
+            if not found:
                 raise Exception("No logger found — go back and try again.")
+            if not confirmed:
+                self.log(f"Running model detection for {found['host']}...")
+                detected_id, active_values, det_score = await _detect_model(
+                    found["host"], found["serial"]
+                )
+                self.log(f"Detection result: {detected_id} (score={det_score})")
+                confirmed["model_id"] = detected_id
+                confirmed["active_values"] = active_values
+                confirmed["score"] = det_score
             return {
                 "detected":      confirmed["model_id"],
                 "models":        DEYE_MODELS,
                 "auto_confirmed": confirmed.get("score", 0) > 0,
-                "host":          found.get("host", ""),
-                "serial":        found.get("serial", ""),
             }
 
         async def on_confirm_model(data: dict) -> bool:
