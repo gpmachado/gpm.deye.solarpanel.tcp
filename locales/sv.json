@@ -22,7 +22,9 @@
       "status_preparing": "Förbereder enhet...",
       "hint_confident": "Identifierad med hög säkerhet — verifiera eller ändra nedan om det behövs.",
       "hint_uncertain": "Identifiering osäker (ingen live-data hittades). Välj rätt modell."
-    }
+    },
+    "add_button": "Lägg till växelriktare",
+    "retry_button": "Försök igen"
   },
   "repair": {
     "title": "Reparera växelriktarens anslutning",

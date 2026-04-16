@@ -22,7 +22,9 @@
       "status_preparing": "Apparaat voorbereiden...",
       "hint_confident": "Met hoge zekerheid gedetecteerd — controleer of wijzig hieronder indien nodig.",
       "hint_uncertain": "Detectie onzeker (geen live data gevonden). Selecteer het juiste model."
-    }
+    },
+    "add_button": "Omvormer toevoegen",
+    "retry_button": "Opnieuw scannen"
   },
   "repair": {
     "title": "Omvormerverbinding herstellen",

@@ -2,58 +2,223 @@
 <html>
 <head>
   <style>
-    body { font-family: sans-serif; padding: 20px; }
-    label { display: block; margin-bottom: 6px; font-weight: bold; }
-    input { width: 100%; padding: 8px; box-sizing: border-box; font-size: 14px; border: 1px solid #ccc; border-radius: 4px; }
-    .hint { font-size: 12px; color: #888; margin-top: 4px; }
-    button { margin-top: 16px; width: 100%; padding: 10px; background: #E84D0E; color: white; border: none; border-radius: 4px; font-size: 14px; cursor: pointer; }
-    button:disabled { background: #aaa; }
-    .status { margin-top: 12px; font-size: 13px; color: #555; text-align: center; }
+    * { box-sizing: border-box; }
+    body { font-family: sans-serif; padding: 20px; margin: 0; }
+
+    /* ── Phase: scanning ─────────────────────────────────────────── */
+    #phase-scan { text-align: center; padding: 30px 0; }
+    .spinner {
+      width: 36px; height: 36px; margin: 0 auto 14px;
+      border: 4px solid #eee; border-top-color: #E84D0E;
+      border-radius: 50%; animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .scan-label { font-size: 14px; color: #555; }
+
+    /* ── Phase: found ────────────────────────────────────────────── */
+    #phase-found { display: none; }
+    .tile {
+      border: 1px solid #e0e0e0; border-radius: 10px;
+      padding: 14px 16px; margin-bottom: 16px;
+      display: flex; align-items: center; gap: 12px;
+      background: #fafafa;
+    }
+    .tile-icon {
+      width: 40px; height: 40px; border-radius: 8px;
+      background: #fff3e0; display: flex; align-items: center;
+      justify-content: center; font-size: 22px; flex-shrink: 0;
+    }
+    .tile-info { flex: 1; min-width: 0; }
+    .tile-name { font-weight: 600; font-size: 14px; margin-bottom: 2px; }
+    .tile-sub  { font-size: 12px; color: #888; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+    .badge {
+      display: inline-flex; align-items: center; gap: 5px;
+      font-size: 12px; font-weight: 600; padding: 3px 10px;
+      border-radius: 10px; margin-bottom: 12px;
+    }
+    .badge-ok   { background: #e8f5e9; color: #2e7d32; }
+    .badge-warn { background: #fff3e0; color: #e65100; }
+
+    label { display: block; font-weight: bold; font-size: 13px; margin-bottom: 5px; }
+    select {
+      width: 100%; padding: 8px; font-size: 14px;
+      border: 1px solid #ccc; border-radius: 4px; background: white;
+    }
+
+    /* ── Phase: error / manual ───────────────────────────────────── */
+    #phase-error { display: none; }
+    .error-msg { font-size: 13px; color: #c62828; margin-bottom: 14px; }
+    input {
+      width: 100%; padding: 8px; font-size: 14px;
+      border: 1px solid #ccc; border-radius: 4px; margin-bottom: 4px;
+    }
+    .hint { font-size: 12px; color: #888; margin-bottom: 12px; }
+
+    /* ── Shared ──────────────────────────────────────────────────── */
+    button {
+      margin-top: 16px; width: 100%; padding: 11px;
+      background: #E84D0E; color: white; border: none;
+      border-radius: 4px; font-size: 14px; cursor: pointer; font-weight: 600;
+    }
+    button.secondary {
+      background: white; color: #E84D0E;
+      border: 1px solid #E84D0E; margin-top: 8px;
+    }
+    button:disabled { background: #aaa; cursor: default; }
+    .status { margin-top: 10px; font-size: 13px; color: #555; text-align: center; min-height: 18px; }
   </style>
 </head>
 <body>
-  <label for="ip" data-i18n="pair.ip_label">Logger IP Address</label>
-  <input id="ip" type="text" autocomplete="off" />
-  <div class="hint" data-i18n="pair.ip_hint">Leave empty to scan automatically. Or enter the IP shown in your router's device list.</div>
 
-  <label for="serial" style="margin-top:14px;">
-    <span data-i18n="pair.serial_label">Logger Serial Number</span>
-    <span style="font-weight:normal;color:#888" data-i18n="pair.serial_optional"> (optional)</span>
-  </label>
-  <input id="serial" type="text" autocomplete="off" />
-  <div class="hint" data-i18n="pair.serial_hint">Printed on the sticker of the Wi-Fi logger. Detected automatically if blank.</div>
+  <!-- Phase 1: auto-scanning -->
+  <div id="phase-scan">
+    <div class="spinner"></div>
+    <div class="scan-label" id="scan-label" data-i18n="pair.status_scanning">Scanning network for Solarman logger…</div>
+  </div>
 
-  <button id="btn" onclick="connect()" data-i18n="pair.connect_button">Connect</button>
-  <div class="status" id="status"></div>
+  <!-- Phase 2: logger found + model confirmed -->
+  <div id="phase-found">
+    <div class="tile">
+      <div class="tile-icon">☀️</div>
+      <div class="tile-info">
+        <div class="tile-name">Deye Inverter</div>
+        <div class="tile-sub" id="tile-sub">—</div>
+      </div>
+    </div>
 
-  <script>
-    document.getElementById('ip').placeholder     = Homey.__('pair.ip_placeholder');
-    document.getElementById('serial').placeholder = Homey.__('pair.serial_placeholder');
+    <div class="badge" id="badge"></div>
+    <br>
 
-    function connect() {
-      var ip     = document.getElementById('ip').value.trim();
-      var serial = document.getElementById('serial').value.trim();
-      var btn    = document.getElementById('btn');
-      var status = document.getElementById('status');
+    <label for="model" data-i18n="pair.confirm.select_label">Inverter model</label>
+    <select id="model"></select>
 
-      btn.disabled = true;
-      status.textContent = ip
-        ? Homey.__('pair.status_connecting', { ip: ip })
-        : Homey.__('pair.status_scanning');
+    <button id="btn-add" onclick="doAdd()" data-i18n="pair.add_button">Add Inverter</button>
+    <div class="status" id="status"></div>
+  </div>
 
-      Homey.emit('login', { username: ip, password: serial }, function(err) {
-        if (err) {
-          status.textContent = err.message || String(err);
-          btn.disabled = false;
-        } else {
-          Homey.nextView();
-        }
-      });
+  <!-- Phase 3: error + manual fallback -->
+  <div id="phase-error">
+    <div class="error-msg" id="error-msg"></div>
+
+    <label for="ip" data-i18n="pair.ip_label">Logger IP Address</label>
+    <input id="ip" type="text" autocomplete="off" />
+    <div class="hint" data-i18n="pair.ip_hint">Leave blank to scan, or enter the IP shown in your router.</div>
+
+    <label for="serial" data-i18n="pair.serial_label">Logger Serial <span style="font-weight:normal;color:#888" data-i18n="pair.serial_optional">(optional)</span></label>
+    <input id="serial" type="text" autocomplete="off" />
+
+    <button onclick="doConnect()" data-i18n="pair.connect_button">Connect</button>
+    <button class="secondary" onclick="startScan()" data-i18n="pair.retry_button">Retry auto-scan</button>
+  </div>
+
+<script>
+  var _detectedModel = null;
+
+  /* ── helpers ─────────────────────────────────────────────────── */
+  function show(phase) {
+    ['scan','found','error'].forEach(function(p) {
+      document.getElementById('phase-' + p).style.display = (p === phase) ? '' : 'none';
+    });
+  }
+
+  function populateModels(models, detected) {
+    var sel = document.getElementById('model');
+    sel.innerHTML = '';
+    var ordered = [detected].concat(
+      Object.keys(models).filter(function(k) { return k !== detected; })
+    );
+    ordered.forEach(function(mid) {
+      var opt = document.createElement('option');
+      opt.value = mid;
+      opt.textContent = models[mid] + (mid === detected ? ' ' + Homey.__('pair.confirm.auto_detected') : '');
+      sel.appendChild(opt);
+    });
+    sel.value = detected;
+  }
+
+  function showFound(found, data) {
+    // tile subtitle
+    document.getElementById('tile-sub').textContent =
+      'IP ' + (found.host || '—') + '  ·  S/N ' + (found.serial || '—');
+
+    // badge
+    var badgeEl = document.getElementById('badge');
+    _detectedModel = data.detected;
+    if (data.auto_confirmed) {
+      badgeEl.className   = 'badge badge-ok';
+      badgeEl.textContent = '✓ ' + Homey.__('pair.confirm.detected_badge') + data.models[data.detected];
+    } else {
+      badgeEl.className   = 'badge badge-warn';
+      badgeEl.textContent = '⚠ ' + Homey.__('pair.confirm.hint_uncertain') + ' — ' + data.models[data.detected];
     }
 
-    document.getElementById('ip').addEventListener('keydown', function(e) {
-      if (e.key === 'Enter') connect();
+    populateModels(data.models, data.detected);
+    show('found');
+  }
+
+  /* ── auto-scan on load ───────────────────────────────────────── */
+  function startScan() {
+    show('scan');
+    document.getElementById('scan-label').textContent = Homey.__('pair.status_scanning');
+    runLogin('', '');
+  }
+
+  function runLogin(ip, serial) {
+    Homey.emit('login', { username: ip, password: serial }, function(err) {
+      if (err) {
+        document.getElementById('error-msg').textContent = err.message || String(err);
+        show('error');
+        return;
+      }
+      // login OK — fetch detected model
+      Homey.emit('get_detected_model', null, function(e2, data) {
+        if (e2 || !data) {
+          document.getElementById('error-msg').textContent =
+            Homey.__('pair.confirm.status_no_data');
+          show('error');
+          return;
+        }
+        showFound({ host: data.host, serial: data.serial }, data);
+      });
     });
-  </script>
+  }
+
+  /* ── manual connect (error phase) ───────────────────────────── */
+  function doConnect() {
+    var ip     = document.getElementById('ip').value.trim();
+    var serial = document.getElementById('serial').value.trim();
+    show('scan');
+    document.getElementById('scan-label').textContent = ip
+      ? Homey.__('pair.status_connecting', { ip: ip })
+      : Homey.__('pair.status_scanning');
+    runLogin(ip, serial);
+  }
+
+  /* ── add inverter ────────────────────────────────────────────── */
+  function doAdd() {
+    var model  = document.getElementById('model').value;
+    var btn    = document.getElementById('btn-add');
+    var status = document.getElementById('status');
+    btn.disabled    = true;
+    status.textContent = Homey.__('pair.confirm.status_preparing');
+
+    Homey.emit('confirm_model', { model: model }, function(err) {
+      if (err) {
+        status.textContent = err.message || String(err);
+        btn.disabled = false;
+        return;
+      }
+      Homey.nextView();
+    });
+  }
+
+  /* ── boot ────────────────────────────────────────────────────── */
+  Homey.ready(function() {
+    document.getElementById('ip').placeholder     = Homey.__('pair.ip_placeholder');
+    document.getElementById('serial').placeholder = Homey.__('pair.serial_placeholder');
+    startScan();
+  });
+</script>
 </body>
 </html>

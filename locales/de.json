@@ -22,7 +22,9 @@
       "status_preparing": "Gerät wird vorbereitet...",
       "hint_confident": "Mit hoher Sicherheit erkannt — überprüfen oder unten ändern, falls nötig.",
       "hint_uncertain": "Erkennung unsicher (keine Live-Daten gefunden). Bitte das richtige Modell auswählen."
-    }
+    },
+    "add_button": "Wechselrichter hinzufügen",
+    "retry_button": "Erneut scannen"
   },
   "repair": {
     "title": "Wechselrichterverbindung reparieren",

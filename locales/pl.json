@@ -22,7 +22,9 @@
       "status_preparing": "Przygotowywanie urządzenia...",
       "hint_confident": "Wykryto z dużą pewnością — w razie potrzeby zweryfikuj lub zmień poniżej.",
       "hint_uncertain": "Wykrywanie niepewne (nie znaleziono danych na żywo). Wybierz właściwy model."
-    }
+    },
+    "add_button": "Dodaj falownik",
+    "retry_button": "Skanuj ponownie"
   },
   "repair": {
     "title": "Napraw połączenie falownika",

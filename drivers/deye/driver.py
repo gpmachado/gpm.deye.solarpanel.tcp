@@ -331,13 +331,15 @@ class DeyeDriver(Driver):
             return True
 
         async def on_get_detected_model(data: dict = None) -> dict:
-            """Called by confirm_model.html on load — returns already-detected model."""
+            """Called by login.html after scan — returns detected model + logger info for tile."""
             if not confirmed:
                 raise Exception("No logger found — go back and try again.")
             return {
                 "detected":      confirmed["model_id"],
                 "models":        DEYE_MODELS,
                 "auto_confirmed": confirmed.get("score", 0) > 0,
+                "host":          found.get("host", ""),
+                "serial":        found.get("serial", ""),
             }
 
         async def on_confirm_model(data: dict) -> bool:

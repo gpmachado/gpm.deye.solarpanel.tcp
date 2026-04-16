@@ -22,7 +22,9 @@
       "status_preparing": "Preparing device...",
       "hint_confident": "Detected with high confidence — verify or change below if needed.",
       "hint_uncertain": "Detection uncertain (no live data found). Please select the correct model."
-    }
+    },
+    "add_button": "Add Inverter",
+    "retry_button": "Retry auto-scan"
   },
   "repair": {
     "title": "Repair Inverter Connection",

@@ -22,7 +22,9 @@
       "status_preparing": "Preparazione dispositivo...",
       "hint_confident": "Rilevato con alta confidenza — verifica o modifica sotto se necessario.",
       "hint_uncertain": "Rilevamento incerto (nessun dato live trovato). Seleziona il modello corretto."
-    }
+    },
+    "add_button": "Aggiungi inverter",
+    "retry_button": "Riprova scansione"
   },
   "repair": {
     "title": "Ripara connessione inverter",

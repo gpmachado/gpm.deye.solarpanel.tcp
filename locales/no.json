@@ -22,7 +22,9 @@
       "status_preparing": "Forbereder enhet...",
       "hint_confident": "Oppdaget med høy sikkerhet — bekreft eller endre nedenfor ved behov.",
       "hint_uncertain": "Oppdagelse usikker (ingen live-data funnet). Velg riktig modell."
-    }
+    },
+    "add_button": "Legg til vekselretter",
+    "retry_button": "Prøv igjen"
   },
   "repair": {
     "title": "Reparer vekselrettertilkobling",

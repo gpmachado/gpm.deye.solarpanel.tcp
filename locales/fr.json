@@ -22,7 +22,9 @@
       "status_preparing": "Préparation de l'appareil...",
       "hint_confident": "Détecté avec grande confiance — vérifiez ou modifiez ci-dessous si nécessaire.",
       "hint_uncertain": "Détection incertaine (aucune donnée en direct). Veuillez sélectionner le modèle correct."
-    }
+    },
+    "add_button": "Ajouter l'onduleur",
+    "retry_button": "Relancer le scan"
   },
   "repair": {
     "title": "Réparer la connexion de l'onduleur",

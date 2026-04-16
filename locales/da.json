@@ -22,7 +22,9 @@
       "status_preparing": "Forbereder enhed...",
       "hint_confident": "Registreret med høj sikkerhed — bekræft eller skift nedenfor hvis nødvendigt.",
       "hint_uncertain": "Registrering usikker (ingen live-data fundet). Vælg venligst den korrekte model."
-    }
+    },
+    "add_button": "Tilføj inverter",
+    "retry_button": "Prøv igen"
   },
   "repair": {
     "title": "Reparer inverterforbindelsen",

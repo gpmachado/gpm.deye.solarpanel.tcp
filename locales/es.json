@@ -22,7 +22,9 @@
       "status_preparing": "Preparando dispositivo...",
       "hint_confident": "Detectado con alta confianza — verifica o cambia a continuación si es necesario.",
       "hint_uncertain": "Detección incierta (no se encontraron datos en vivo). Selecciona el modelo correcto."
-    }
+    },
+    "add_button": "Agregar inversor",
+    "retry_button": "Reintentar escaneo"
   },
   "repair": {
     "title": "Reparar conexión del inversor",
