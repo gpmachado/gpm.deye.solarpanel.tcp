@@ -414,13 +414,18 @@ class DeyeDriver(Driver):
             inverter_opts = {k: v for k, v in caps_opts.items()
                              if k not in BATTERY_CAPS and (not is_hybrid or k not in GRID_METER_CAPS)}
 
-            # Add measure_power.solar for inverters with PV sub-capabilities.
+            # Add measure_power.solar for inverters with PV sub-capabilities or Input Power.
             # Points Energy Dashboard to solar-only production (not AC output).
+            # Note: Input Power (DC from PV array) also maps to measure_power.solar via
+            # capability_map — avoid inserting a duplicate if it's already present.
             pv_caps = [c for c in inverter_caps if c.startswith("measure_power.pv")]
-            if pv_caps:
+            has_solar = "measure_power.solar" in inverter_caps
+            if pv_caps and not has_solar:
                 inverter_caps = ["measure_power.solar"] + inverter_caps
-                inverter_opts["measure_power.solar"] = {"title": {"en": "Solar Power (Total PV)"}}
-            produced_cap = "measure_power.solar" if pv_caps else "measure_power"
+                inverter_opts["measure_power.solar"] = {"title": {"en": "Solar Power (DC Input)"}}
+            elif has_solar and "measure_power.solar" not in inverter_opts:
+                inverter_opts["measure_power.solar"] = {"title": {"en": "Solar Power (DC Input)"}}
+            produced_cap = "measure_power.solar" if (pv_caps or has_solar) else "measure_power"
 
             base_settings = {
                 "host":            host,

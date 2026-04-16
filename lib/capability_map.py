@@ -19,6 +19,8 @@ _NAME_RULES: list[tuple[str, str, str]] = [
     (r'\bload\b.+power|power.+\bload\b',       'measure_power.load',    'Load Power'),
     (r'grid.+power|power.+grid',               'measure_power.grid',    'Grid Power'),
     (r'micro.+power|power.+micro',             'measure_power.micro',   'Micro-inverter Power'),
+    # DC input power from PV array (before inverter conversion)
+    (r'\binput.+power|pv.+power(?!.+\bpv\d)',  'measure_power.solar',   'Solar Power (DC Input)'),
     # Frequency — must come before AC output power to catch "AC Output Frequency"
     (r'ac.+freq|output.+freq|freq.+ac',        'measure_frequency',     'Grid Frequency'),
     # Main AC output (must come after the specific ones above)
