@@ -99,16 +99,18 @@ class DeyeDevice(Device):
         if not self._is_battery:
             asyncio.create_task(self._refresh_wifi_info(host))
 
-    async def on_settings(self, event) -> None:
-        changed_keys = event.get("changedKeys", [])
-        if any(k in changed_keys for k in
+    async def on_settings(self, old_settings=None, new_settings=None, changed_keys=None) -> None:
+        # Homey Python SDK passes changed_keys as a keyword argument list.
+        # Guard against None in case the SDK calls with no changedKeys.
+        keys = changed_keys or []
+        if any(k in keys for k in
                ("host", "loggerSerial", "port", "slaveId", "model", "pollingInterval")):
             self._detach_poller()
             self._build_sensor_map()
             self._attach_poller()
-            
+
             # Restart Wi-Fi info task if IP was changed (only for main/inverter device)
-            if "host" in changed_keys and not self._is_battery:
+            if "host" in keys and not self._is_battery:
                 host = self.get_setting("host") or ""
                 asyncio.create_task(self._refresh_wifi_info(host))
 
