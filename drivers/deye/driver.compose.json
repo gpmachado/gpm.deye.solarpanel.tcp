@@ -218,6 +218,30 @@
             "pl": "Interwał odpytywania (sekundy)"
           },
           "value": 60, "min": 35, "max": 3600
+        },
+        {
+          "id": "solar_latitude",
+          "type": "number",
+          "label": { "en": "Solar latitude" },
+          "hint": { "en": "Optional. Fallback when Homey location is unavailable. Example: -23.5505" },
+          "min": -90,
+          "max": 90
+        },
+        {
+          "id": "solar_longitude",
+          "type": "number",
+          "label": { "en": "Solar longitude" },
+          "hint": { "en": "Optional. Fallback when Homey location is unavailable. Example: -46.6333" },
+          "min": -180,
+          "max": 180
+        },
+        {
+          "id": "solar_timezone",
+          "type": "text",
+          "label": { "en": "Solar timezone" },
+          "hint": { "en": "IANA timezone. Required when using manual coordinates. Example: America/Sao_Paulo" },
+          "placeholder": { "en": "America/Sao_Paulo" },
+          "value": ""
         }
       ]
     }

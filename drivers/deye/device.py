@@ -24,6 +24,7 @@ _LOGGER = logging.getLogger(__name__)
 
 _BACKOFF_NIGHT   = 30 * 60   # 30 min — inverter expected offline at night
 _ERROR_THRESHOLD = 5          # consecutive failures before set_unavailable
+_UTC_TIMEZONES   = {"UTC", "Etc/UTC"}
 
 # Capabilities zeroed on the inverter device at night
 _INVERTER_NIGHT_ZERO = frozenset({
@@ -72,6 +73,21 @@ class DeyeDevice(Device):
         self._is_grid_meter = (device_type == "grid_meter")
         host = self.get_setting("host") or ""
         self.log(f"DeyeDevice init — type={device_type} host={host}")
+
+        # Timezone / night-detection diagnostic
+        try:
+            tz_name = self.homey.clock.get_timezone()
+            now_utc = datetime.now(timezone.utc)
+            local   = now_utc.astimezone(ZoneInfo(tz_name)) if tz_name else now_utc
+            self.log(
+                f"Timezone check — tz={tz_name!r} "
+                f"utc={now_utc.strftime('%H:%M')} "
+                f"local={local.strftime('%H:%M')} "
+                f"is_night={self._is_night_time()}"
+            )
+        except Exception as e:
+            self.log(f"Timezone check failed: {e}")
+
         self._build_sensor_map()
 
         # Grid meters paired before v1.3.2 don't have measure_power — add it now.
@@ -103,8 +119,10 @@ class DeyeDevice(Device):
         # Homey Python SDK passes changed_keys as a keyword argument list.
         # Guard against None in case the SDK calls with no changedKeys.
         keys = changed_keys or []
-        if any(k in keys for k in
-               ("host", "loggerSerial", "port", "slaveId", "model", "pollingInterval")):
+        if any(k in keys for k in (
+            "host", "loggerSerial", "port", "slaveId", "model", "pollingInterval",
+            "solar_latitude", "solar_longitude", "solar_timezone",
+        )):
             self._detach_poller()
             self._build_sensor_map()
             self._attach_poller()
@@ -191,17 +209,25 @@ class DeyeDevice(Device):
 
     def _is_string_night(self) -> bool:
         """True when this is a string/micro inverter device during night hours.
-        Hybrid models stay online 24/7 — detected via model name, not a flag."""
+        Convenience wrapper — computes sun_times internally."""
+        return self._is_string_night_from(self._get_sunrise_sunset())
+
+    def _is_string_night_from(self, sun_times: tuple[float, float, str] | None) -> bool:
+        """True when this is a string/micro inverter device during night hours.
+        Accepts pre-computed sun_times to avoid a second SDK call."""
         if self._is_battery or self._is_grid_meter:
             return False
         model = str(self.get_setting("model") or "")
         is_hybrid = "hybrid" in model.lower() or model == "deye_sg04lp3"
-        return not is_hybrid and self._is_night_time()
+        return not is_hybrid and self._is_night_time_from(sun_times)
 
     async def _on_values(self, values: dict | None) -> None:
+        # Compute sun_times once — shared by both night checks below.
+        sun_times = self._get_sunrise_sunset()
+
         if values is None:
             # For string/micro inverters: logger loses power at night — expected, not an error
-            if self._is_string_night():
+            if self._is_string_night_from(sun_times):
                 self._consecutive_errors = 0
                 await self._apply_zeros()
                 self.log("night offline (expected) — logger without power")
@@ -210,12 +236,15 @@ class DeyeDevice(Device):
             return
 
         # Night backoff — inverter only, and only for non-hybrid (hybrid stays on 24/7 via battery)
-        if self._is_string_night():
+        if self._is_string_night_from(sun_times):
             self._consecutive_errors = 0
             await self._apply_zeros()
-            sr, ss = self._get_sunrise_sunset()
-            self.log(f"night offline (expected) — backing off 30 min "
-                     f"| sunrise≈{sr:.2f}h sunset≈{ss:.2f}h")
+            if sun_times:
+                sr, ss, _tz = sun_times
+                self.log(f"night offline (expected) — backing off 30 min "
+                         f"| sunrise≈{sr:.2f}h sunset≈{ss:.2f}h")
+            else:
+                self.log("night offline (expected) — backing off 30 min")
             return
 
         self._consecutive_errors = 0
@@ -346,42 +375,78 @@ class DeyeDevice(Device):
 
     # ── Night detection (astral) ──────────────────────────────────────────────
 
-    def _get_sunrise_sunset(self) -> tuple[float, float] | None:
-        """Returns (sunrise, sunset) as decimal local hours, or None if unavailable.
-        Returns None instead of raising so callers can safely disable night backoff."""
+    def _get_sunrise_sunset(self) -> tuple[float, float, str] | None:
+        """Returns (sunrise, sunset, tz_name) as decimal local hours using astral.
+
+        Priority: manual device settings → Homey geolocation/clock.
+        Returns None if coordinates or timezone cannot be resolved — callers
+        should disable night backoff rather than using a hardcoded fallback."""
         try:
-            lat     = self.homey.geolocation.get_latitude()
-            lng     = self.homey.geolocation.get_longitude()
-            tz_name = self.homey.clock.get_timezone()
-            if not lat or not lng:
-                _LOGGER.warning("Night backoff disabled — Homey geolocation not set")
+            manual_lat = self._get_float_setting("solar_latitude")
+            manual_lng = self._get_float_setting("solar_longitude")
+            manual_tz  = (self.get_setting("solar_timezone") or "").strip()
+
+            lat     = manual_lat
+            lng     = manual_lng
+            tz_name = manual_tz
+
+            if manual_lat is None:
+                lat = self.homey.geolocation.get_latitude()
+            if manual_lng is None:
+                lng = self.homey.geolocation.get_longitude()
+            if not manual_tz:
+                tz_name = self.homey.clock.get_timezone()
+
+            if lat is None or lng is None or not tz_name:
+                self.log("Night backoff disabled — solar location or timezone not set")
                 return None
+
+            # Warn when manual coords are set but timezone was not — using UTC
+            # would silently produce wrong night/day decisions.
+            if not manual_tz and (manual_lat is not None or manual_lng is not None) \
+                    and tz_name in _UTC_TIMEZONES:
+                self.log(
+                    "Night backoff disabled — set Solar timezone when using manual coordinates"
+                )
+                return None
+
             loc = LocationInfo(latitude=lat, longitude=lng, timezone=tz_name)
             s   = sun(loc.observer, tzinfo=ZoneInfo(tz_name))
             sr  = s["sunrise"].hour + s["sunrise"].minute / 60
             ss  = s["sunset"].hour  + s["sunset"].minute  / 60
-            self.log(f"Sun times: sunrise={sr:.2f}h sunset={ss:.2f}h tz={tz_name}")
-            return (sr, ss)
+            self.log(
+                f"Sun times: sunrise={sr:.2f}h sunset={ss:.2f}h "
+                f"tz={tz_name} lat={lat} lng={lng}"
+            )
+            return (sr, ss, tz_name)
         except Exception as e:
-            _LOGGER.warning(f"Night backoff disabled — sun calculation failed: {e}")
+            self.log(f"Night backoff disabled — sun calculation failed: {e}")
             return None
 
     def _is_night_time(self) -> bool:
-        """True when outside solar window + 30-minute buffer on each side.
-        Returns False (assume daytime) if geolocation or timezone is unavailable —
-        safer than a hardcoded fallback that may fire incorrectly."""
-        times = self._get_sunrise_sunset()
-        if times is None:
-            return False  # location unknown — never apply night backoff
-        sunrise, sunset = times
+        """True when outside solar window. Convenience wrapper for _is_night_time_from."""
+        return self._is_night_time_from(self._get_sunrise_sunset())
+
+    def _is_night_time_from(self, sun_times: tuple[float, float, str] | None) -> bool:
+        """True when outside solar window with a 30-minute buffer on each side.
+        Uses the timezone already embedded in sun_times to avoid a second SDK read."""
+        if sun_times is None:
+            return False
+        sunrise, sunset, tz_name = sun_times
         try:
-            tz_name = self.homey.clock.get_timezone()
             now     = datetime.now(timezone.utc)
-            local   = now.astimezone(ZoneInfo(tz_name)) if tz_name else now
+            local   = now.astimezone(ZoneInfo(tz_name))
             local_h = local.hour + local.minute / 60
-            return local_h < (sunrise - 0.5) or local_h >= (sunset + 0.5)
+            is_night = local_h < (sunrise - 0.5) or local_h >= (sunset + 0.5)
+            self.log(
+                f"[TZ] tz={tz_name!r} utc={now.strftime('%H:%M')} "
+                f"local={local.strftime('%H:%M')} ({local_h:.2f}h) "
+                f"window={sunrise - 0.5:.2f}h–{sunset + 0.5:.2f}h "
+                f"→ {'NIGHT' if is_night else 'DAY'}"
+            )
+            return is_night
         except Exception as e:
-            _LOGGER.warning(f"Night time check failed ({e}) — assuming daytime")
+            self.log(f"Night time check failed ({e}) — assuming daytime")
             return False
 
     # ── Apply zeros ───────────────────────────────────────────────────────────
@@ -441,7 +506,18 @@ class DeyeDevice(Device):
         except Exception as e:
             _LOGGER.debug(f"Wi-Fi info refresh failed: {e}")
 
-    # ── Helper ────────────────────────────────────────────────────────────────
+    # ── Helpers ───────────────────────────────────────────────────────────────
+
+    def _get_float_setting(self, key: str) -> float | None:
+        """Return a device setting as float, or None if absent/invalid."""
+        raw = self.get_setting(key)
+        if raw in (None, ""):
+            return None
+        try:
+            return float(raw)
+        except (TypeError, ValueError):
+            self.log(f"Ignoring invalid numeric setting {key}={raw!r}")
+            return None
 
     async def _set(self, cap: str, value) -> None:
         try:
