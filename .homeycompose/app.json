@@ -26,7 +26,9 @@
   "category": [
     "energy"
   ],
-  "permissions": [],
+  "permissions": [
+    "homey:manager:geolocation"
+  ],
   "brandColor": "#E84D0E",
   "images": {
     "small": "/assets/images/small.png",
