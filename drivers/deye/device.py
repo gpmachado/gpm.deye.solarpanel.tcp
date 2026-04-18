@@ -265,6 +265,19 @@ class DeyeDevice(Device):
                 self._last_power_w = float(value)
 
         if self._is_battery:
+            # Derive battery_charging_state from Battery Power sign — more reliable than the
+            # Battery Status sensor (deye_hybrid reg 189 is shared with PV4 Power, making
+            # the lookup-based status unreliable).
+            # Deye convention: positive Battery Power = discharging, negative = charging.
+            if "Battery Power" in values and self.has_capability("battery_charging_state"):
+                raw_pwr = float(values.get("Battery Power") or 0)
+                if raw_pwr > 5:
+                    await self._set("battery_charging_state", "discharge")
+                elif raw_pwr < -5:
+                    await self._set("battery_charging_state", "charge")
+                else:
+                    await self._set("battery_charging_state", "standby")
+
             # Mirror battery power to measure_power for the Energy Dashboard.
             # Deye: positive = discharging → negate for Homey convention (positive = charging).
             if "Battery Power" in values and self.has_capability("measure_power"):
