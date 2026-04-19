@@ -258,6 +258,14 @@ class DeyeDevice(Device):
                     coerced = "standby"
             else:
                 coerced = value
+                # Skip temperature readings below −50 °C: the Deye firmware returns
+                # register value 0 for hardware sensors that are not physically present,
+                # which yields (0 − 1000) × 0.1 = −100 °C.  Nothing legitimate runs
+                # this cold, so we suppress the update rather than confuse Homey.
+                if (cap_id.startswith("measure_temperature")
+                        and isinstance(coerced, (int, float))
+                        and coerced < -50):
+                    continue
 
             await self._set(cap_id, coerced)
 

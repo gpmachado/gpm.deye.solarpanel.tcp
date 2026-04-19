@@ -63,20 +63,22 @@ _NAME_RULES: list[tuple[str, str, str]] = [
     # Total production — exclude rows that mention grid buy/sell/import/export
     (r'total.+prod|lifetime|total.+energy(?!.+(?:buy|bought|sell|sold|import|export))',
                                                'meter_power',                 'Total Production'),
-    # Grid import: total/grid prefixed or energy+import (excludes daily variants)
-    (r'(?:total|grid).+(?:buy|bought|import)|import.+energy|energy.+import',
-                                               'meter_power.grid_import',     'Grid Import Energy'),
-    # Grid export: total/grid prefixed or energy+export (excludes daily variants)
-    (r'(?:total|grid).+(?:sell|sold|export)|export.+energy|energy.+export',
-                                               'meter_power.grid_export',     'Grid Export Energy'),
+    # Grid import: must begin with "total" or "grid" so daily variants ("Today Energy Import",
+    # "Daily Energy Bought") do NOT match — they fall through to no-cap (no daily grid-import cap).
+    (r'(?:total|grid).+(?:buy|bought|import)',  'meter_power.grid_import',     'Grid Import Energy'),
+    # Grid export: same constraint — "Today/Daily Energy Export" are intentionally skipped.
+    (r'(?:total|grid).+(?:sell|sold|export)',   'meter_power.grid_export',     'Grid Export Energy'),
     (r'battery.+charg.+energy|energy.+battery.+charg|total.+charg',
                                                'meter_power.battery_charged', 'Battery Charged Energy'),
     (r'battery.+discharg.+energy|energy.+battery.+discharg|total.+discharg',
                                                'meter_power.battery_discharged', 'Battery Discharged Energy'),
 
-    # Temperature — battery-specific before generic
-    (r'battery.+temp|temp.+battery',           'measure_temperature.battery', 'Battery Temperature'),
-    (r'temp',                                  'measure_temperature',   'Temperature'),
+    # Temperature — most-specific first
+    (r'battery.+temp|temp.+battery',           'measure_temperature.battery',  'Battery Temperature'),
+    # Radiator / AC heatsink temperature (secondary sensor, distinct from DC/module temp)
+    (r'radiator.+temp|temp.+radiator|ac\s+temp|temp.+\bac\b',
+                                               'measure_temperature.radiator', 'Radiator Temperature'),
+    (r'temp',                                  'measure_temperature',          'Temperature'),
 
     # Frequency
     (r'freq',                                  'measure_frequency',     'Grid Frequency'),

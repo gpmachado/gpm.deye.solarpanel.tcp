@@ -76,14 +76,21 @@ async def _detect_model(host: str, serial: int, port: int = 8899) -> tuple[str, 
             for req in definition["requests"]:
                 start, end, fc = req["start"], req["end"], req["mb_functioncode"]
                 length = end - start + 1
-                try:
-                    if fc == 3:
-                        raw = await m.read_holding_registers(register_addr=start, quantity=length)
-                    else:
-                        raw = await m.read_input_registers(register_addr=start, quantity=length)
-                    params.parse(raw, start, length)
-                except Exception as req_e:
-                    _LOGGER.debug(f"Model probe {model_id} request [{start}-{end}] skipped: {req_e}")
+                for _attempt in range(2):
+                    try:
+                        if fc == 3:
+                            raw = await m.read_holding_registers(register_addr=start, quantity=length)
+                        else:
+                            raw = await m.read_input_registers(register_addr=start, quantity=length)
+                        params.parse(raw, start, length)
+                        break
+                    except Exception as req_e:
+                        if _attempt == 0:
+                            await asyncio.sleep(0.5)  # brief recovery before retry
+                        else:
+                            _LOGGER.debug(
+                                f"Model probe {model_id} request [{start}-{end}] skipped: {req_e}"
+                            )
         finally:
             await m.disconnect()
 
@@ -123,7 +130,7 @@ async def _detect_model(host: str, serial: int, port: int = 8899) -> tuple[str, 
         except Exception as e:
             _LOGGER.debug(f"Model probe {model_id} failed: {e}")
 
-        await asyncio.sleep(0.3)  # brief pause between probes — let logger recover
+        await asyncio.sleep(1.5)  # let logger fully close the TCP slot before next probe
 
     _LOGGER.info(f"Detected model: {best_model} (score={best_score})")
     return best_model, best_values, best_score
@@ -249,6 +256,50 @@ async def _fetch_logger_serial(host: str) -> int | None:
     return (await _fetch_logger_info(host))["serial"]
 
 
+async def _fetch_logger_serial_udp(host: str, timeout: float = 2.0) -> int | None:
+    """
+    Send a UDP unicast discovery packet directly to the logger's IP and return its serial.
+
+    The standard Solarman discovery payload works on both broadcast and unicast.
+    This is more reliable than parsing the HTTP status page, which returns the
+    INVERTER serial (webdata_sn) on some firmware versions instead of the
+    LOGGER serial that the V5 protocol header requires.
+    Returns None if the logger does not respond within timeout.
+    """
+    found_serial: list = [None]
+    loop = asyncio.get_event_loop()
+
+    class _Protocol(asyncio.DatagramProtocol):
+        def datagram_received(self, data: bytes, addr):
+            try:
+                parts = data.decode("latin-1").strip().split(",")
+                if len(parts) >= 3 and parts[2].strip().isdigit():
+                    found_serial[0] = int(parts[2].strip())
+            except Exception:
+                pass
+
+        def error_received(self, exc):
+            pass
+
+        def connection_lost(self, exc):
+            pass
+
+    try:
+        transport, _ = await loop.create_datagram_endpoint(
+            _Protocol,
+            local_addr=("0.0.0.0", 0),
+        )
+        for payload in [b"WIFIKIT-214028-READ", b"HF-A11ASSISTHREAD"]:
+            transport.sendto(payload, (host, 48899))
+            await asyncio.sleep(0.1)
+        await asyncio.sleep(timeout)
+        transport.close()
+    except Exception as e:
+        _LOGGER.debug(f"UDP unicast to {host}:48899 failed: {e}")
+
+    return found_serial[0]
+
+
 class DeyeDriver(Driver):
 
     async def on_init(self) -> None:
@@ -302,15 +353,19 @@ class DeyeDriver(Driver):
             if serial_str and serial_str.isdigit():
                 serial = int(serial_str)
             else:
-                self.log(f"No serial — trying auto-detect via HTTP from {host}")
-                serial = await _fetch_logger_serial(host)
-
-                if serial is None:
-                    # Fallback: try UDP for this specific IP
-                    loggers = await _discover_loggers(timeout=2.0)
-                    match = next((l for l in loggers if l["ip"] == host), None)
-                    if match:
-                        serial = match["serial"]
+                # UDP unicast to the specific IP first — gives the LOGGER serial
+                # (the V5 protocol header serial printed on the Wi-Fi stick sticker).
+                # HTTP webdata_sn on some firmware returns the INVERTER serial instead,
+                # which is different and causes all data reads to fail.
+                self.log(f"No serial — trying UDP unicast to {host}")
+                serial = await _fetch_logger_serial_udp(host, timeout=2.0)
+                if serial:
+                    self.log(f"Serial from UDP unicast: {serial}")
+                else:
+                    self.log(f"UDP unicast returned nothing — falling back to HTTP")
+                    serial = await _fetch_logger_serial(host)
+                    if serial:
+                        self.log(f"Serial from HTTP: {serial}")
 
             if serial is None:
                 raise Exception(
