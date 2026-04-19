@@ -234,13 +234,17 @@
           "hint": { "en": "Optional. Fallback when Homey location is unavailable. Example: -46.6333" },
           "min": -180,
           "max": 180
-        },
+        }
       ]
     }
   ],
   "pair": [
     {
       "id": "login"
+    },
+    {
+      "id": "list_devices",
+      "template": "list_devices"
     },
     {
       "id": "add_devices",
