@@ -291,16 +291,33 @@ class DeyeDevice(Device):
                 if grid_pwr is not None:
                     await self._set("measure_power", float(grid_pwr))
         else:
-            # Inverter: override measure_power with total PV (solar production only).
-            # AC output includes battery discharge and overstates solar.
+            # Inverter: ensure measure_power reflects solar production (not AC output,
+            # which includes battery discharge and overstates production).
             if self.has_capability("measure_power.solar"):
                 pv_names = [n for n, c in self._sensor_cap_map.items()
                             if c.startswith("measure_power.pv")]
-                pv_total = sum(float(values.get(n) or 0) for n in pv_names)
-                await self._set("measure_power.solar", pv_total)
-                if self.has_capability("measure_power"):
-                    await self._set("measure_power", pv_total)
-                    self._last_power_w = pv_total
+                if pv_names:
+                    # Multi-channel models (hybrid, micro): sum all individual PV channel powers.
+                    # measure_power.solar is synthetic — no single sensor maps to it directly.
+                    pv_total = sum(float(values.get(n) or 0) for n in pv_names)
+                    await self._set("measure_power.solar", pv_total)
+                    if self.has_capability("measure_power"):
+                        await self._set("measure_power", pv_total)
+                        self._last_power_w = pv_total
+                else:
+                    # String models: measure_power.solar was already set by the "Input Power"
+                    # sensor in the loop above (Input Power → measure_power.solar via cap map).
+                    # Do NOT override it with 0. Just mirror its value to measure_power so the
+                    # Energy Dashboard receives the correct live solar production reading.
+                    solar_sensor = next(
+                        (sname for sname, cap in self._sensor_cap_map.items()
+                         if cap == "measure_power.solar"),
+                        None,
+                    )
+                    if solar_sensor is not None and self.has_capability("measure_power"):
+                        val = float(values.get(solar_sensor) or 0)
+                        await self._set("measure_power", val)
+                        self._last_power_w = val
 
             # ── Flow triggers ──────────────────────────────────────────────
             await self._fire_flow_triggers(values)
