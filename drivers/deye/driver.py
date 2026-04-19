@@ -434,23 +434,34 @@ class DeyeDriver(Driver):
 
             sensors = _load_sensors(model_id)
 
-            # Filter to sensors that returned non-zero data during detection.
-            # Always keep: production totals, status sensors, lookup-based sensors,
-            # and cumulative energy meters (may be 0 on new devices or at pairing time).
+            # Filter sensors that returned non-zero data during detection.
+            # Purpose: exclude PV input channels that are not physically wired
+            # (e.g. PV3/PV4 inputs on a 2-MPPT inverter always read 0).
+            # Sensors that may legitimately read 0 at night (power, grid, temperature)
+            # are always kept — their capabilities are structurally required by Homey.
             _ALWAYS_KEEP = {"Today Production", "Total Production", "Running Status"}
             _METER_KEYWORDS = ("energy", "production", "charged", "discharged",
                                "import", "export", "buy", "sell")
+            import re as _re
             if active_values:
                 def _keep(s: dict) -> bool:
                     if s["name"] in _ALWAYS_KEEP:
                         return True
                     if "lookup" in s:
                         return True
-                    # Cumulative energy counters are always meaningful even when 0
                     name_lower = s["name"].lower()
+                    # Cumulative energy counters are always meaningful even when 0
                     if any(kw in name_lower for kw in _METER_KEYWORDS):
                         return True
-                    return bool(active_values.get(s["name"]))
+                    # Only filter PV-specific channel sensors (e.g. "PV1 Voltage",
+                    # "PV3 Current", "PV4 Power") based on actual detection values.
+                    # Unconnected PV inputs return 0 consistently; this excludes them
+                    # so the device doesn't show dead channels as capabilities.
+                    # Everything else (AC power, grid, temperature, frequency …) is
+                    # always kept — it may read 0 at night but the capability is real.
+                    if _re.search(r'\bpv\s*\d+\b', name_lower):
+                        return bool(active_values.get(s["name"]))
+                    return True
                 sensors = [s for s in sensors if _keep(s)]
 
             caps, caps_opts = build_capabilities(sensors)
