@@ -62,6 +62,7 @@ class DeyeDevice(Device):
     _was_producing: bool = False
     _grid_was_available: bool = True
     _is_unavailable: bool = False
+    _sun_cache: tuple | None = None   # (cache_date, sunrise_utc, sunset_utc)
 
     # ── Lifecycle ─────────────────────────────────────────────────────────────
 
@@ -80,7 +81,7 @@ class DeyeDevice(Device):
                 and self.has_capability("measure_power.grid")
                 and not self.has_capability("measure_power")):
             try:
-                await self.addCapability("measure_power")
+                await self.add_capability("measure_power")
                 self.log("Added measure_power cap to grid meter (upgraded from pre-1.3.2)")
             except Exception as e:
                 _LOGGER.warning(f"Could not add measure_power to grid meter: {e}")
@@ -207,7 +208,7 @@ class DeyeDevice(Device):
             if self.has_capability(cap_id):
                 continue
             try:
-                await self.addCapability(cap_id)
+                await self.add_capability(cap_id)
                 self.log(f"Added missing PV structural cap {cap_id} ({model})")
             except Exception as e:
                 _LOGGER.warning(f"Could not add missing PV cap {cap_id}: {e}")
@@ -481,9 +482,16 @@ class DeyeDevice(Device):
     def _get_sunrise_sunset(self) -> tuple[float, float] | None:
         """Returns (sunrise_utc, sunset_utc) as decimal UTC hours using astral.
 
+        Result is cached per calendar day — sun times don't change within a day,
+        so we only compute (and log) once per day instead of every poll.
+
         Everything is in UTC — no timezone conversion needed.
         Priority: manual solar_latitude/longitude → Homey geolocation."""
         try:
+            today = datetime.now(timezone.utc).date()
+            if self._sun_cache and self._sun_cache[0] == today:
+                return (self._sun_cache[1], self._sun_cache[2])
+
             lat = self._get_float_setting("solar_latitude")
             lng = self._get_float_setting("solar_longitude")
 
@@ -496,11 +504,11 @@ class DeyeDevice(Device):
                 self.log("Night backoff disabled — location not available")
                 return None
 
-            today = datetime.now(timezone.utc).date()
-            loc   = LocationInfo(latitude=lat, longitude=lng)
-            s     = sun(loc.observer, date=today, tzinfo=timezone.utc)
-            sr    = s["sunrise"].hour + s["sunrise"].minute / 60
-            ss    = s["sunset"].hour  + s["sunset"].minute  / 60
+            loc = LocationInfo(latitude=lat, longitude=lng)
+            s   = sun(loc.observer, date=today, tzinfo=timezone.utc)
+            sr  = s["sunrise"].hour + s["sunrise"].minute / 60
+            ss  = s["sunset"].hour  + s["sunset"].minute  / 60
+            self._sun_cache = (today, sr, ss)
             self.log(f"Sun times (UTC): sunrise={sr:.2f}h sunset={ss:.2f}h lat={lat:.4f} lng={lng:.4f}")
             return (sr, ss)
         except Exception as e:
@@ -520,13 +528,7 @@ class DeyeDevice(Device):
         try:
             now      = datetime.now(timezone.utc)
             utc_hour = now.hour + now.minute / 60
-            is_night = utc_hour < (sunrise - 0.5) or utc_hour >= (sunset + 0.5)
-            self.log(
-                f"Sun check: utc={now.strftime('%H:%M')} ({utc_hour:.2f}h) "
-                f"window={sunrise - 0.5:.2f}h–{sunset + 0.5:.2f}h "
-                f"→ {'NIGHT' if is_night else 'DAY'}"
-            )
-            return is_night
+            return utc_hour < (sunrise - 0.5) or utc_hour >= (sunset + 0.5)
         except Exception as e:
             self.log(f"Night time check failed ({e}) — assuming daytime")
             return False

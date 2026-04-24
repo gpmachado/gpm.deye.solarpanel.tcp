@@ -121,6 +121,11 @@ def _parse_modbus_registers(data: bytes, count: int) -> list[int]:
         raise ValueError(f"Modbus exception, code {data[2]:#04x}")
     byte_count = data[2]
     n = min(count, byte_count // 2)
+    if n < count:
+        raise ValueError(
+            f"Incomplete Modbus response: expected {count} registers, "
+            f"byte_count={byte_count} → only {n} registers"
+        )
     return [struct.unpack(">H", data[3 + i*2: 5 + i*2])[0] for i in range(n)]
 
 
