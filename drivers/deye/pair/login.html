@@ -65,6 +65,11 @@
     .badge-ok   { background: #e8f5e9; color: #2e7d32; }
     .badge-warn { background: #fff3e0; color: #e65100; }
 
+    .section-sep { border: none; border-top: 1px solid #eee; margin: 14px 0 10px; }
+    .row-check { display: flex; align-items: center; gap: 10px; margin-bottom: 4px; }
+    .row-check input[type="checkbox"] { width: 18px; height: 18px; margin: 0; flex-shrink: 0; cursor: pointer; }
+    .row-check label { margin: 0; font-weight: normal; font-size: 13px; cursor: pointer; }
+
     /* ── Phase: error / manual ───────────────────────────────────── */
     .error-msg { font-size: 13px; color: #c62828; margin-bottom: 14px; }
 
@@ -144,6 +149,17 @@
       <select id="model"></select>
       <div class="hint" data-i18n="pair.confirm.hint">
         Auto-detection reads live registers. If the pre-selected model looks wrong, choose the correct one.
+      </div>
+
+      <hr class="section-sep">
+      <div class="row-check">
+        <input type="checkbox" id="adv-caps" />
+        <label for="adv-caps" data-i18n="pair.adv_caps.label">Advanced sensors</label>
+      </div>
+      <div class="hint" data-i18n="pair.adv_caps.hint">
+        Adds load power, grid energy counters, L2/L3 phase voltages and secondary temperature.
+        Useful for 3-phase installations or detailed energy balance.
+        <strong>Cannot be changed after pairing.</strong>
       </div>
     </div>
 
@@ -272,13 +288,14 @@
 
   /* ── add inverter ────────────────────────────────────────────── */
   function doAdd() {
-    var model  = document.getElementById('model').value;
-    var btn    = document.getElementById('btn-add');
-    var status = document.getElementById('status');
+    var model    = document.getElementById('model').value;
+    var advanced = document.getElementById('adv-caps').checked;
+    var btn      = document.getElementById('btn-add');
+    var status   = document.getElementById('status');
     btn.disabled       = true;
     status.textContent = Homey.__('pair.confirm.status_preparing');
 
-    Homey.emit('confirm_model', { model: model }, function(err) {
+    Homey.emit('confirm_model', { model: model, advanced: advanced }, function(err) {
       if (err) {
         status.textContent = err.message || String(err);
         btn.disabled = false;

@@ -30,6 +30,26 @@ HYBRID_MODELS: frozenset[str] = frozenset({"deye_hybrid", "deye_sg04lp3"})
 
 _INVERTER_DEFS_DIR = os.path.join(os.path.dirname(__file__), "..", "..", "inverter_definitions")
 
+# ── Advanced capabilities (excluded by default) ───────────────────────────────
+# Shown only when the user enables "Advanced sensors" at pairing.
+# These capabilities exist in the inverter definitions but are not needed for
+# basic solar production monitoring and may be misleading or model-dependent.
+#
+# IMPORTANT: capabilities are fixed at device creation — cannot be changed
+# after pairing without removing and re-adding the device.
+_ADVANCED_CAPS: frozenset[str] = frozenset({
+    "measure_power.load",           # Load Power — often 0 / inaccurate on string inverters
+    "measure_power.grid",           # Grid Power — inverter internal CT, less accurate than a meter
+    "measure_power.micro",          # Micro-inverter Power — hybrid diagnostic only
+    "measure_temperature.radiator", # Radiator / AC heatsink temperature (secondary sensor)
+    "measure_voltage.l2",           # L2 phase voltage (3-phase installations)
+    "measure_voltage.l3",           # L3 phase voltage
+    "measure_current.l2",           # L2 phase current
+    "measure_current.l3",           # L3 phase current
+    "meter_power.grid_import",      # Total grid energy bought (partial reading on multi-phase)
+    "meter_power.grid_export",      # Total grid energy sold
+})
+
 
 def _yaml_path(model_id: str) -> str:
     return os.path.join(_INVERTER_DEFS_DIR, f"{model_id}.json")
@@ -410,12 +430,13 @@ class DeyeDriver(Driver):
             }
 
         async def on_confirm_model(data: dict) -> bool:
-            """Called when user clicks Confirm in confirm_model.html."""
+            """Called when user clicks Add Inverter in login.html."""
             model_id = data.get("model", "")
             if model_id not in DEYE_MODELS:
                 raise Exception(f"Unknown model: {model_id}")
             confirmed["model_id"] = model_id
-            self.log(f"Model confirmed by user: {model_id}")
+            confirmed["advanced"] = bool(data.get("advanced", False))
+            self.log(f"Model confirmed: {model_id}  advanced={confirmed['advanced']}")
             return True
 
         async def on_list_devices(data: dict = None) -> list:
@@ -488,6 +509,13 @@ class DeyeDriver(Driver):
                              if is_hybrid else {})
             inverter_opts = {k: v for k, v in caps_opts.items()
                              if k not in BATTERY_CAPS and (not is_hybrid or k not in GRID_METER_CAPS)}
+
+            # ── Strip advanced capabilities unless user opted in ───────────────
+            # Battery caps and grid meter caps are already separated above and are
+            # never affected by this filter (they're structurally required for hybrids).
+            if not confirmed.get("advanced", False):
+                inverter_caps = [c for c in inverter_caps if c not in _ADVANCED_CAPS]
+                inverter_opts = {k: v for k, v in inverter_opts.items() if k not in _ADVANCED_CAPS}
 
             # Add measure_power.solar for inverters with PV sub-capabilities or Input Power.
             # Points Energy Dashboard to solar-only production (not AC output).
