@@ -65,6 +65,88 @@ def _yaml_path(model_id: str) -> str:
     return os.path.join(_INVERTER_DEFS_DIR, f"{model_id}.json")
 
 
+def _score_model_values(model_id: str, values: dict) -> int:
+    """Domain-specific scoring for model auto-detection.
+
+    Inspired by the Codex deye_auto_detect.py scanner — each check targets a
+    physical quantity that should only be plausible for the correct model:
+
+      +3   Running Status in known set (Standby / Normal / Fault…)
+      +4   Grid Frequency in 45-65 Hz range
+      +4   Daily production 0-250 kWh (plausible for a real day)
+      +4   Total production > 0.1 kWh (ever produced anything)
+      +2   per PV string voltage in 10-800 V
+      +1   per PV string current > 0
+      +10  Battery voltage 10-1000 V   (hybrid/sg04lp3 only)
+      +8   Battery SOC 0-100 %         (hybrid/sg04lp3 only)
+      +5   Battery current > 0         (hybrid/sg04lp3 only)
+      +7   Battery power > 0           (hybrid/sg04lp3 only)
+      -10  No battery data at all      (hybrid/sg04lp3 penalty)
+    """
+    def between(v, lo, hi):
+        try:
+            return lo <= float(v) <= hi
+        except (TypeError, ValueError):
+            return False
+
+    score = 0
+
+    # Running status — any known Deye status string counts
+    status = values.get("Running Status")
+    if status in {"Standby", "Self-test", "Normal", "Alarm", "Fault"}:
+        score += 3
+
+    # Grid frequency in the legal grid range (covers 50 Hz and 60 Hz countries)
+    freq = values.get("Grid Frequency") or values.get("Frequency")
+    if between(freq, 45, 65):
+        score += 4
+
+    # Daily production — 0 kWh (night / overcast) up to ~250 kWh on a big plant
+    daily = values.get("Today Production") or values.get("Daily Production")
+    if between(daily, 0, 250):
+        score += 4
+
+    # Lifetime production — anything above 0.1 kWh is proof the inverter ran
+    total = values.get("Total Production")
+    if between(total, 0.1, 10_000_000):
+        score += 4
+
+    # PV string voltages (10-800 V covers all common panel/string configs)
+    pv_volts = [v for k, v in values.items()
+                if k.startswith("PV") and "Voltage" in k and between(v, 10, 800)]
+    score += len(pv_volts) * 2
+
+    # PV string currents (only present and non-zero when the sun is up)
+    pv_amps = [v for k, v in values.items()
+               if k.startswith("PV") and "Current" in k and between(v, 0.01, 200)]
+    score += len(pv_amps)
+
+    # Energy meter registers (198-210) — present in deye_string but NOT deye_micro.
+    # Rewards models that read the extra energy-meter block, giving string a clear
+    # edge over micro even when both inverters share the core register layout.
+    today_load = values.get("Today Load Consumption")
+    total_load = values.get("Total Load Consumption")
+    if between(today_load, 0, 250):       score += 2
+    if between(total_load, 0.1, 1e7):     score += 2
+
+    # Battery registers — only meaningful on hybrid models
+    if model_id in ("deye_hybrid", "deye_sg04lp3"):
+        batt_v   = values.get("Battery Voltage")
+        batt_soc = values.get("Battery SOC")
+        batt_a   = values.get("Battery Current")
+        batt_w   = values.get("Battery Power")
+
+        has_battery = between(batt_v, 10, 1000) or between(batt_soc, 1, 100)
+        if between(batt_v, 10, 1000):   score += 10
+        if between(batt_soc, 0, 100):   score += 8
+        if between(batt_a, 0.01, 500):  score += 5
+        if between(batt_w, 0.1, 200_000): score += 7
+        if not has_battery:
+            score -= 10   # strongly penalise if no battery at all
+
+    return score
+
+
 def _load_sensors(model_id: str) -> list:
     path = _yaml_path(model_id)
     with open(path, encoding="utf-8") as f:
@@ -78,9 +160,9 @@ def _load_sensors(model_id: str) -> list:
 
 async def _detect_model(host: str, serial: int, port: int = 8899) -> tuple[str, dict, int]:
     """
-    Auto-detect the inverter model by reading all register sets and scoring each model.
-    Scoring: +2 for each non-zero value from measure_power/meter_power caps, +1 for other non-zero values.
-    Returns (model_id, parsed_values, best_score) for the best-scoring model (falls back to 'deye_string').
+    Auto-detect the inverter model by reading all register sets and scoring each.
+    Uses domain-specific scoring via _score_model_values() — see its docstring.
+    Returns (model_id, parsed_values, best_score) for the winner (falls back to 'deye_string').
     A score of 0 means no live data was found (night-time / logger offline).
 
     Each model probe is capped at 10 s total (asyncio.wait_for) so that models with many
@@ -88,7 +170,6 @@ async def _detect_model(host: str, serial: int, port: int = 8899) -> tuple[str, 
     the pairing wizard for minutes.
     """
     from app.lib.parser import ParameterParser
-    from app.lib.capability_map import get_sensor_capability_map
     from app.lib.v5_transport import V5Transport
 
     best_model  = "deye_string"
@@ -125,20 +206,7 @@ async def _detect_model(host: str, serial: int, port: int = 8899) -> tuple[str, 
             await m.disconnect()
 
         values = params.get_result()
-        cap_map = get_sensor_capability_map(list(
-            item
-            for group in definition.get("parameters", [])
-            for item in group.get("items", [])
-        ))
-        score = 0
-        for sensor_name, cap_id in cap_map.items():
-            val = values.get(sensor_name)
-            if val is None or val == 0:
-                continue
-            if cap_id in ("measure_power", "meter_power"):
-                score += 2
-            else:
-                score += 1
+        score  = _score_model_values(model_id, values)
         return values, score
 
     for model_id in DEYE_MODELS:
