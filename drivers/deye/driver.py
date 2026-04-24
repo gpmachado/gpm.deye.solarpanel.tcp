@@ -44,10 +44,6 @@ _ADVANCED_CAPS: frozenset[str] = frozenset({
     "measure_power.micro",          # Micro-inverter / Generator Power (hybrid diagnostic)
     "measure_power.apparent",       # Output Apparent Power (VA)
     "measure_power.reactive",       # Output Reactive Power (VAr)
-    # PV3/PV4 channels — absent on 2-MPPT installations; always require the checkbox
-    "measure_voltage.pv3", "measure_voltage.pv4",
-    "measure_current.pv3", "measure_current.pv4",
-    "measure_power.pv3",   "measure_power.pv4",
     # Secondary temperature (Radiator / AC heatsink) — often -100 °C / absent on string
     "measure_temperature.radiator",
     # L2/L3 phase sensors (3-phase installations)
