@@ -460,6 +460,15 @@ class DeyeDriver(Driver):
                     # Everything else (AC power, grid, temperature, frequency …) is
                     # always kept — it may read 0 at night but the capability is real.
                     if _re.search(r'\bpv\s*\d+\b', name_lower):
+                        # PV1 and PV2 are structural on every Deye model — always keep.
+                        # (deye_string/hybrid: 2-MPPT min; deye_sg04lp3: only has PV1/PV2;
+                        #  deye_micro: requires at least PV1/PV2 to operate.)
+                        # Filtering them out when detection runs near sunset leaves the
+                        # device without PV sub-caps and no measure_power.solar, which
+                        # causes the Energy Dashboard to fall back to AC Output Power.
+                        if _re.search(r'\bpv\s*[12]\b', name_lower):
+                            return True
+                        # PV3/PV4 may be unconnected optional inputs — filter by values.
                         return bool(active_values.get(s["name"]))
                     return True
                 sensors = [s for s in sensors if _keep(s)]
@@ -600,18 +609,65 @@ class DeyeDriver(Driver):
         """
         self.log(f"onRepair started for device {device.get_id()}")
 
+        def _device_data() -> dict:
+            try:
+                data = device.get_data()
+                return data if isinstance(data, dict) else {}
+            except Exception:
+                return {}
+
+        def _current_host() -> str:
+            data = _device_data()
+            return str(
+                device.get_setting("host")
+                or data.get("host")
+                or data.get("ip")
+                or ""
+            ).strip()
+
+        def _current_serial() -> int:
+            raw = device.get_setting("loggerSerial") or _device_data().get("serial") or 0
+            try:
+                serial = int(str(raw).strip() or 0)
+                if serial > 0:
+                    return serial
+            except (TypeError, ValueError):
+                pass
+
+            # Older devices store only data.id like "deye_1782317166_inverter".
+            import re as _re
+            match = _re.search(r"deye_(\d+)_", str(_device_data().get("id", "")))
+            return int(match.group(1)) if match else 0
+
+        def _current_model() -> str:
+            return str(device.get_setting("model") or _device_data().get("model") or "deye_string").strip()
+
         async def on_get_current(data=None) -> dict:
+            host = _current_host()
+            serial = _current_serial()
+            model = _current_model()
+            self.log(
+                f"Repair current — host:{host or '<empty>'} serial:{serial} "
+                f"model:{model} data:{_device_data()}"
+            )
             return {
-                "host":   device.get_setting("host") or "",
-                "model":  device.get_setting("model") or "deye_string",
+                "host":   host,
+                "serial": serial,
+                "model":  model,
                 "models": DEYE_MODELS,
             }
 
         async def on_run_detection(data=None) -> dict:
-            host   = device.get_setting("host") or ""
-            serial = int(str(device.get_setting("loggerSerial") or "0").strip() or 0)
+            data = data or {}
+            host   = str(data.get("host") or _current_host()).strip()
+            serial = _current_serial()
             if not host:
                 raise Exception("No IP configured — enter an IP address and save first.")
+            parts = host.split(".")
+            if len(parts) != 4 or not all(p.isdigit() and 0 <= int(p) <= 255 for p in parts):
+                raise Exception(f"Invalid IP address: {host}")
+            if serial <= 0:
+                raise Exception("No logger serial configured — re-pair the device.")
             self.log(f"Repair: running detection on {host} serial={serial}")
             detected, _, score = await _detect_model(host, serial)
             self.log(f"Repair detection: {detected} (score={score})")
@@ -622,20 +678,22 @@ class DeyeDriver(Driver):
             }
 
         async def on_save_repair(data: dict) -> bool:
-            model = str(data.get("model", "")).strip()
-            host  = str(data.get("host",  "")).strip()
+            current_model = _current_model()
+            current_host  = _current_host()
+            model = str(data.get("model") or current_model).strip()
+            host  = str(data.get("host")  or current_host).strip()
             if model and model not in DEYE_MODELS:
                 raise Exception(f"Unknown model: {model}")
             new_settings: dict = {}
-            if model:
+            if model and model != current_model:
                 new_settings["model"] = model
-            if host:
+            if host and host != current_host:
                 parts = host.split(".")
                 if len(parts) != 4 or not all(p.isdigit() and 0 <= int(p) <= 255 for p in parts):
                     raise Exception(f"Invalid IP address: {host}")
                 new_settings["host"] = host
             if not new_settings:
-                raise Exception("Nothing to save.")
+                return True
             self.log(f"Repair: applying settings {new_settings}")
             await device.set_settings(new_settings)
             return True

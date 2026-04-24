@@ -27,7 +27,9 @@
   "category": [
     "energy"
   ],
-  "permissions": [],
+  "permissions": [
+    "homey:manager:geolocation"
+  ],
   "brandColor": "#E84D0E",
   "images": {
     "small": "/assets/images/small.png",
@@ -513,6 +515,30 @@
               "value": 60,
               "min": 35,
               "max": 3600
+            },
+            {
+              "id": "solar_latitude",
+              "type": "number",
+              "label": {
+                "en": "Solar latitude"
+              },
+              "hint": {
+                "en": "Optional. Fallback when Homey location is unavailable. Example: -23.5505"
+              },
+              "min": -90,
+              "max": 90
+            },
+            {
+              "id": "solar_longitude",
+              "type": "number",
+              "label": {
+                "en": "Solar longitude"
+              },
+              "hint": {
+                "en": "Optional. Fallback when Homey location is unavailable. Example: -46.6333"
+              },
+              "min": -180,
+              "max": 180
             }
           ]
         }
@@ -520,6 +546,13 @@
       "pair": [
         {
           "id": "login",
+          "navigation": {
+            "next": "list_devices"
+          }
+        },
+        {
+          "id": "list_devices",
+          "template": "list_devices",
           "navigation": {
             "next": "add_devices"
           }

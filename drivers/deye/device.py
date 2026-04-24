@@ -85,6 +85,8 @@ class DeyeDevice(Device):
             except Exception as e:
                 _LOGGER.warning(f"Could not add measure_power to grid meter: {e}")
 
+        await self._ensure_pv_structural_caps()
+
         # Initialise synthetic inverter caps to 0 so Energy Dashboard never shows null
         # before the first successful poll.
         if not self._is_battery and not self._is_grid_meter:
@@ -168,6 +170,49 @@ class DeyeDevice(Device):
         except Exception as e:
             _LOGGER.error(f"Failed to build sensor map: {e}")
             self._sensor_cap_map = {}
+
+    async def _ensure_pv_structural_caps(self) -> None:
+        """Add missing PV1/PV2 capabilities to inverter devices paired during weak sunlight.
+
+        The pairing sensor filter used to exclude PV1/PV2 sensors when they read 0 at
+        detection time (e.g. sunset or cloudy startup). The bug affected all models except
+        deye_string. This method runs once at startup and silently adds any missing
+        PV1/PV2 caps so existing devices recover without requiring re-pairing.
+
+        Cap sets per model:
+          - deye_string / deye_micro: voltage + current for PV1/PV2
+          - deye_hybrid / deye_sg04lp3: power + voltage + current for PV1/PV2
+        """
+        if self._is_battery or self._is_grid_meter:
+            return
+        model = (self.get_setting("model") or "").strip()
+        if not model:
+            return
+
+        # Caps that should always exist for the PV1/PV2 strings of each model
+        base_pv_caps = (
+            "measure_voltage.pv1", "measure_voltage.pv2",
+            "measure_current.pv1", "measure_current.pv2",
+        )
+        power_pv_caps = (
+            "measure_power.pv1", "measure_power.pv2",
+        )
+
+        if model in ("deye_hybrid", "deye_sg04lp3"):
+            required = base_pv_caps + power_pv_caps
+        elif model in ("deye_string", "deye_micro"):
+            required = base_pv_caps
+        else:
+            return
+
+        for cap_id in required:
+            if self.has_capability(cap_id):
+                continue
+            try:
+                await self.addCapability(cap_id)
+                self.log(f"Added missing PV structural cap {cap_id} ({model})")
+            except Exception as e:
+                _LOGGER.warning(f"Could not add missing PV cap {cap_id}: {e}")
 
     # ── SharedPoller ──────────────────────────────────────────────────────────
 

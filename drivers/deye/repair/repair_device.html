@@ -64,7 +64,7 @@
 
   <div class="section">
     <label for="host" data-i18n="repair.ip_label">Logger IP Address</label>
-    <input type="text" id="host" placeholder="192.168.1.100" />
+    <input type="text" id="host" placeholder="192.168.1.x" />
     <div class="hint" data-i18n="repair.ip_hint">The local IP of your Solarman Wi-Fi logger (port 8899).</div>
   </div>
 
@@ -75,6 +75,8 @@
   <div id="err"></div>
 
   <script>
+    var _current = { host: '', model: 'deye_string', models: {} };
+
     Homey.ready(function() {
       // Translate static i18n elements
       document.querySelectorAll('[data-i18n]').forEach(function(el) {
@@ -88,20 +90,35 @@
           document.getElementById('err').textContent = err ? (err.message || String(err)) : 'Failed to load device info.';
           return;
         }
+        _current = {
+          host:   data.host || '',
+          model:  data.model || 'deye_string',
+          models: data.models || {}
+        };
+
         // Populate model dropdown
         var sel      = document.getElementById('model');
-        var current  = data.model || 'deye_string';
-        var models   = data.models || {};
+        var current  = _current.model;
+        var models   = _current.models;
+        sel.innerHTML = '';
         Object.keys(models).forEach(function(mid) {
           var opt = document.createElement('option');
           opt.value       = mid;
           opt.textContent = models[mid];
           sel.appendChild(opt);
         });
+
+        // Defensive fallback: keep repair usable even if model metadata fails to load.
+        if (!sel.options.length) {
+          var opt = document.createElement('option');
+          opt.value       = current;
+          opt.textContent = current;
+          sel.appendChild(opt);
+        }
         sel.value = current;
 
         // Populate IP input
-        document.getElementById('host').value = data.host || '';
+        document.getElementById('host').value = _current.host;
       });
     });
 
@@ -109,28 +126,43 @@
       var btn        = document.getElementById('detect-btn');
       var statusEl   = document.getElementById('detect-status');
       var badgeEl    = document.getElementById('detect-badge');
+      var previousModel = document.getElementById('model').value || _current.model;
       btn.disabled   = true;
       badgeEl.innerHTML = '';
       statusEl.textContent = Homey.__('repair.detecting') || 'Running detection…';
 
-      Homey.emit('run_detection', null, function(err, data) {
+      var host = document.getElementById('host').value.trim() || _current.host;
+
+      Homey.emit('run_detection', { host: host }, function(err, data) {
         btn.disabled = false;
         if (err) {
           statusEl.textContent = err.message || String(err);
           return;
         }
         statusEl.textContent = '';
-        // Pre-select detected model in dropdown
+        // Show detected model, but do not auto-switch away from the current model.
+        // Repair should not accidentally change model after a weak/late-day detection.
         var sel = document.getElementById('model');
-        if (data.detected && sel.querySelector('option[value="' + data.detected + '"]')) {
+        if (data.detected && data.detected === previousModel && sel.querySelector('option[value="' + data.detected + '"]')) {
           sel.value = data.detected;
+        } else if (data.detected && !sel.querySelector('option[value="' + data.detected + '"]')) {
+          var opt = document.createElement('option');
+          opt.value       = data.detected;
+          opt.textContent = ((data.models || {})[data.detected] || data.detected);
+          sel.appendChild(opt);
+        }
+        if (data.detected !== previousModel && sel.querySelector('option[value="' + previousModel + '"]')) {
+          sel.value = previousModel;
         }
         // Show badge
         var badge = document.createElement('div');
         var modelName = (data.models || {})[data.detected] || data.detected;
-        if (data.auto_confirmed) {
+        if (data.auto_confirmed && data.detected === previousModel) {
           badge.className   = 'badge badge-ok';
           badge.textContent = '✓ ' + (Homey.__('repair.detected_badge') || 'Detected: ') + modelName;
+        } else if (data.auto_confirmed) {
+          badge.className   = 'badge badge-warn';
+          badge.textContent = '⚠ Detected different model: ' + modelName + '. Select it manually only if this is expected.';
         } else {
           badge.className   = 'badge badge-warn';
           badge.textContent = '⚠ ' + (Homey.__('repair.detected_uncertain') || 'No live data — default: ') + modelName;
@@ -144,7 +176,7 @@
       var statusEl = document.getElementById('save-status');
       var errEl    = document.getElementById('err');
       var model    = document.getElementById('model').value;
-      var host     = document.getElementById('host').value.trim();
+      var host     = document.getElementById('host').value.trim() || _current.host;
 
       saveBtn.disabled     = true;
       errEl.textContent    = '';

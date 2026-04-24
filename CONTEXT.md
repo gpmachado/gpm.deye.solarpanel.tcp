@@ -197,6 +197,92 @@ respond during pairing (matches davidrapan/ha-solarman scanner.py).
 
 ### Capability gaps (from HA entity comparison)
 
+Mapping change status:
+- `deye_string.json` was not rewritten after `v1.3.2`; current tests show the
+  core register map matches Gabriel's HA/Deye Cloud values for production,
+  voltage/current/frequency, totals, and status.
+- `deye_hybrid.json` did receive targeted changes after `v1.3.2`: PV3/PV4
+  voltage/current/power were added, the first request was extended from register
+  112 to 116, and Grid Current L1/L2 decode changed from unsigned (`rule: 1`) to
+  signed (`rule: 2`).
+- Do not broadly rewrite either map without a new register baseline. Future work
+  should compare each changed/added hybrid sensor against Luis's HA screenshots
+  and diagnostic files before publishing.
+
+Capability profile idea:
+- Add a pairing/settings checkbox for "advanced sensors" (wording TBD).
+- Default profile should expose only reliable, production-focused capabilities for
+  string inverters without battery.
+- Advanced profile can expose additional/experimental sensors for users who want
+  full HA-style comparison.
+
+For pairing, split capabilities into:
+
+Required/essential capabilities:
+- These should be added automatically when the model supports them.
+- They represent the core purpose of the device and should be reliable enough for
+  normal Homey use.
+- For a string inverter without battery, these are production/solar telemetry,
+  status, and basic AC context.
+
+Optional/advanced capabilities:
+- These should be behind a pairing checkbox or equivalent advanced choice.
+- They are useful for diagnostics, HA parity, or advanced users, but may be
+  model/firmware/install dependent.
+- A zero value is not automatically invalid for power/energy sensors, but some
+  sensors may still be non-informative on a given installation.
+
+For `deye_string` without battery (Gabriel's case), treat the inverter primarily
+as a solar production device, not as a whole-home/grid meter. Gabriel has 3-phase
+utility service and exports through only 2 phases, so string-inverter telemetry
+does not represent complete house load or complete grid import/export.
+
+Basic/immediate-interest `deye_string` capabilities:
+- PV1 Voltage.
+- PV1 Current.
+- PV1 Power, derived when the inverter has no direct PV1 power register:
+  `PV1 Voltage * PV1 Current`.
+- PV2 Voltage.
+- PV2 Current.
+- PV2 Power, derived when the inverter has no direct PV2 power register:
+  `PV2 Voltage * PV2 Current`.
+- Solar Power / DC Input Power, mapped from `Input Power` when available
+  (`regs 82,83` on Gabriel's inverter).
+- AC Output Power, mapped from `Output AC Power` when available (`regs 80,81`
+  on Gabriel's inverter).
+- Power Losses, derived as `Input Power - Output AC Power` when both values are
+  present. This is useful for immediate diagnostics but should be labelled
+  clearly as a derived conversion-loss estimate.
+- Daily Production.
+- Total Production.
+- Grid L1 Voltage.
+- Grid L1 Current.
+- Grid Frequency.
+- DC/module Temperature when decoded value is valid.
+- Running Status.
+- Fault / Alarm.
+- PV1/PV2 voltage/current are structural on 2-MPPT `deye_string` devices and
+  should not be filtered out just because pairing happens near sunset/night.
+
+Keep available but advanced/optional for `deye_string`:
+- Today/Total Energy Import/Export (0 is valid and should not be suppressed)
+- Today/Total Load Consumption (may mirror production on Gabriel's inverter)
+- `AC Output Power` as an alternate AC power register if it exists separately
+  from `Output AC Power` (`regs 86,87` on Gabriel's inverter).
+- Output Apparent Power / Output Reactive Power.
+- PV3/PV4 voltage/current/power for 4-MPPT string devices or when values are
+  actually present.
+
+Avoid publishing by default for Gabriel-like `deye_string` devices:
+- Grid Power (stays 0 on Gabriel's inverter)
+- Load Power (stays 0 in HA on Gabriel's inverter)
+- Today/Total Losses (Total Losses is unknown in HA; Total Production equals
+  Total Load Consumption on Gabriel's inverter)
+- Radiator/Ambient Temperature when decoded value is `-100 °C` (raw 0 with
+  offset means sensor unavailable)
+- Battery capabilities
+- PV3/PV4 when voltage and current are consistently 0 on 2-MPPT devices
+
 High priority additions to inverter_definitions:
 - `PV1..PV4 Power` for deye_micro and deye_string (capability_map.py already handles
   `measure_power.pv1..pv4`, just missing from JSON sensor definitions)
