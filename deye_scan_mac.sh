@@ -2,6 +2,7 @@
 # deye_scan_mac.sh — Universal Deye inverter scan (macOS / Linux)
 # Supports: deye_string · deye_hybrid · deye_micro · deye_sg04lp3
 # Transport: embedded Solarman V5 TCP — no pysolarmanv5 needed
+# Auto-discovery: UDP broadcast on port 48899 (leave IP blank to scan)
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -15,60 +16,12 @@ fi
 
 echo
 echo " ============================================"
-echo "  Deye Universal Local Scan for macOS"
+echo "  Deye Universal Local Scan"
+echo "  String · Hybrid · Micro · SG04LP3"
 echo " ============================================"
 echo
 
-DEFAULT_HOST="${1:-192.168.1.199}"
-DEFAULT_SERIAL="${2:-1782317166}"
-
-printf " Logger IP Address    [%s]: " "$DEFAULT_HOST"
-read -r HOST
-HOST="${HOST:-$DEFAULT_HOST}"
-
-printf " Logger Serial Number [%s]: " "$DEFAULT_SERIAL"
-read -r SERIAL
-SERIAL="${SERIAL:-$DEFAULT_SERIAL}"
-
-if ! [[ "$SERIAL" =~ ^[0-9]+$ ]]; then
-  echo " [ERROR] Serial must be numeric"
-  exit 1
-fi
-
-echo
-echo " Select model:"
-echo "   [1] deye_string   — String Inverter (2/4 MPPT)"
-echo "   [2] deye_hybrid   — Hybrid (Battery + 2 MPPT)"
-echo "   [3] deye_micro    — Microinverter (4 MPPT)"
-echo "   [4] deye_sg04lp3  — Hybrid 3-phase SG04LP3"
-echo "   [5] auto-detect   (probe inverter to determine model)"
-echo
-printf " Choice [1-5, default=1]: "
-read -r MODEL_CHOICE
-MODEL_CHOICE="${MODEL_CHOICE:-1}"
-
-case "$MODEL_CHOICE" in
-  1) MODEL="deye_string"  ;;
-  2) MODEL="deye_hybrid"  ;;
-  3) MODEL="deye_micro"   ;;
-  4) MODEL="deye_sg04lp3" ;;
-  5) MODEL="auto"         ;;
-  *) echo " [ERROR] Invalid choice"; exit 1 ;;
-esac
-
-STAMP="$(date +%Y%m%d_%H%M%S)"
-if [ "$MODEL" = "auto" ]; then
-  OUTFILE="${HOME}/Desktop/deye_scan_${HOST}_${STAMP}.txt"
-else
-  OUTFILE="${HOME}/Desktop/${MODEL}_scan_${HOST}_${STAMP}.txt"
-fi
-
-echo
-echo " Scanning ${HOST} serial=${SERIAL} model=${MODEL}"
-echo " Output: ${OUTFILE}"
-echo
-
-"$PYTHON_BIN" - "$HOST" "$SERIAL" "$MODEL" "$OUTFILE" "$DEFS_DIR" <<'PY'
+"$PYTHON_BIN" - "$DEFS_DIR" <<'PY'
 import asyncio
 import datetime as _dt
 import json
@@ -78,11 +31,7 @@ import struct
 import sys
 import time
 
-HOST   = sys.argv[1]
-SERIAL = int(sys.argv[2])
-MODEL  = sys.argv[3]      # model id or "auto"
-OUTFILE = sys.argv[4]
-DEFS_DIR = sys.argv[5]
+DEFS_DIR = sys.argv[1]
 
 PORT    = 8899
 SLAVE   = 1
@@ -90,17 +39,58 @@ TIMEOUT = 8.0
 RETRIES = 3
 
 MODELS = {
-    "deye_string":  "Deye String Inverter (2/4 MPPT)",
-    "deye_hybrid":  "Deye Hybrid (Battery + 2 MPPT)",
-    "deye_micro":   "Deye Microinverter (4 MPPT) — SUN-M/SUN2000G3",
-    "deye_sg04lp3": "Deye Hybrid 3-phase — SG04LP3",
+    "deye_string":  "String Inverter (2/4 MPPT)",
+    "deye_hybrid":  "Hybrid (Battery + 2 MPPT)",
+    "deye_micro":   "Microinverter (4 MPPT) — SUN-M/SUN2000G3",
+    "deye_sg04lp3": "Hybrid 3-phase — SG04LP3",
 }
 
-# ── Tee output to file + stdout ───────────────────────────────────────────────
+# ── UDP logger discovery ───────────────────────────────────────────────────────
+
+async def discover_loggers(timeout: float = 3.0) -> list[dict]:
+    """Broadcast Solarman discovery payloads, collect IP/MAC/serial replies."""
+    DISCOVERY_PORT     = 48899
+    DISCOVERY_PAYLOADS = [b"WIFIKIT-214028-READ", b"HF-A11ASSISTHREAD"]
+    found: list[dict] = []
+    seen:  set[str]   = set()
+
+    loop = asyncio.get_event_loop()
+
+    class _Protocol(asyncio.DatagramProtocol):
+        def datagram_received(self, data: bytes, addr):
+            try:
+                parts = data.decode("latin-1").strip().split(",")
+                if len(parts) < 3:
+                    return
+                ip, mac, sn = parts[0].strip(), parts[1].strip(), parts[2].strip()
+                if not ip or ip in seen or not sn.isdigit():
+                    return
+                seen.add(ip)
+                found.append({"ip": ip, "mac": mac, "serial": int(sn)})
+            except Exception:
+                pass
+        def error_received(self, exc): pass
+        def connection_lost(self, exc):  pass
+
+    try:
+        transport, _ = await loop.create_datagram_endpoint(
+            _Protocol, local_addr=("0.0.0.0", 0), allow_broadcast=True,
+        )
+        for payload in DISCOVERY_PAYLOADS:
+            transport.sendto(payload, ("<broadcast>", DISCOVERY_PORT))
+            await asyncio.sleep(0.1)
+        await asyncio.sleep(timeout)
+        transport.close()
+    except Exception as e:
+        print(f" [WARNING] UDP scan error: {e}")
+
+    return found
+
+# ── Tee output ────────────────────────────────────────────────────────────────
 
 class Tee:
     def __init__(self, path):
-        os.makedirs(os.path.dirname(path), exist_ok=True)
+        os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
         self._file = open(path, "w", encoding="utf-8")
 
     def write(self, text=""):
@@ -111,7 +101,7 @@ class Tee:
     def close(self):
         self._file.close()
 
-# ── SolarmanV5 TCP transport (embedded — no pysolarmanv5) ────────────────────
+# ── SolarmanV5 TCP transport ──────────────────────────────────────────────────
 
 V5_START     = 0xA5
 V5_END       = 0x15
@@ -132,11 +122,6 @@ def v5_checksum(frame):
     return sum(frame[i] & 0xFF for i in range(1, len(frame) - 2)) & 0xFF
 
 
-def build_modbus_request(slave, fc, start, count):
-    msg = struct.pack(">BBHH", slave, fc, start, count)
-    return msg + struct.pack("<H", crc16_modbus(msg))
-
-
 def build_v5_frame(serial, seq, modbus_payload):
     payload = bytearray(bytes([0x02]) + bytes(14) + modbus_payload)
     header  = bytearray(
@@ -152,11 +137,14 @@ def build_v5_frame(serial, seq, modbus_payload):
     return frame
 
 
-def parse_v5_response(frame, expected_seq):
-    if len(frame) < 29:
-        raise ValueError("V5 frame too short: %d bytes" % len(frame))
-    if frame[0] != V5_START or frame[-1] != V5_END:
-        raise ValueError("V5 start/end mismatch")
+def build_modbus_request(slave, fc, start, count):
+    msg = struct.pack(">BBHH", slave, fc, start, count)
+    return msg + struct.pack("<H", crc16_modbus(msg))
+
+
+def parse_v5_response(frame):
+    if len(frame) < 29 or frame[0] != V5_START or frame[-1] != V5_END:
+        raise ValueError("Invalid V5 frame (%d bytes)" % len(frame))
     modbus = frame[25:-2]
     if len(modbus) < 5:
         raise ValueError("Modbus payload too short: %d bytes" % len(modbus))
@@ -176,15 +164,14 @@ def parse_modbus_registers(data, count):
 
 
 class V5Transport:
-    def __init__(self, host, serial, port=8899, slave=1, timeout=8.0):
+    def __init__(self, host, serial):
         self.host = host; self.serial = serial
-        self.port = port; self.slave = slave; self.timeout = timeout
         self.seq = 0; self.reader = self.writer = None
 
     async def connect(self):
         self.reader, self.writer = await asyncio.wait_for(
-            asyncio.open_connection(self.host, self.port, family=socket.AF_INET),
-            timeout=self.timeout,
+            asyncio.open_connection(self.host, PORT, family=socket.AF_INET),
+            timeout=TIMEOUT,
         )
 
     async def disconnect(self):
@@ -201,24 +188,24 @@ class V5Transport:
         return self.seq
 
     async def read_registers(self, fc, start, count):
-        seq = self._next_seq()
-        req   = build_modbus_request(self.slave, fc, start, count)
+        seq   = self._next_seq()
+        req   = build_modbus_request(SLAVE, fc, start, count)
         frame = build_v5_frame(self.serial, seq, req)
         self.writer.write(frame)
         await self.writer.drain()
         resp   = await self._read_v5_frame()
-        modbus = parse_v5_response(resp, seq)
+        modbus = parse_v5_response(resp)
         return parse_modbus_registers(modbus, count)
 
     async def _read_v5_frame(self):
         for _ in range(5):
             header = await asyncio.wait_for(
-                self.reader.readexactly(11), timeout=self.timeout)
+                self.reader.readexactly(11), timeout=TIMEOUT)
             if header[0] != V5_START:
                 raise ValueError("Unexpected V5 start: 0x%02x" % header[0])
             payload_len = struct.unpack("<H", header[1:3])[0]
             rest  = await asyncio.wait_for(
-                self.reader.readexactly(payload_len + 2), timeout=self.timeout)
+                self.reader.readexactly(payload_len + 2), timeout=TIMEOUT)
             frame = header + rest
             if frame[3:5] == V5_CTRL_RESP:
                 return frame
@@ -230,7 +217,7 @@ async def read_block(host, serial, fc, start, end, log=None):
     label = "fc=%d [%d-%d]" % (fc, start, end)
     last_err = None
     for attempt in range(1, RETRIES + 1):
-        t = V5Transport(host, serial, PORT, SLAVE, TIMEOUT)
+        t = V5Transport(host, serial)
         try:
             await t.connect()
             values = await t.read_registers(fc, start, count)
@@ -239,22 +226,19 @@ async def read_block(host, serial, fc, start, end, log=None):
         except Exception as exc:
             last_err = exc
             if log:
-                log.write("  %s attempt %d/%d failed: %s: %s"
+                log.write("  %s attempt %d/%d: %s: %s"
                           % (label, attempt, RETRIES, type(exc).__name__, exc))
             await t.disconnect()
             await asyncio.sleep(0.8 * attempt)
     raise last_err
 
-
-# ── JSON definition loader ────────────────────────────────────────────────────
+# ── JSON / parser ─────────────────────────────────────────────────────────────
 
 def load_definition(model_id):
     path = os.path.join(DEFS_DIR, model_id + ".json")
     with open(path, encoding="utf-8") as f:
         return json.load(f)
 
-
-# ── Parameter parser (adapted from ha-solarman) ───────────────────────────────
 
 def lookup_value(value, options):
     for o in options:
@@ -264,132 +248,88 @@ def lookup_value(value, options):
 
 
 def parse_sensor(defn, all_regs):
-    """Parse one sensor definition against a {addr: raw_value} dict.
-    Returns (raw_combined, parsed_value) or (None, None) if registers missing."""
-    rule  = defn.get("rule", 1)
     regs  = defn["registers"]
+    rule  = defn.get("rule", 1)
     scale = defn.get("scale", 1)
-
-    # Check all registers are present
     for r in regs:
         if r not in all_regs:
             return None, None
-
-    # Combine register words
-    raw   = 0
-    shift = 0
-    bits  = 0
+    raw = shift = bits = 0
     for r in regs:
         raw  += (all_regs[r] & 0xFFFF) << shift
         shift += 16
         bits  += 16
-
-    # Lookup table
     if "lookup" in defn:
         return raw, lookup_value(raw, defn["lookup"])
-
     value = raw
-
-    # Offset (e.g. temperature: subtract 1000)
     if "offset" in defn:
         value -= defn["offset"]
-
-    # Signed (rules 2 and 4)
     if rule in (2, 4):
         maxint = (1 << bits) - 1
         if value > maxint // 2:
             value -= (maxint + 1)
-
     value = value * scale
-
-    # Validation
     if "validation" in defn:
         v = defn["validation"]
         if "min" in v and value < v["min"]:
             return raw, None
         if "max" in v and value > v["max"]:
             return raw, None
-
-    # Round nicely
     if isinstance(value, float) and value == int(value):
         value = int(value)
     elif isinstance(value, float):
         value = round(value, 3)
-
     return raw, value
 
+# ── Auto-detect model ─────────────────────────────────────────────────────────
 
-# ── Auto-detection ────────────────────────────────────────────────────────────
-
-async def detect_model(log):
-    """Score each model by reading its registers and counting non-zero sensor hits."""
+async def detect_model(host, serial, log):
     log.write(" Auto-detecting model — probing each type...")
     log.write("")
-
-    best_model = "deye_string"
-    best_score = 0
-
+    best_model, best_score = "deye_string", 0
     for model_id in MODELS:
         try:
             defn = load_definition(model_id)
         except FileNotFoundError:
-            log.write("  [%s] definition not found — skipped" % model_id)
             continue
-
-        score = 0
         all_regs = {}
-
         for req in defn["requests"]:
             start, end, fc = req["start"], req["end"], req["mb_functioncode"]
-            count = end - start + 1
             try:
                 values = await asyncio.wait_for(
-                    read_block(HOST, SERIAL, fc, start, end), timeout=10.0
-                )
+                    read_block(host, serial, fc, start, end), timeout=10.0)
                 for i, v in enumerate(values):
                     all_regs[start + i] = v
-            except Exception as e:
-                pass   # register group not supported by this inverter → skip
-
-        # Score sensors
+            except Exception:
+                pass
+        score = 0
         for group in defn["parameters"]:
             for sensor in group["items"]:
-                raw, value = parse_sensor(sensor, all_regs)
+                _, value = parse_sensor(sensor, all_regs)
                 if value is None or value == 0:
                     continue
-                uom = sensor.get("uom", "")
-                if uom in ("W", "kWh", "kW"):
-                    score += 2
-                else:
-                    score += 1
-
+                score += 2 if sensor.get("uom", "") in ("W", "kWh", "kW") else 1
         log.write("  [%s] score=%d" % (model_id, score))
         if score > best_score:
             best_score = score
             best_model = model_id
-
-        await asyncio.sleep(1.5)   # let logger close TCP slot
-
+        await asyncio.sleep(1.5)
     log.write("")
     if best_score == 0:
-        log.write(" ⚠ No live data found (night / offline) — defaulting to deye_string")
+        log.write(" ⚠ No live data (night/offline) — defaulting to deye_string")
     else:
         log.write(" ✓ Detected: %s (score=%d)" % (best_model, best_score))
     log.write("")
     return best_model
 
-
-# ── Formatted output ──────────────────────────────────────────────────────────
+# ── Output helper ─────────────────────────────────────────────────────────────
 
 def fmt(value, uom=""):
     if value is None:
         return "--"
     if isinstance(value, str):
         return value
-    if isinstance(value, float):
-        text = ("%.3f" % value).rstrip("0").rstrip(".")
-    else:
-        text = str(value)
+    text = ("%.3f" % value).rstrip("0").rstrip(".") if isinstance(value, float) else str(value)
     return (text + (" " + uom if uom else "")).strip()
 
 
@@ -397,52 +337,125 @@ def add_derived(results, name, value, uom, note):
     results[name] = {"raw": None, "value": value, "uom": uom,
                      "registers": [], "note": note}
 
+# ── Interactive prompts ───────────────────────────────────────────────────────
+
+async def prompt_logger() -> tuple[str, int]:
+    """Ask for IP+serial, offering UDP auto-discovery when IP is left blank."""
+    print(" Logger IP Address (leave blank to auto-scan): ", end="", flush=True)
+    host = input().strip()
+
+    if not host:
+        print(" Scanning network for Solarman loggers (UDP broadcast)...", flush=True)
+        loggers = await discover_loggers(timeout=3.0)
+        if not loggers:
+            print(" [ERROR] No loggers found. Enter IP manually.")
+            sys.exit(1)
+        if len(loggers) == 1:
+            lg = loggers[0]
+            print(f" Found: {lg['ip']}  MAC:{lg['mac']}  Serial:{lg['serial']}")
+            return lg["ip"], lg["serial"]
+        # Multiple loggers — let user pick
+        print(f" Found {len(loggers)} logger(s):")
+        for i, lg in enumerate(loggers, 1):
+            print(f"   [{i}] {lg['ip']}  MAC:{lg['mac']}  Serial:{lg['serial']}")
+        print(f" Choice [1-{len(loggers)}, default=1]: ", end="", flush=True)
+        choice = input().strip() or "1"
+        try:
+            lg = loggers[int(choice) - 1]
+        except (IndexError, ValueError):
+            print(" [ERROR] Invalid choice")
+            sys.exit(1)
+        return lg["ip"], lg["serial"]
+
+    # Manual IP entered — ask for serial
+    parts = host.split(".")
+    if len(parts) != 4 or not all(p.isdigit() and 0 <= int(p) <= 255 for p in parts):
+        print(f" [ERROR] Invalid IP: {host}")
+        sys.exit(1)
+    print(" Logger Serial Number: ", end="", flush=True)
+    sn_str = input().strip()
+    if not sn_str.isdigit():
+        print(" [ERROR] Serial must be numeric")
+        sys.exit(1)
+    return host, int(sn_str)
+
+
+def prompt_model() -> str:
+    print()
+    print(" Select model:")
+    for i, (mid, mname) in enumerate(MODELS.items(), 1):
+        print(f"   [{i}] {mid:<14} — {mname}")
+    print(f"   [5] auto-detect   (probe inverter to determine model)")
+    print()
+    print(" Choice [1-5, default=1]: ", end="", flush=True)
+    choice = input().strip() or "1"
+    keys = list(MODELS.keys())
+    if choice == "5":
+        return "auto"
+    try:
+        idx = int(choice) - 1
+        if 0 <= idx < len(keys):
+            return keys[idx]
+    except ValueError:
+        pass
+    print(" [ERROR] Invalid choice")
+    sys.exit(1)
 
 # ── Main ──────────────────────────────────────────────────────────────────────
 
 async def main():
-    log = Tee(OUTFILE)
+    host, serial = await prompt_logger()
+    model        = prompt_model()
+
+    stamp   = _dt.datetime.now().strftime("%Y%m%d_%H%M%S")
+    out_pfx = model if model != "auto" else "deye"
+    outfile = os.path.join(os.path.expanduser("~"), "Desktop",
+                           f"{out_pfx}_scan_{host}_{stamp}.txt")
+
+    print()
+    print(f" Scanning {host}  serial={serial}  model={model}")
+    print(f" Output:  {outfile}")
+    print()
+
+    log = Tee(outfile)
     started = _dt.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
     try:
-        # ── Auto-detect if requested ──────────────────────────────────────────
-        model_id = MODEL
+        model_id = model
         if model_id == "auto":
             log.write("Deye Universal Scan - %s" % started)
-            log.write("Host: %s  Serial: %s" % (HOST, SERIAL))
+            log.write("Host: %s  Serial: %s" % (host, serial))
             log.write("Transport: embedded Solarman V5 TCP, no pysolarmanv5")
             log.write("=" * 72)
             log.write("")
-            model_id = await detect_model(log)
+            model_id = await detect_model(host, serial, log)
 
-        defn = load_definition(model_id)
+        defn       = load_definition(model_id)
         model_name = MODELS.get(model_id, model_id)
 
         log.write("Deye Universal Scan - %s" % started)
-        log.write("Host: %s  Serial: %s  Model: %s" % (HOST, SERIAL, model_id))
+        log.write("Host: %s  Serial: %s  Model: %s" % (host, serial, model_id))
         log.write("Description: %s" % model_name)
         log.write("Transport: embedded Solarman V5 TCP, no pysolarmanv5")
         log.write("=" * 72)
         log.write("")
 
-        # ── Read all register groups ──────────────────────────────────────────
+        # Read all register groups
         all_registers = {}
         for req in defn["requests"]:
-            start = req["start"]
-            end   = req["end"]
-            fc    = req["mb_functioncode"]
+            start, end, fc = req["start"], req["end"], req["mb_functioncode"]
             count = end - start + 1
             log.write("Reading fc=%d registers [%d-%d]..." % (fc, start, end))
             try:
-                values = await read_block(HOST, SERIAL, fc, start, end, log)
+                values = await read_block(host, serial, fc, start, end, log)
                 for i, v in enumerate(values):
                     all_registers[start + i] = v
                 log.write("  OK: %d registers" % count)
             except Exception as exc:
-                log.write("  FAILED after %d retries: %s" % (RETRIES, exc))
+                log.write("  FAILED: %s" % exc)
             await asyncio.sleep(0.3)
 
-        # ── Raw non-zero registers ────────────────────────────────────────────
+        # Raw non-zero registers
         log.write("")
         log.write("Raw registers (non-zero):")
         for reg in sorted(all_registers):
@@ -450,65 +463,55 @@ async def main():
             if v:
                 log.write("  reg %5d (0x%04X) = %7d  (0x%04X)" % (reg, reg, v, v))
 
-        # ── Parse all sensors ─────────────────────────────────────────────────
-        results = {}   # name → {raw, value, uom, registers, note, group}
-        group_order = []
+        # Parse sensors
+        results = {}
         for group_def in defn["parameters"]:
             gname = group_def.get("group", "")
-            if gname not in group_order:
-                group_order.append(gname)
             for sensor in group_def["items"]:
                 sname = sensor["name"]
                 raw, value = parse_sensor(sensor, all_registers)
                 if value is not None:
                     results[sname] = {
-                        "raw": raw,
-                        "value": value,
+                        "raw": raw, "value": value,
                         "uom": sensor.get("uom", ""),
                         "registers": sensor["registers"],
-                        "note": "",
-                        "group": gname,
+                        "note": "", "group": gname,
                     }
 
-        # ── Derived PV power for string/micro (no direct PV-power registers) ─
+        # Derived PV power for string/micro
         if model_id in ("deye_string", "deye_micro"):
-            pv_channels = {}
             for idx in (1, 2, 3, 4):
-                vname = "PV%d Voltage" % idx
-                aname = "PV%d Current" % idx
-                v_val = results.get(vname, {}).get("value")
-                a_val = results.get(aname, {}).get("value")
+                v_val = results.get("PV%d Voltage" % idx, {}).get("value")
+                a_val = results.get("PV%d Current" % idx, {}).get("value")
                 if v_val is not None and a_val is not None:
                     pwr = round(float(v_val) * float(a_val), 1)
-                    pv_channels[idx] = pwr
                     add_derived(results, "PV%d Power" % idx, pwr, "W",
                                 "derived: PV%d Voltage × PV%d Current" % (idx, idx))
-            if pv_channels:
-                total = round(sum(pv_channels.values()), 1)
-                add_derived(results, "PV Power Total", total, "W",
+            pv_total = sum(
+                results["PV%d Power" % i]["value"]
+                for i in (1, 2, 3, 4) if ("PV%d Power" % i) in results
+            )
+            if pv_total:
+                add_derived(results, "PV Power Total", pv_total, "W",
                             "derived: sum of PV1..PV4 Power")
 
-        # ── Display parsed values by group ────────────────────────────────────
+        # Display by group
         log.write("")
         log.write("Parsed values by group:")
         log.write("")
-
-        # Gather all sensor names in their definition order
         ordered_names = []
         for group_def in defn["parameters"]:
             gname = group_def.get("group", "")
-            group_sensors = [s["name"] for s in group_def["items"]]
-            # inject derived PV power after each PVx Voltage/Current pair
             expanded = []
-            for sname in group_sensors:
+            for sensor in group_def["items"]:
+                sname = sensor["name"]
                 expanded.append(sname)
                 for idx in (1, 2, 3, 4):
                     if sname == ("PV%d Current" % idx):
-                        pwr_name = "PV%d Power" % idx
-                        if pwr_name in results:
-                            expanded.append(pwr_name)
+                        pname = "PV%d Power" % idx
+                        if pname in results:
+                            expanded.append(pname)
             ordered_names.append((gname, expanded))
-        # add PV Power Total at end of solar group
         for gname_exp in ordered_names:
             if gname_exp[0].lower() in ("solar", "pv", ""):
                 if "PV Power Total" in results and "PV Power Total" not in gname_exp[1]:
@@ -516,42 +519,39 @@ async def main():
                 break
 
         for gname, sensor_names in ordered_names:
-            printed_header = False
+            printed = False
             for sname in sensor_names:
                 if sname not in results:
                     continue
-                if not printed_header:
+                if not printed:
                     log.write("  [%s]" % gname)
-                    printed_header = True
+                    printed = True
                 item = results[sname]
                 regs_str = (",".join(str(r) for r in item["registers"])
                             if item["registers"] else "derived")
                 raw_str  = "--" if item["raw"] is None else str(item["raw"])
-                val_str  = fmt(item["value"], item["uom"])
                 note     = "  # %s" % item["note"] if item["note"] else ""
                 log.write("    %-38s %-16s raw=%-10s regs=%s%s"
-                          % (sname + ":", val_str, raw_str, regs_str, note))
-            if printed_header:
+                          % (sname + ":", fmt(item["value"], item["uom"]),
+                             raw_str, regs_str, note))
+            if printed:
                 log.write("")
 
-        # ── Model-specific notes ──────────────────────────────────────────────
+        # Notes
         log.write("Notes:")
         if model_id in ("deye_string", "deye_micro"):
             log.write("  - PV Power is derived (Voltage × Current) — no direct PV power register.")
-            input_pwr = results.get("Input Power", {}).get("value")
-            if input_pwr is not None:
-                log.write("  - Input Power (Solar DC) = %.1f W (register 82+83)." % input_pwr)
         if model_id in ("deye_hybrid", "deye_sg04lp3"):
             batt_soc = results.get("Battery SOC", {}).get("value")
+            batt_pwr = results.get("Battery Power", {}).get("value")
             if batt_soc is not None:
                 log.write("  - Battery SOC = %s%%." % batt_soc)
-            batt_pwr = results.get("Battery Power", {}).get("value")
             if batt_pwr is not None:
                 direction = "discharging" if float(batt_pwr) > 0 else "charging" if float(batt_pwr) < 0 else "standby"
                 log.write("  - Battery Power = %.1f W (%s)." % (float(batt_pwr), direction))
-        log.write("  - Radiator Temperature = -100 C means register is 0 (sensor absent).")
+        log.write("  - Radiator Temperature = -100 C means register 0 (sensor absent).")
         log.write("")
-        log.write("Done. File saved to: %s" % OUTFILE)
+        log.write("Done. File saved to: %s" % outfile)
 
     finally:
         log.close()
@@ -561,7 +561,7 @@ if __name__ == "__main__":
     try:
         asyncio.run(main())
     except KeyboardInterrupt:
-        print("Interrupted.")
+        print("\nInterrupted.")
         sys.exit(130)
     except Exception as exc:
         print("ERROR: %s: %s" % (type(exc).__name__, exc))
@@ -570,7 +570,6 @@ PY
 
 echo
 echo " ============================================"
-echo "  Done. File saved to:"
-echo "  ${OUTFILE}"
+echo "  Done."
 echo " ============================================"
 echo
