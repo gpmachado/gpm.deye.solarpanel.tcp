@@ -21,6 +21,9 @@ _NAME_RULES: list[tuple[str, str, str]] = [
     (r'micro.+power|power.+micro',             'measure_power.micro',   'Micro-inverter Power'),
     # DC input power from PV array (before inverter conversion)
     (r'\binput.+power|pv.+power(?!.+\bpv\d)',  'measure_power.solar',   'Solar Power (DC Input)'),
+    # Apparent and reactive power — must come before the generic AC output rule
+    (r'apparent.+power|power.+apparent',       'measure_power.apparent', 'Output Apparent Power'),
+    (r'reactive.+power|power.+reactive',       'measure_power.reactive', 'Output Reactive Power'),
     # Frequency — must come before AC output power to catch "AC Output Frequency"
     (r'ac.+freq|output.+freq|freq.+ac',        'measure_frequency',     'Grid Frequency'),
     # Main AC output (must come after the specific ones above)
@@ -57,16 +60,22 @@ _NAME_RULES: list[tuple[str, str, str]] = [
     (r'grid.+curr|curr.+grid|ac.+curr',        'measure_current.grid',  'Grid Current'),
 
     # Energy meters (order matters: specific before generic)
-    # daily/today only for solar production — exclude grid/battery/load daily values
+    # Daily import / export / load — must come before the generic daily/today production rule
+    (r'(?:today|daily).+(?:import|bought)',     'meter_power.today_import',    'Today Energy Import'),
+    (r'(?:today|daily).+(?:export|sold)',       'meter_power.today_export',    'Today Energy Export'),
+    (r'(?:today|daily).+load',                 'meter_power.today_load',      'Today Load Consumption'),
+    # Total load energy — must come before the generic "total production" rule
+    (r'total.+load',                           'meter_power.load_total',      'Total Load Consumption'),
+    # daily/today only for solar production — exclude grid/battery/load/import/export daily values
     (r'(?:daily|today)(?!.*export|.*import|.*buy|.*bought|.*sell|.*sold|.*battery|.*grid|.*load)',
                                                'meter_power.today',           'Daily Production'),
     # Total production — exclude rows that mention grid buy/sell/import/export
     (r'total.+prod|lifetime|total.+energy(?!.+(?:buy|bought|sell|sold|import|export))',
                                                'meter_power',                 'Total Production'),
     # Grid import: must begin with "total" or "grid" so daily variants ("Today Energy Import",
-    # "Daily Energy Bought") do NOT match — they fall through to no-cap (no daily grid-import cap).
+    # "Daily Energy Bought") do NOT match — they fall through to the rules above.
     (r'(?:total|grid).+(?:buy|bought|import)',  'meter_power.grid_import',     'Grid Import Energy'),
-    # Grid export: same constraint — "Today/Daily Energy Export" are intentionally skipped.
+    # Grid export: same constraint.
     (r'(?:total|grid).+(?:sell|sold|export)',   'meter_power.grid_export',     'Grid Export Energy'),
     (r'battery.+charg.+energy|energy.+battery.+charg|total.+charg',
                                                'meter_power.battery_charged', 'Battery Charged Energy'),
@@ -90,9 +99,13 @@ _NAME_RULES: list[tuple[str, str, str]] = [
     (r'soc|state.of.charge|battery.+level',   'measure_battery',       'Battery SOC'),
 ]
 
-# Homey built-in capability types that need `usingInsights: false` for sub-caps
+# Homey built-in capability types that need `usingInsights: false` for sub-caps.
+# Daily meters reset at midnight — their Insights graph would show a sawtooth, not useful.
 _METER_SUBCAPS = {
     'meter_power.today',
+    'meter_power.today_import',
+    'meter_power.today_export',
+    'meter_power.today_load',
     'meter_power.grid_import',
     'meter_power.grid_export',
     'meter_power.battery_charged',

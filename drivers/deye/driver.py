@@ -38,16 +38,30 @@ _INVERTER_DEFS_DIR = os.path.join(os.path.dirname(__file__), "..", "..", "invert
 # IMPORTANT: capabilities are fixed at device creation — cannot be changed
 # after pairing without removing and re-adding the device.
 _ADVANCED_CAPS: frozenset[str] = frozenset({
-    "measure_power.load",           # Load Power — often 0 / inaccurate on string inverters
-    "measure_power.grid",           # Grid Power — inverter internal CT, less accurate than a meter
-    "measure_power.micro",          # Micro-inverter Power — hybrid diagnostic only
-    "measure_temperature.radiator", # Radiator / AC heatsink temperature (secondary sensor)
-    "measure_voltage.l2",           # L2 phase voltage (3-phase installations)
-    "measure_voltage.l3",           # L3 phase voltage
-    "measure_current.l2",           # L2 phase current
-    "measure_current.l3",           # L3 phase current
-    "meter_power.grid_import",      # Total grid energy bought (partial reading on multi-phase)
-    "meter_power.grid_export",      # Total grid energy sold
+    # Instantaneous power — often 0 or inaccurate on string inverters / not needed for basics
+    "measure_power.load",           # Load Power
+    "measure_power.grid",           # Grid Power (inverter internal CT)
+    "measure_power.micro",          # Micro-inverter / Generator Power (hybrid diagnostic)
+    "measure_power.apparent",       # Output Apparent Power (VA)
+    "measure_power.reactive",       # Output Reactive Power (VAr)
+    # PV3/PV4 channels — absent on 2-MPPT installations; always require the checkbox
+    "measure_voltage.pv3", "measure_voltage.pv4",
+    "measure_current.pv3", "measure_current.pv4",
+    "measure_power.pv3",   "measure_power.pv4",
+    # Secondary temperature (Radiator / AC heatsink) — often -100 °C / absent on string
+    "measure_temperature.radiator",
+    # L2/L3 phase sensors (3-phase installations)
+    "measure_voltage.l2", "measure_voltage.l3",
+    "measure_current.l2", "measure_current.l3",
+    # Grid energy totals (cumulative kWh bought/sold)
+    "meter_power.grid_import",
+    "meter_power.grid_export",
+    # Daily energy (grid import/export + load) — reset every midnight
+    "meter_power.today_import",
+    "meter_power.today_export",
+    "meter_power.today_load",
+    # Total load energy consumed
+    "meter_power.load_total",
 })
 
 
@@ -516,6 +530,20 @@ class DeyeDriver(Driver):
             if not confirmed.get("advanced", False):
                 inverter_caps = [c for c in inverter_caps if c not in _ADVANCED_CAPS]
                 inverter_opts = {k: v for k, v in inverter_opts.items() if k not in _ADVANCED_CAPS}
+
+            # ── Inject derived PV1/PV2 power for string/micro ────────────────
+            # deye_string and deye_micro have no direct PV-power registers.
+            # Power is computed at runtime as V×I (see device.py _on_values).
+            # We add the capability explicitly here so the Energy Dashboard picks
+            # it up and so the pv_caps check below includes them.
+            if model_id in ("deye_string", "deye_micro"):
+                for cap_id, title in (
+                    ("measure_power.pv1", "PV1 Power"),
+                    ("measure_power.pv2", "PV2 Power"),
+                ):
+                    if cap_id not in inverter_caps:
+                        inverter_caps.append(cap_id)
+                        inverter_opts[cap_id] = {"title": {"en": title}}
 
             # Add measure_power.solar for inverters with PV sub-capabilities or Input Power.
             # Points Energy Dashboard to solar-only production (not AC output).

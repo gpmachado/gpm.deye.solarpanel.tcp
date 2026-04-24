@@ -179,9 +179,9 @@ class DeyeDevice(Device):
         deye_string. This method runs once at startup and silently adds any missing
         PV1/PV2 caps so existing devices recover without requiring re-pairing.
 
-        Cap sets per model:
-          - deye_string / deye_micro: voltage + current for PV1/PV2
-          - deye_hybrid / deye_sg04lp3: power + voltage + current for PV1/PV2
+        Cap set for all 4 models: voltage + current + power for PV1/PV2.
+        For string/micro, pv1/pv2 power is derived (V×I) at poll time — the
+        capability still needs to exist so the value can be written.
         """
         if self._is_battery or self._is_grid_meter:
             return
@@ -198,10 +198,8 @@ class DeyeDevice(Device):
             "measure_power.pv1", "measure_power.pv2",
         )
 
-        if model in ("deye_hybrid", "deye_sg04lp3"):
+        if model in ("deye_hybrid", "deye_sg04lp3", "deye_string", "deye_micro"):
             required = base_pv_caps + power_pv_caps
-        elif model in ("deye_string", "deye_micro"):
-            required = base_pv_caps
         else:
             return
 
@@ -371,6 +369,44 @@ class DeyeDevice(Device):
                         val = float(values.get(solar_sensor) or 0)
                         await self._set("measure_power", val)
                         self._last_power_w = val
+
+            # ── Derived PV power for string / micro ────────────────────────
+            # These models have no direct PV-power registers in the JSON definition.
+            # Power is approximated as V × I per channel and written to the
+            # measure_power.pv{N} capability (added at pairing / by _ensure_pv_structural_caps).
+            # For deye_micro the derived total also drives measure_power.solar because
+            # there is no "Input Power" register to use as a solar proxy.
+            model = self.get_setting("model") or ""
+            if model in ("deye_string", "deye_micro"):
+                derived_total = 0.0
+                for idx in (1, 2, 3, 4):
+                    pwr_cap = f"measure_power.pv{idx}"
+                    if not self.has_capability(pwr_cap):
+                        continue
+                    v_cap = f"measure_voltage.pv{idx}"
+                    i_cap = f"measure_current.pv{idx}"
+                    v_name = next(
+                        (n for n, c in self._sensor_cap_map.items() if c == v_cap), None
+                    )
+                    i_name = next(
+                        (n for n, c in self._sensor_cap_map.items() if c == i_cap), None
+                    )
+                    if v_name and i_name:
+                        v_val = values.get(v_name)
+                        i_val = values.get(i_name)
+                        if v_val is not None and i_val is not None:
+                            pv_power = round(float(v_val) * float(i_val), 1)
+                            await self._set(pwr_cap, pv_power)
+                            derived_total += pv_power
+
+                # deye_micro: no "Input Power" register — use derived PV total as
+                # the solar proxy so the Energy Dashboard shows correct production.
+                if model == "deye_micro" and self.has_capability("measure_power.solar"):
+                    solar_w = round(derived_total, 1)
+                    await self._set("measure_power.solar", solar_w)
+                    if self.has_capability("measure_power"):
+                        await self._set("measure_power", solar_w)
+                    self._last_power_w = solar_w
 
             # ── Flow triggers ──────────────────────────────────────────────
             await self._fire_flow_triggers(values)
