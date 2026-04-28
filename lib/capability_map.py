@@ -93,7 +93,8 @@ _NAME_RULES: list[tuple[str, str, str]] = [
     (r'freq',                                  'measure_frequency',     'Grid Frequency'),
 
     # Battery charging state (lookup: Charge / Stand-by / Discharge)
-    (r'battery.+status|status.+battery',       'battery_charging_state', 'Battery Status'),
+    (r'battery.+status|status.+battery|battery.+state|state.+battery',
+                                               'battery_charging_state', 'Battery Status'),
 
     # Battery SOC
     (r'soc|state.of.charge|battery.+level',   'measure_battery',       'Battery SOC'),

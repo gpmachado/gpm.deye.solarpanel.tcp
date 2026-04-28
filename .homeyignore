@@ -4,4 +4,5 @@ third_Party
 .git
 .claude
 *.md
+analise/
 scan-auto-detect/

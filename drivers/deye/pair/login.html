@@ -151,15 +151,39 @@
         Auto-detection reads live registers. If the pre-selected model looks wrong, choose the correct one.
       </div>
 
-      <hr class="section-sep">
-      <div class="row-check">
-        <input type="checkbox" id="adv-caps" />
-        <label for="adv-caps" data-i18n="pair.adv_caps.label">Advanced sensors</label>
+      <div id="generic-advanced">
+        <hr class="section-sep">
+        <div class="row-check">
+          <input type="checkbox" id="adv-caps" />
+          <label for="adv-caps" data-i18n="pair.adv_caps.label">Advanced sensors</label>
+        </div>
+        <div class="hint" data-i18n="pair.adv_caps.hint">
+          Adds load power, grid energy counters, L2/L3 phase voltages and secondary temperature.
+          Useful for 3-phase installations or detailed energy balance.
+          <strong>Cannot be changed after pairing.</strong>
+        </div>
       </div>
-      <div class="hint" data-i18n="pair.adv_caps.hint">
-        Adds load power, grid energy counters, L2/L3 phase voltages and secondary temperature.
-        Useful for 3-phase installations or detailed energy balance.
-        <strong>Cannot be changed after pairing.</strong>
+
+      <div id="string-optionals" style="display:none">
+        <hr class="section-sep">
+        <div class="hint">
+          Optional sensors for <strong>Deye String</strong>. Only enable the values that are useful on your inverter.
+          <strong>Cannot be changed after pairing.</strong>
+        </div>
+        <div class="row-check">
+          <input type="checkbox" id="string-grid-import-export" />
+          <label for="string-grid-import-export">Grid Import / Export</label>
+        </div>
+        <div class="hint">
+          Includes Today and Total import/export counters. Useful only when grid metering / CT data is available.
+        </div>
+        <div class="row-check">
+          <input type="checkbox" id="string-radiator-temperature" />
+          <label for="string-radiator-temperature">Radiator Temperature</label>
+        </div>
+        <div class="hint">
+          Secondary temperature sensor. Some inverters may report an invalid value.
+        </div>
       </div>
     </div>
 
@@ -284,18 +308,39 @@
       sel.appendChild(opt);
     });
     sel.value = detected;
+    updateOptionalUi();
+  }
+
+  function updateOptionalUi() {
+    var model = document.getElementById('model').value;
+    var isString = model === 'deye_string';
+    document.getElementById('generic-advanced').style.display = isString ? 'none' : '';
+    document.getElementById('string-optionals').style.display = isString ? '' : 'none';
+    if (isString) {
+      document.getElementById('adv-caps').checked = false;
+    } else {
+      document.getElementById('string-grid-import-export').checked = false;
+      document.getElementById('string-radiator-temperature').checked = false;
+    }
   }
 
   /* ── add inverter ────────────────────────────────────────────── */
   function doAdd() {
     var model    = document.getElementById('model').value;
     var advanced = document.getElementById('adv-caps').checked;
+    var gridIe   = document.getElementById('string-grid-import-export').checked;
+    var radTemp  = document.getElementById('string-radiator-temperature').checked;
     var btn      = document.getElementById('btn-add');
     var status   = document.getElementById('status');
     btn.disabled       = true;
     status.textContent = Homey.__('pair.confirm.status_preparing');
 
-    Homey.emit('confirm_model', { model: model, advanced: advanced }, function(err) {
+    Homey.emit('confirm_model', {
+      model: model,
+      advanced: advanced,
+      grid_import_export: gridIe,
+      radiator_temperature: radTemp
+    }, function(err) {
       if (err) {
         status.textContent = err.message || String(err);
         btn.disabled = false;
@@ -311,6 +356,7 @@
     document.getElementById('serial').placeholder  = Homey.__('pair.serial_placeholder');
     document.getElementById('ip-err').placeholder  = Homey.__('pair.ip_placeholder');
     document.getElementById('serial-err').placeholder = Homey.__('pair.serial_placeholder');
+    document.getElementById('model').addEventListener('change', updateOptionalUi);
     show('intro');
   });
 </script>

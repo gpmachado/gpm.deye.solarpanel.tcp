@@ -37,7 +37,13 @@ _INVERTER_DEFS_DIR = os.path.join(os.path.dirname(__file__), "..", "..", "invert
 #
 # IMPORTANT: capabilities are fixed at device creation — cannot be changed
 # after pairing without removing and re-adding the device.
-_ADVANCED_CAPS: frozenset[str] = frozenset({
+#
+# NOTE:
+# - String inverters without CT frequently expose load/import/export counters that
+#   are 0, unknown, or mirror production. Keep those optional by default.
+# - Hybrid models have proven daily/total load-energy counters, so those should
+#   stay in the standard capability set.
+_BASE_ADVANCED_CAPS: frozenset[str] = frozenset({
     # Instantaneous power — often 0 or inaccurate on string inverters / not needed for basics
     "measure_power.load",           # Load Power
     "measure_power.grid",           # Grid Power (inverter internal CT)
@@ -52,13 +58,35 @@ _ADVANCED_CAPS: frozenset[str] = frozenset({
     # Grid energy totals (cumulative kWh bought/sold)
     "meter_power.grid_import",
     "meter_power.grid_export",
+})
+
+_STRING_OPTIONAL_CAPS: frozenset[str] = frozenset({
     # Daily energy (grid import/export + load) — reset every midnight
     "meter_power.today_import",
     "meter_power.today_export",
-    "meter_power.today_load",
-    # Total load energy consumed
-    "meter_power.load_total",
+    "meter_power.grid_import",
+    "meter_power.grid_export",
 })
+
+
+def _advanced_caps_for_model(model_id: str) -> frozenset[str]:
+    """Return the capability IDs hidden by default for the selected model."""
+    if model_id == "deye_string":
+        return _BASE_ADVANCED_CAPS | _STRING_OPTIONAL_CAPS
+    return _BASE_ADVANCED_CAPS
+
+
+_STRING_OPTION_GROUPS: dict[str, frozenset[str]] = {
+    "grid_import_export": frozenset({
+        "meter_power.today_import",
+        "meter_power.today_export",
+        "meter_power.grid_import",
+        "meter_power.grid_export",
+    }),
+    "radiator_temperature": frozenset({
+        "measure_temperature.radiator",
+    }),
+}
 
 
 def _yaml_path(model_id: str) -> str:
@@ -514,6 +542,10 @@ class DeyeDriver(Driver):
                 raise Exception(f"Unknown model: {model_id}")
             confirmed["model_id"] = model_id
             confirmed["advanced"] = bool(data.get("advanced", False))
+            confirmed["string_optionals"] = {
+                key for key in _STRING_OPTION_GROUPS
+                if bool(data.get(key, False))
+            }
             self.log(f"Model confirmed: {model_id}  advanced={confirmed['advanced']}")
             return True
 
@@ -588,12 +620,17 @@ class DeyeDriver(Driver):
             inverter_opts = {k: v for k, v in caps_opts.items()
                              if k not in BATTERY_CAPS and (not is_hybrid or k not in GRID_METER_CAPS)}
 
+            advanced_caps = set(_advanced_caps_for_model(model_id))
+            if model_id == "deye_string":
+                for selected in confirmed.get("string_optionals", set()):
+                    advanced_caps.difference_update(_STRING_OPTION_GROUPS.get(selected, frozenset()))
+
             # ── Strip advanced capabilities unless user opted in ───────────────
             # Battery caps and grid meter caps are already separated above and are
             # never affected by this filter (they're structurally required for hybrids).
             if not confirmed.get("advanced", False):
-                inverter_caps = [c for c in inverter_caps if c not in _ADVANCED_CAPS]
-                inverter_opts = {k: v for k, v in inverter_opts.items() if k not in _ADVANCED_CAPS}
+                inverter_caps = [c for c in inverter_caps if c not in advanced_caps]
+                inverter_opts = {k: v for k, v in inverter_opts.items() if k not in advanced_caps}
 
             # ── Inject derived PV1/PV2 power for string/micro ────────────────
             # deye_string and deye_micro have no direct PV-power registers.

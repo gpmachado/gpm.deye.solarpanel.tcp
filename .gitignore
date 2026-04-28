@@ -10,6 +10,7 @@ test_connection.py
 package-lock.json
 
 ha/
+analise/
 TIMEZONE_DIAGNOSIS.md
 HA_BASELINE_COMPARISON.md
 INVERTER_DEFINITIONS_COMPARISON.md

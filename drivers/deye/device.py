@@ -293,6 +293,10 @@ class DeyeDevice(Device):
             if cap_id == "alarm_generic":
                 coerced = str(value).lower() in ("fault", "alarm", "warning")
             elif cap_id == "battery_charging_state":
+                # For battery devices, the textual status register is less reliable than
+                # deriving state from battery power. Skip it here and set it later.
+                if self._is_battery:
+                    continue
                 v_lower = str(value).lower()
                 if "discharge" in v_lower:
                     coerced = "discharge"
@@ -318,14 +322,14 @@ class DeyeDevice(Device):
 
         if self._is_battery:
             # Derive battery_charging_state from Battery Power sign — more reliable than the
-            # Battery Status sensor (deye_hybrid reg 189 is shared with PV4 Power, making
-            # the lookup-based status unreliable).
+            # textual battery status register on hybrid models. Follow the more conservative
+            # davidrapan HA convention: only switch state outside a +-50 W deadband.
             # Deye convention: positive Battery Power = discharging, negative = charging.
             if "Battery Power" in values and self.has_capability("battery_charging_state"):
                 raw_pwr = float(values.get("Battery Power") or 0)
-                if raw_pwr > 5:
+                if raw_pwr > 50:
                     await self._set("battery_charging_state", "discharge")
-                elif raw_pwr < -5:
+                elif raw_pwr < -50:
                     await self._set("battery_charging_state", "charge")
                 else:
                     await self._set("battery_charging_state", "standby")
