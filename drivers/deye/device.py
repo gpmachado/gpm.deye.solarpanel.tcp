@@ -353,27 +353,31 @@ class DeyeDevice(Device):
                 pv_names = [n for n, c in self._sensor_cap_map.items()
                             if c.startswith("measure_power.pv")]
                 if pv_names:
-                    # Multi-channel models (hybrid, micro): sum all individual PV channel powers.
+                    # Multi-channel models (hybrid, sg04lp3): sum all individual PV channel powers.
                     # measure_power.solar is synthetic — no single sensor maps to it directly.
                     pv_total = sum(float(values.get(n) or 0) for n in pv_names)
                     await self._set("measure_power.solar", pv_total)
-                    if self.has_capability("measure_power"):
-                        await self._set("measure_power", pv_total)
-                        self._last_power_w = pv_total
+                    # Track PV total for flow triggers (solar_production_started/stopped).
+                    # Do NOT override measure_power here: for hybrid/sg04lp3 the sensor loop
+                    # already wrote it from the Total Power register (AC output), and the
+                    # Energy Dashboard reads solar production via measure_power.solar
+                    # (measurePowerProducedCapability), so AC Output Power stays accurate.
+                    self._last_power_w = pv_total
                 else:
                     # String models: measure_power.solar was already set by the "Input Power"
                     # sensor in the loop above (Input Power → measure_power.solar via cap map).
-                    # Do NOT override it with 0. Just mirror its value to measure_power so the
-                    # Energy Dashboard receives the correct live solar production reading.
+                    # measure_power (AC Output Power) keeps its sensor-loop value — do NOT
+                    # override it with Input Power (DC). The Energy Dashboard reads solar
+                    # production from measure_power.solar (measurePowerProducedCapability),
+                    # so the AC Output Power tile stays accurate.
+                    # Only update _last_power_w for solar flow triggers.
                     solar_sensor = next(
                         (sname for sname, cap in self._sensor_cap_map.items()
                          if cap == "measure_power.solar"),
                         None,
                     )
-                    if solar_sensor is not None and self.has_capability("measure_power"):
-                        val = float(values.get(solar_sensor) or 0)
-                        await self._set("measure_power", val)
-                        self._last_power_w = val
+                    if solar_sensor is not None:
+                        self._last_power_w = float(values.get(solar_sensor) or 0)
 
             # ── Derived PV power for string / micro ────────────────────────
             # These models have no direct PV-power registers in the JSON definition.

@@ -1,20 +1,11 @@
 {
   "requests": [
-    {
-      "start": 3,
-      "end": 116,
-      "mb_functioncode": 3
-    },
-    {
-      "start": 150,
-      "end": 249,
-      "mb_functioncode": 3
-    },
-    {
-      "start": 250,
-      "end": 279,
-      "mb_functioncode": 3
-    }
+    { "start": 3,   "end": 44,  "mb_functioncode": 3 },
+    { "start": 45,  "end": 84,  "mb_functioncode": 3 },
+    { "start": 85,  "end": 116, "mb_functioncode": 3 },
+    { "start": 150, "end": 191, "mb_functioncode": 3 },
+    { "start": 192, "end": 249, "mb_functioncode": 3 },
+    { "start": 250, "end": 279, "mb_functioncode": 3 }
   ],
   "parameters": [
     {
@@ -41,30 +32,6 @@
           "rule": 1,
           "registers": [
             187
-          ],
-          "icon": "mdi:solar-power"
-        },
-        {
-          "name": "PV3 Power",
-          "class": "power",
-          "state_class": "measurement",
-          "uom": "W",
-          "scale": 1,
-          "rule": 1,
-          "registers": [
-            188
-          ],
-          "icon": "mdi:solar-power"
-        },
-        {
-          "name": "PV4 Power",
-          "class": "power",
-          "state_class": "measurement",
-          "uom": "W",
-          "scale": 1,
-          "rule": 1,
-          "registers": [
-            189
           ],
           "icon": "mdi:solar-power"
         },
@@ -112,54 +79,6 @@
           "rule": 1,
           "registers": [
             112
-          ],
-          "icon": "mdi:solar-power"
-        },
-        {
-          "name": "PV3 Voltage",
-          "class": "voltage",
-          "state_class": "measurement",
-          "uom": "V",
-          "scale": 0.1,
-          "rule": 1,
-          "registers": [
-            113
-          ],
-          "icon": "mdi:solar-power"
-        },
-        {
-          "name": "PV3 Current",
-          "class": "current",
-          "state_class": "measurement",
-          "uom": "A",
-          "scale": 0.1,
-          "rule": 1,
-          "registers": [
-            114
-          ],
-          "icon": "mdi:solar-power"
-        },
-        {
-          "name": "PV4 Voltage",
-          "class": "voltage",
-          "state_class": "measurement",
-          "uom": "V",
-          "scale": 0.1,
-          "rule": 1,
-          "registers": [
-            115
-          ],
-          "icon": "mdi:solar-power"
-        },
-        {
-          "name": "PV4 Current",
-          "class": "current",
-          "state_class": "measurement",
-          "uom": "A",
-          "scale": 0.1,
-          "rule": 1,
-          "registers": [
-            116
           ],
           "icon": "mdi:solar-power"
         },
