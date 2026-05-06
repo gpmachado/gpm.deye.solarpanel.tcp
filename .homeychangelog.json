@@ -1,4 +1,7 @@
 {
+  "1.3.4": {
+    "en": "Fixed hybrid inverter (deye_hybrid): removed PV3/PV4 register entries that conflicted with Battery Status (register 189), causing Battery Status to always show Charging. Fixed AC Output Power showing the same value as Solar Power — AC output now correctly reflects inverter AC production instead of PV DC input. Fixed the same AC output override on string inverters. Request blocks split for better Modbus compatibility."
+  },
   "1.3.2": {
     "en": "Fixed Energy Dashboard for hybrid inverters: Grid Meter now exposes live grid power (W) via measurePowerConsumedCapability so Homey Energy correctly shows grid consumption. Existing Grid Meter devices are upgraded automatically without re-pairing. Inverter caps initialised to 0 on startup to prevent null values on the Energy Dashboard."
   },
