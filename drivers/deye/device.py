@@ -88,19 +88,6 @@ class DeyeDevice(Device):
 
         await self._ensure_pv_structural_caps()
 
-        # Migration: ensure measurePowerProducedCapability points to measure_power.solar,
-        # not measure_power (AC output). Devices paired before v1.3.5 may have the old
-        # value stored in Homey's DB. set_energy() updates it without requiring re-pairing.
-        if not self._is_battery and not self._is_grid_meter and self.has_capability("measure_power.solar"):
-            try:
-                await self.set_energy({
-                    "measurePowerProducedCapability": "measure_power.solar",
-                    "meterPowerExportedCapability":   "meter_power",
-                })
-                self.log("Energy settings migrated: measurePowerProducedCapability → measure_power.solar")
-            except Exception as e:
-                _LOGGER.warning(f"Could not migrate energy settings: {e}")
-
         # Initialise synthetic inverter caps to 0 so Energy Dashboard never shows null
         # before the first successful poll.
         if not self._is_battery and not self._is_grid_meter:

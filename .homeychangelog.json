@@ -1,6 +1,6 @@
 {
   "1.3.5": {
-    "en": "Fixed hybrid inverter Energy Dashboard: Solar Generated now correctly shows PV-only production instead of AC output (which includes battery discharge). Two fixes: removed a duplicate register (reg 63-64) that was overwriting Total Production with total AC output; added automatic migration so existing devices update their Energy Dashboard settings without re-pairing."
+    "en": "Fixed hybrid inverter Energy Dashboard: Solar Generated now correctly shows PV-only production instead of AC output (which includes battery discharge). Removed a duplicate register (reg 63-64) that was overwriting Total Production with total AC output. Re-pairing required for existing hybrid inverter devices to apply the correct Energy Dashboard settings."
   },
   "1.3.4": {
     "en": "Fixed hybrid inverter (deye_hybrid): removed PV3/PV4 register entries that conflicted with Battery Status (register 189), causing Battery Status to always show Charging. Fixed AC Output Power showing the same value as Solar Power — AC output now correctly reflects inverter AC production instead of PV DC input. Fixed the same AC output override on string inverters. Request blocks split for better Modbus compatibility."
