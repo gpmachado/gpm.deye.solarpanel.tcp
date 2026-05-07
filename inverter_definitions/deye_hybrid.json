@@ -425,19 +425,6 @@
           ],
           "icon": "mdi:transmission-tower-import"
         },
-        {
-          "name": "Total Grid Production",
-          "class": "energy",
-          "state_class": "total_increasing",
-          "uom": "kWh",
-          "scale": 0.1,
-          "rule": 4,
-          "registers": [
-            63,
-            64
-          ],
-          "icon": "mdi:transmission-tower"
-        }
       ]
     },
     {
