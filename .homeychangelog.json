@@ -61,5 +61,11 @@
   },
   "1.3.3": {
     "en": "Fixed night backoff incorrectly triggering when Homey timezone is unavailable — inverter no longer shows 0W/0V during the day for users in timezones where clock.get_timezone() returns None (e.g. Brazil UTC-3). Night detection now safely disabled if geolocation or timezone data is missing."
+  },
+  "1.3.6": {
+    "en": "Fixed hybrid energy mapping so Homey Energy now uses real PV lifetime production instead of Total Grid Production, preventing battery discharge from being counted as solar generation."
+  },
+  "1.3.7": {
+    "en": "Fixed Homey Energy configuration for dynamically paired Deye devices. Hybrid inverters now explicitly sync their Energy settings on startup so the dashboard uses solar PV production instead of AC/load power. Battery and Grid devices also re-apply their specific Energy roles reliably."
   }
 }

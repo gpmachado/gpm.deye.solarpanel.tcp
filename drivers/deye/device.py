@@ -87,6 +87,7 @@ class DeyeDevice(Device):
                 _LOGGER.warning(f"Could not add measure_power to grid meter: {e}")
 
         await self._ensure_pv_structural_caps()
+        await self._sync_energy_config()
 
         # Initialise synthetic inverter caps to 0 so Energy Dashboard never shows null
         # before the first successful poll.
@@ -112,6 +113,7 @@ class DeyeDevice(Device):
         )):
             self._detach_poller()
             self._build_sensor_map()
+            await self._sync_energy_config()
             self._attach_poller()
 
             # Restart Wi-Fi info task if IP was changed (only for main/inverter device)
@@ -130,6 +132,44 @@ class DeyeDevice(Device):
             return int(val)
         except (ValueError, TypeError):
             return default
+
+    async def _sync_energy_config(self) -> None:
+        """Apply the effective Homey Energy configuration for this device type.
+
+        The driver manifest contains only one static `energy` block, but this app creates
+        three distinct energy-device roles from the same driver (inverter, battery, grid meter).
+        Homey expects dynamic energy overrides to be applied with Device.set_energy().
+        """
+        setter = getattr(self, "set_energy", None)
+        if not callable(setter):
+            _LOGGER.warning("Device.set_energy() unavailable in this Homey runtime")
+            return
+
+        if self._is_battery:
+            energy = {
+                "homeBattery": True,
+                "meterPowerImportedCapability": "meter_power.battery_charged",
+                "meterPowerExportedCapability": "meter_power.battery_discharged",
+            }
+        elif self._is_grid_meter:
+            energy = {
+                "cumulative": True,
+                "cumulativeImportedCapability": "meter_power",
+                "cumulativeExportedCapability": "meter_power.exported",
+                "measurePowerConsumedCapability": "measure_power",
+            }
+        else:
+            produced_cap = "measure_power.solar" if self.has_capability("measure_power.solar") else "measure_power"
+            energy = {
+                "measurePowerProducedCapability": produced_cap,
+                "meterPowerExportedCapability": "meter_power",
+            }
+
+        try:
+            await setter(energy)
+            self.log(f"Energy config synced: {energy}")
+        except Exception as e:
+            _LOGGER.warning(f"Could not sync energy settings: {e}")
 
     # ── Sensor map ────────────────────────────────────────────────────────────
 
