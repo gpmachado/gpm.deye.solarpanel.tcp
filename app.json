@@ -306,7 +306,7 @@
       ],
       "mainCapability": "measure_power",
       "energy": {
-        "measurePowerProducedCapability": "measure_power",
+        "measurePowerProducedCapability": "measure_power.solar",
         "meterPowerExportedCapability": "meter_power"
       },
       "images": {
