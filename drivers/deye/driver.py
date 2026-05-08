@@ -66,6 +66,8 @@ _STRING_OPTIONAL_CAPS: frozenset[str] = frozenset({
     "meter_power.today_export",
     "meter_power.grid_import",
     "meter_power.grid_export",
+    "meter_power.today_load",
+    "meter_power.load_total",
 })
 
 
@@ -82,6 +84,8 @@ _STRING_OPTION_GROUPS: dict[str, frozenset[str]] = {
         "meter_power.today_export",
         "meter_power.grid_import",
         "meter_power.grid_export",
+        "meter_power.today_load",
+        "meter_power.load_total",
     }),
     "radiator_temperature": frozenset({
         "measure_temperature.radiator",
