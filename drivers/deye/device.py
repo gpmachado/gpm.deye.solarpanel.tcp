@@ -146,18 +146,23 @@ class DeyeDevice(Device):
             return
 
         if self._is_battery:
-            energy = {
-                "homeBattery": True,
-                "meterPowerImportedCapability": "meter_power.battery_charged",
-                "meterPowerExportedCapability": "meter_power.battery_discharged",
-            }
+            # homeBattery must always be set regardless of which meter caps exist.
+            # Only include meterPower* keys when the capability actually exists —
+            # if a missing cap causes set_energy() to throw, homeBattery is lost and
+            # the device falls back to the manifest default (solar panel icon).
+            energy: dict = {"homeBattery": True}
+            if self.has_capability("meter_power.battery_charged"):
+                energy["meterPowerImportedCapability"] = "meter_power.battery_charged"
+            if self.has_capability("meter_power.battery_discharged"):
+                energy["meterPowerExportedCapability"] = "meter_power.battery_discharged"
         elif self._is_grid_meter:
-            energy = {
-                "cumulative": True,
-                "cumulativeImportedCapability": "meter_power",
-                "cumulativeExportedCapability": "meter_power.exported",
-                "measurePowerConsumedCapability": "measure_power",
-            }
+            energy = {"cumulative": True}
+            if self.has_capability("meter_power"):
+                energy["cumulativeImportedCapability"] = "meter_power"
+            if self.has_capability("meter_power.exported"):
+                energy["cumulativeExportedCapability"] = "meter_power.exported"
+            if self.has_capability("measure_power"):
+                energy["measurePowerConsumedCapability"] = "measure_power"
         else:
             produced_cap = "measure_power.solar" if self.has_capability("measure_power.solar") else "measure_power"
             energy = {
