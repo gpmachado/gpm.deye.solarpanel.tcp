@@ -1,5 +1,11 @@
 {
   "pair": {
+    "intro": {
+      "subtitle": "Buscar el logger Solarman en tu red local",
+      "scan_button": "Escanear red",
+      "manual_toggle": "Introducir dirección IP manualmente"
+    },
+    "status_detecting": "Detectando modelo del inversor…",
     "ip_label": "Dirección IP del logger",
     "ip_placeholder": "Dejar vacío para detección automática",
     "ip_hint": "Dejar vacío para escanear automáticamente. O introduce la IP que aparece en la lista de dispositivos de tu router.",

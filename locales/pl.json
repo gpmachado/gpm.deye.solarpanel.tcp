@@ -1,5 +1,11 @@
 {
   "pair": {
+    "intro": {
+      "subtitle": "Przeskanuj sieć lokalną w poszukiwaniu rejestratora Solarman",
+      "scan_button": "Skanuj sieć",
+      "manual_toggle": "Wprowadź adres IP ręcznie"
+    },
+    "status_detecting": "Wykrywanie modelu inwertera…",
     "ip_label": "Adres IP loggera",
     "ip_placeholder": "Pozostaw puste dla automatycznego wykrycia",
     "ip_hint": "Pozostaw puste, aby skanować automatycznie. Lub wprowadź IP widoczne na liście urządzeń routera.",

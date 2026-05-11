@@ -1,5 +1,11 @@
 {
   "pair": {
+    "intro": {
+      "subtitle": "Søk etter Solarman-loggeren på ditt lokale nettverk",
+      "scan_button": "Søk i nettverk",
+      "manual_toggle": "Skriv inn IP-adresse manuelt"
+    },
+    "status_detecting": "Oppdager invertermodell…",
     "ip_label": "IP-adresse til loggeren",
     "ip_placeholder": "La stå tomt for automatisk oppdagelse",
     "ip_hint": "La stå tomt for automatisk skanning. Eller skriv inn IP-adressen fra routerens enhetsliste.",
