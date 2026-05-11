@@ -77,7 +77,8 @@ _NAME_RULES: list[tuple[str, str, str]] = [
     (r'(?:total|grid).+(?:buy|bought|import)',  'meter_power.grid_import',     'Grid Import Energy'),
     # Grid export: same constraint.
     (r'(?:total|grid).+(?:sell|sold|export)',   'meter_power.grid_export',     'Grid Export Energy'),
-    (r'battery.+charg.+energy|energy.+battery.+charg|total.+charg',
+    # "total.+charg" would also match "discharge" (contains "charg") — exclude via negative lookbehind.
+    (r'battery.+charg.+energy|energy.+battery.+charg|total.+(?<!dis)charg',
                                                'meter_power.battery_charged', 'Battery Charged Energy'),
     (r'battery.+discharg.+energy|energy.+battery.+discharg|total.+discharg',
                                                'meter_power.battery_discharged', 'Battery Discharged Energy'),

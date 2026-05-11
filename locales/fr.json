@@ -1,5 +1,11 @@
 {
   "pair": {
+    "intro": {
+      "subtitle": "Rechercher le logger Solarman sur votre réseau local",
+      "scan_button": "Scanner le réseau",
+      "manual_toggle": "Saisir l'adresse IP manuellement"
+    },
+    "status_detecting": "Détection du modèle d'onduleur…",
     "ip_label": "Adresse IP du logger",
     "ip_placeholder": "Laisser vide pour la détection automatique",
     "ip_hint": "Laisser vide pour scanner automatiquement. Ou entrez l'IP affichée dans la liste des appareils de votre routeur.",

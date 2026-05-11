@@ -146,18 +146,23 @@ class DeyeDevice(Device):
             return
 
         if self._is_battery:
-            energy = {
-                "homeBattery": True,
-                "meterPowerImportedCapability": "meter_power.battery_charged",
-                "meterPowerExportedCapability": "meter_power.battery_discharged",
-            }
+            # homeBattery must always be set regardless of which meter caps exist.
+            # Only include meterPower* keys when the capability actually exists —
+            # if a missing cap causes set_energy() to throw, homeBattery is lost and
+            # the device falls back to the manifest default (solar panel icon).
+            energy: dict = {"homeBattery": True}
+            if self.has_capability("meter_power.battery_charged"):
+                energy["meterPowerImportedCapability"] = "meter_power.battery_charged"
+            if self.has_capability("meter_power.battery_discharged"):
+                energy["meterPowerExportedCapability"] = "meter_power.battery_discharged"
         elif self._is_grid_meter:
-            energy = {
-                "cumulative": True,
-                "cumulativeImportedCapability": "meter_power",
-                "cumulativeExportedCapability": "meter_power.exported",
-                "measurePowerConsumedCapability": "measure_power",
-            }
+            energy = {"cumulative": True}
+            if self.has_capability("meter_power"):
+                energy["cumulativeImportedCapability"] = "meter_power"
+            if self.has_capability("meter_power.exported"):
+                energy["cumulativeExportedCapability"] = "meter_power.exported"
+            if self.has_capability("measure_power"):
+                energy["measurePowerConsumedCapability"] = "measure_power"
         else:
             produced_cap = "measure_power.solar" if self.has_capability("measure_power.solar") else "measure_power"
             energy = {
@@ -224,7 +229,17 @@ class DeyeDevice(Device):
         For string/micro, pv1/pv2 power is derived (V×I) at poll time — the
         capability still needs to exist so the value can be written.
         """
-        if self._is_battery or self._is_grid_meter:
+        if self._is_battery:
+            # Battery structural caps: meter_power.battery_discharged was missing on devices
+            # paired before the capability_map fix (total.+charg incorrectly matched "discharge").
+            if not self.has_capability("meter_power.battery_discharged"):
+                try:
+                    await self.add_capability("meter_power.battery_discharged")
+                    self.log("Added missing battery_discharged cap (recovered from cap_map bug)")
+                except Exception as e:
+                    _LOGGER.warning(f"Could not add meter_power.battery_discharged: {e}")
+            return
+        if self._is_grid_meter:
             return
         model = (self.get_setting("model") or "").strip()
         if not model:
@@ -240,7 +255,9 @@ class DeyeDevice(Device):
         )
 
         if model in ("deye_hybrid", "deye_sg04lp3", "deye_string", "deye_micro"):
-            required = base_pv_caps + power_pv_caps
+            # measure_power.solar is the Energy Dashboard production source.
+            # Without it, _sync_energy_config falls back to measure_power (AC output).
+            required = base_pv_caps + power_pv_caps + ("measure_power.solar",)
         else:
             return
 

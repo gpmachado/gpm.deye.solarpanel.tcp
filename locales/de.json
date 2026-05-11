@@ -1,5 +1,11 @@
 {
   "pair": {
+    "intro": {
+      "subtitle": "Lokales Netzwerk nach dem Solarman-Logger durchsuchen",
+      "scan_button": "Netzwerk scannen",
+      "manual_toggle": "IP-Adresse manuell eingeben"
+    },
+    "status_detecting": "Wechselrichtermodell wird erkannt…",
     "ip_label": "IP-Adresse des Loggers",
     "ip_placeholder": "Leer lassen für automatische Erkennung",
     "ip_hint": "Leer lassen zum automatischen Scannen. Oder geben Sie die IP aus der Geräteliste Ihres Routers ein.",

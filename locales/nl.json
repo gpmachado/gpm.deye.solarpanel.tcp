@@ -1,5 +1,11 @@
 {
   "pair": {
+    "intro": {
+      "subtitle": "Scan uw lokale netwerk naar de Solarman-logger",
+      "scan_button": "Netwerk scannen",
+      "manual_toggle": "IP-adres handmatig invoeren"
+    },
+    "status_detecting": "Invertermodel detecteren…",
     "ip_label": "IP-adres van de logger",
     "ip_placeholder": "Leeg laten voor automatische detectie",
     "ip_hint": "Leeg laten om automatisch te scannen. Of voer het IP in dat in de apparatenlijst van uw router staat.",

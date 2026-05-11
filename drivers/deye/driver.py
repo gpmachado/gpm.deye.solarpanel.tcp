@@ -307,11 +307,20 @@ async def _discover_loggers(timeout: float = 3.0) -> list[dict]:
             pass
 
     try:
-        transport, _ = await loop.create_datagram_endpoint(
-            _Protocol,
-            local_addr=("0.0.0.0", 0),
-            allow_broadcast=True,
-        )
+        # Bind to port 48899: some Solarman loggers only reply to that source port.
+        # Fall back to a random port if 48899 is already in use.
+        for bind_port in (DISCOVERY_PORT, 0):
+            try:
+                transport, _ = await loop.create_datagram_endpoint(
+                    _Protocol,
+                    local_addr=("0.0.0.0", bind_port),
+                    allow_broadcast=True,
+                )
+                break
+            except OSError:
+                if bind_port == 0:
+                    raise
+                _LOGGER.debug(f"UDP port {bind_port} busy — retrying with random port")
         for payload in DISCOVERY_PAYLOADS:
             transport.sendto(payload, ("<broadcast>", DISCOVERY_PORT))
             await asyncio.sleep(0.1)   # small gap so HF-A11 has time to arm

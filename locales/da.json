@@ -1,5 +1,11 @@
 {
   "pair": {
+    "intro": {
+      "subtitle": "Scan dit lokale netværk for Solarman-loggeren",
+      "scan_button": "Scan netværk",
+      "manual_toggle": "Angiv IP-adresse manuelt"
+    },
+    "status_detecting": "Registrerer invertermodel…",
     "ip_label": "Loggerens IP-adresse",
     "ip_placeholder": "Lad feltet stå tomt for automatisk opdagelse",
     "ip_hint": "Lad stå tomt for automatisk scanning. Eller indtast den IP, der vises i din routers enhedsliste.",

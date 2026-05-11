@@ -1,5 +1,11 @@
 {
   "pair": {
+    "intro": {
+      "subtitle": "Sök efter Solarman-loggern på ditt lokala nätverk",
+      "scan_button": "Sök i nätverk",
+      "manual_toggle": "Ange IP-adress manuellt"
+    },
+    "status_detecting": "Identifierar växelriktarmodell…",
     "ip_label": "Loggers IP-adress",
     "ip_placeholder": "Lämna tomt för automatisk identifiering",
     "ip_hint": "Lämna tomt för att skanna automatiskt. Eller ange IP-adressen från routerns enhetslista.",
