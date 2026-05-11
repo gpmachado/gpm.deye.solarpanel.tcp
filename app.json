@@ -305,10 +305,6 @@
         "lan"
       ],
       "mainCapability": "measure_power",
-      "energy": {
-        "measurePowerProducedCapability": "measure_power.solar",
-        "meterPowerExportedCapability": "meter_power"
-      },
       "images": {
         "small": "/drivers/deye/assets/images/small.png",
         "large": "/drivers/deye/assets/images/large.png",
