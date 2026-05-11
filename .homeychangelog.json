@@ -67,5 +67,8 @@
   },
   "1.3.7": {
     "en": "Fixed Homey Energy configuration for dynamically paired Deye devices. Hybrid inverters now explicitly sync their Energy settings on startup so the dashboard uses solar PV production instead of AC/load power. Battery and Grid devices also re-apply their specific Energy roles reliably."
+  },
+  "1.3.8": {
+    "en": "Energy Dashboard now correctly shows solar production instead of AC output power — existing hybrid devices are repaired automatically on next restart, no re-pairing required. Battery discharge energy tracking fixed (devices paired with earlier versions recover automatically). Auto-discovery (UDP) improved for loggers that only respond on port 48899. Missing pairing screen translations added for DE, FR, ES, IT, NL, NO, PL, SV, DA."
   }
 }
