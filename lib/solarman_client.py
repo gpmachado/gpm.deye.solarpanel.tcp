@@ -15,8 +15,13 @@ log = logging.getLogger(__name__)
 
 QUERY_RETRY_ATTEMPTS = 3
 _RETRY_SLEEP_S = 3        # seconds between retry attempts (give logger time to recover)
-MAX_REGISTERS_PER_REQUEST = 50  # many Deye/Solarman inverters silently cap at ~58 registers
-                                 # per Modbus query; 50 gives a safe margin
+MAX_REGISTERS_PER_REQUEST = 125  # Request the full JSON-defined range per call.
+                                  # Solarman loggers may return fewer registers than requested
+                                  # (partial response); _send_request advances by the actual
+                                  # received count and loops until the full range is covered.
+                                  # Using the full range avoids the pathological case where
+                                  # smaller chunks (e.g. 50) cause the logger to return even
+                                  # fewer registers (e.g. 7) than a large request (~58).
 
 
 class SolarmanClient:
