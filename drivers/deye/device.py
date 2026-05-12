@@ -142,6 +142,20 @@ class DeyeDevice(Device):
         three distinct energy-device roles from the same driver (inverter, battery, grid meter).
         Homey expects dynamic energy overrides to be applied with Device.set_energy().
         """
+        # Fix class mismatch: all devices share class="solarpanel" from the manifest.
+        # set_class() overrides it at runtime so the Energy Dashboard assigns the correct role.
+        class_setter = getattr(self, "set_class", None)
+        if callable(class_setter):
+            try:
+                if self._is_battery:
+                    await class_setter("battery")
+                    self.log("Device class set to battery")
+                elif self._is_grid_meter:
+                    await class_setter("sensor")
+                    self.log("Device class set to sensor")
+            except Exception as e:
+                _LOGGER.warning(f"Could not set device class: {e}")
+
         setter = getattr(self, "set_energy", None)
         if not callable(setter):
             _LOGGER.warning("Device.set_energy() unavailable in this Homey runtime")
