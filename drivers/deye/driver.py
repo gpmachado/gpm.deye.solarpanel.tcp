@@ -741,7 +741,7 @@ class DeyeDriver(Driver):
                      f"grid_caps:{len(grid_caps_raw)}")
 
             devices = [{
-                "name": DEYE_MODELS[model_id],
+                "name": f"{DEYE_MODELS[model_id]} — Inverter",
                 "icon": "/drivers/deye/assets/icon_inverter.svg",
                 "data": {"id": f"deye_{serial}_inverter"},
                 "capabilities": inverter_caps,
@@ -798,7 +798,7 @@ class DeyeDriver(Driver):
                     grid_opts_final["measure_power"] = {"title": {"en": "Grid Power (Live)"}}
 
                 devices.append({
-                    "name": f"{DEYE_MODELS[model_id]} — Grid Meter",
+                    "name": f"{DEYE_MODELS[model_id]} — Meter",
                     "icon": "/drivers/deye/assets/icon_grid.svg",
                     "data": {"id": f"deye_{serial}_grid"},
                     "class": "sensor",
