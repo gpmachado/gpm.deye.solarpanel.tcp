@@ -5,8 +5,6 @@ __pycache__/
 .DS_Store
 .claude/
 third_Party/
-test_registers.py
-test_connection.py
 package-lock.json
 
 ha/
