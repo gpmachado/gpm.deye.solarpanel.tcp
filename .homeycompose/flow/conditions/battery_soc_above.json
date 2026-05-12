@@ -1,0 +1,28 @@
+{
+  "id": "battery_soc_above",
+  "title": {
+    "en": "Battery SOC !{{is|is not}} above",
+    "nl": "Batterij SOC !{{is|is niet}} boven",
+    "de": "Batterie-SOC !{{ist|ist nicht}} über",
+    "fr": "SOC batterie !{{est|n'est pas}} supérieur à",
+    "it": "SOC batteria !{{è|non è}} sopra",
+    "sv": "Batteri SOC !{{är|är inte}} över",
+    "no": "Batteri SOC !{{er|er ikke}} over",
+    "es": "SOC batería !{{está|no está}} por encima de",
+    "da": "Batteri SOC !{{er|er ikke}} over",
+    "pl": "SOC baterii !{{jest|nie jest}} powyżej"
+  },
+  "args": [
+    {
+      "type": "device",
+      "name": "device",
+      "filter": "driver_id=deye&capabilities=measure_battery"
+    },
+    {
+      "type": "number",
+      "name": "value",
+      "min": 0,
+      "max": 100
+    }
+  ]
+}

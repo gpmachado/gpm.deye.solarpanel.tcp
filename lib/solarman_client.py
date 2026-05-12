@@ -60,7 +60,13 @@ class SolarmanClient:
     # ── Register I/O ──────────────────────────────────────────────────────────
 
     async def _send_request(self, params: ParameterParser, start: int, end: int, mb_fc: int) -> None:
-        """Read registers [start..end], splitting into chunks ≤ MAX_REGISTERS_PER_REQUEST."""
+        """Read registers [start..end], splitting into chunks ≤ MAX_REGISTERS_PER_REQUEST.
+
+        Advances by the actual number of registers returned so partial responses
+        (where the logger returns fewer than requested) are handled gracefully.
+        If the logger returns 0 registers for a chunk, a ValueError is raised to
+        trigger the normal retry / connection-error path.
+        """
         addr = start
         while addr <= end:
             chunk = min(MAX_REGISTERS_PER_REQUEST, end - addr + 1)
@@ -70,8 +76,11 @@ class SolarmanClient:
                 response = await self._modbus.read_input_registers(register_addr=addr, quantity=chunk)
             else:
                 raise ValueError(f"Unsupported Modbus function code: {mb_fc}")
-            params.parse(response, addr, chunk)
-            addr += chunk
+            received = len(response)
+            if received == 0:
+                raise ValueError(f"Register [{addr:#x}]: logger returned 0 registers")
+            params.parse(response, addr, received)
+            addr += received
 
     # ── Public async API ──────────────────────────────────────────────────────
 

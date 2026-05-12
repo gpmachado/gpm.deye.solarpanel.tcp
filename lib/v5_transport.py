@@ -114,7 +114,12 @@ def _build_modbus_request(slave: int, fc: int, start: int, count: int) -> bytes:
 
 
 def _parse_modbus_registers(data: bytes, count: int) -> list[int]:
-    """Parse a Modbus RTU read-register response. Returns register values."""
+    """Parse a Modbus RTU read-register response. Returns register values.
+
+    Accepts partial responses — some Solarman loggers return fewer registers
+    than requested.  The caller is responsible for advancing the address pointer
+    by len(result) rather than by the originally requested count.
+    """
     if len(data) < 5:
         raise ValueError(f"Modbus response too short ({len(data)} bytes)")
     if data[1] & 0x80:
@@ -122,9 +127,9 @@ def _parse_modbus_registers(data: bytes, count: int) -> list[int]:
     byte_count = data[2]
     n = min(count, byte_count // 2)
     if n < count:
-        raise ValueError(
-            f"Incomplete Modbus response: expected {count} registers, "
-            f"byte_count={byte_count} → only {n} registers"
+        _LOGGER.debug(
+            "Partial Modbus response: requested %d registers, got %d (byte_count=%d) — continuing",
+            count, n, byte_count,
         )
     return [struct.unpack(">H", data[3 + i*2: 5 + i*2])[0] for i in range(n)]
 
