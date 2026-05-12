@@ -1,11 +1,23 @@
+import json
+import os
+
 from homey.app import App
+
+
+def _app_version() -> str:
+    try:
+        manifest = os.path.join(os.path.dirname(__file__), "app.json")
+        with open(manifest, encoding="utf-8") as f:
+            return json.load(f).get("version", "unknown")
+    except Exception:
+        return "unknown"
 
 
 class MyApp(App):
 
     async def on_init(self):
         await super().on_init()
-        self.log("Initialized MyApp")
+        self.log(f"Deye app v{_app_version()} initialized")
         self._register_flow_conditions()
 
     def _register_flow_conditions(self):
