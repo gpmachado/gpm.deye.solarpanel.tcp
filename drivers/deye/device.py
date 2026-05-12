@@ -176,13 +176,15 @@ class DeyeDevice(Device):
             if self.has_capability("meter_power.battery_discharged"):
                 energy["meterPowerExportedCapability"] = "meter_power.battery_discharged"
         elif self._is_grid_meter:
-            energy = {"cumulative": True}
-            if self.has_capability("meter_power"):
-                energy["cumulativeImportedCapability"] = "meter_power"
-            if self.has_capability("meter_power.exported"):
-                energy["cumulativeExportedCapability"] = "meter_power.exported"
-            if self.has_capability("measure_power"):
-                energy["measurePowerConsumedCapability"] = "measure_power"
+            # The Homey Python SDK does not reliably support the `cumulative` key
+            # in set_energy() — calling it overwrites (and clears) the correct
+            # energy config that was stored at pairing time.
+            # Reference apps (SMA, Sigenergy) declare cumulative energy in the
+            # driver manifest, not via runtime set_energy().
+            # Fix: skip set_energy() for grid meter and let the pairing-time
+            # energy config ({cumulative: true, ...}) persist unchanged.
+            self.log("Grid meter: skipping set_energy — relying on pairing-time cumulative config")
+            return
         else:
             # Inverter: set_energy() overwrites ALL energy properties, so we must
             # include measurePowerProducedCapability here — omitting it removes the
