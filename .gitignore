@@ -9,5 +9,4 @@ package-lock.json
 pyrightconfig.json
 ha/
 analise/
-scan-auto-detect/
 *.log
