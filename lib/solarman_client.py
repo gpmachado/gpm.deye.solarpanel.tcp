@@ -14,7 +14,9 @@ from app.lib.parser import ParameterParser
 log = logging.getLogger(__name__)
 
 QUERY_RETRY_ATTEMPTS = 3
-_RETRY_SLEEP_S = 3   # seconds between retry attempts (give logger time to recover)
+_RETRY_SLEEP_S = 3        # seconds between retry attempts (give logger time to recover)
+MAX_REGISTERS_PER_REQUEST = 50  # many Deye/Solarman inverters silently cap at ~58 registers
+                                 # per Modbus query; 50 gives a safe margin
 
 
 class SolarmanClient:
@@ -58,14 +60,18 @@ class SolarmanClient:
     # ── Register I/O ──────────────────────────────────────────────────────────
 
     async def _send_request(self, params: ParameterParser, start: int, end: int, mb_fc: int) -> None:
-        length = end - start + 1
-        if mb_fc == 3:
-            response = await self._modbus.read_holding_registers(register_addr=start, quantity=length)
-        elif mb_fc == 4:
-            response = await self._modbus.read_input_registers(register_addr=start, quantity=length)
-        else:
-            raise ValueError(f"Unsupported Modbus function code: {mb_fc}")
-        params.parse(response, start, length)
+        """Read registers [start..end], splitting into chunks ≤ MAX_REGISTERS_PER_REQUEST."""
+        addr = start
+        while addr <= end:
+            chunk = min(MAX_REGISTERS_PER_REQUEST, end - addr + 1)
+            if mb_fc == 3:
+                response = await self._modbus.read_holding_registers(register_addr=addr, quantity=chunk)
+            elif mb_fc == 4:
+                response = await self._modbus.read_input_registers(register_addr=addr, quantity=chunk)
+            else:
+                raise ValueError(f"Unsupported Modbus function code: {mb_fc}")
+            params.parse(response, addr, chunk)
+            addr += chunk
 
     # ── Public async API ──────────────────────────────────────────────────────
 
