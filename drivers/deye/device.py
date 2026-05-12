@@ -180,10 +180,18 @@ class DeyeDevice(Device):
             if self.has_capability("measure_power"):
                 energy["measurePowerConsumedCapability"] = "measure_power"
         else:
-            # Inverter: measure_power is set to PV total at poll time, so Homey Energy
-            # reads solar production directly from measure_power via class=solarpanel.
-            # No measurePowerProducedCapability needed — matches SMA/SigenEnergy pattern.
-            energy = {"meterPowerExportedCapability": "meter_power"}
+            # Inverter: set_energy() overwrites ALL energy properties, so we must
+            # include measurePowerProducedCapability here — omitting it removes the
+            # value set at pairing time and breaks the Solar production tile.
+            produced_cap = (
+                "measure_power.solar"
+                if self.has_capability("measure_power.solar")
+                else "measure_power"
+            )
+            energy = {
+                "measurePowerProducedCapability": produced_cap,
+                "meterPowerExportedCapability": "meter_power",
+            }
 
         try:
             await setter(energy)
