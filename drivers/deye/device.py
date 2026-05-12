@@ -153,6 +153,10 @@ class DeyeDevice(Device):
                 elif self._is_grid_meter:
                     await class_setter("sensor")
                     self.log("Device class set to sensor")
+                else:
+                    # Inverter: manifest default is now "other" — set explicitly to "solarpanel"
+                    await class_setter("solarpanel")
+                    self.log("Device class set to solarpanel")
             except Exception as e:
                 _LOGGER.warning(f"Could not set device class: {e}")
 

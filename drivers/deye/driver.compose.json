@@ -11,7 +11,7 @@
     "da": "Deye Inverter",
     "pl": "Falownik Deye"
   },
-  "class": "solarpanel",
+  "class": "other",
   "capabilities": [],
   "platforms": ["local"],
   "connectivity": ["lan"],
