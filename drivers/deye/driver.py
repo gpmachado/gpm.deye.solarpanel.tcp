@@ -711,6 +711,7 @@ class DeyeDriver(Driver):
 
                 devices.append({
                     "name": f"{DEYE_MODELS[model_id]} — Battery",
+                    "icon": "/drivers/deye/assets/icon_battery.svg",
                     "data": {"id": f"deye_{serial}_battery"},
                     "class": "battery",
                     "capabilities": batt_caps_final,
@@ -746,7 +747,7 @@ class DeyeDriver(Driver):
 
                 devices.append({
                     "name": f"{DEYE_MODELS[model_id]} — Grid",
-                    "icon": "/drivers/deye/assets/icon_inverter.svg",
+                    "icon": "/drivers/deye/assets/icon_grid.svg",
                     "data": {"id": f"deye_{serial}_grid"},
                     "class": "sensor",
                     "capabilities": grid_caps_final,
