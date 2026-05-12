@@ -89,7 +89,6 @@ class DeyeDevice(Device):
                 _LOGGER.warning(f"Could not add measure_power to grid meter: {e}")
 
         await self._ensure_pv_structural_caps()
-        await self._sync_energy_config()
 
         # Initialise synthetic inverter caps to 0 so Energy Dashboard never shows null
         # before the first successful poll.
@@ -115,7 +114,6 @@ class DeyeDevice(Device):
         )):
             self._detach_poller()
             self._build_sensor_map()
-            await self._sync_energy_config()
             self._attach_poller()
 
             # Restart Wi-Fi info task if IP was changed (only for main/inverter device)
@@ -134,76 +132,6 @@ class DeyeDevice(Device):
             return int(val)
         except (ValueError, TypeError):
             return default
-
-    async def _sync_energy_config(self) -> None:
-        """Apply the effective Homey Energy configuration for this device type.
-
-        The driver manifest contains only one static `energy` block, but this app creates
-        three distinct energy-device roles from the same driver (inverter, battery, grid meter).
-        Homey expects dynamic energy overrides to be applied with Device.set_energy().
-        """
-        # Fix class mismatch: all devices share class="solarpanel" from the manifest.
-        # set_class() overrides it at runtime so the Energy Dashboard assigns the correct role.
-        class_setter = getattr(self, "set_class", None)
-        if callable(class_setter):
-            try:
-                if self._is_battery:
-                    await class_setter("battery")
-                    self.log("Device class set to battery")
-                elif self._is_grid_meter:
-                    await class_setter("sensor")
-                    self.log("Device class set to sensor")
-                else:
-                    # Inverter: manifest default is now "other" — set explicitly to "solarpanel"
-                    await class_setter("solarpanel")
-                    self.log("Device class set to solarpanel")
-            except Exception as e:
-                _LOGGER.warning(f"Could not set device class: {e}")
-
-        setter = getattr(self, "set_energy", None)
-        if not callable(setter):
-            _LOGGER.warning("Device.set_energy() unavailable in this Homey runtime")
-            return
-
-        if self._is_battery:
-            # homeBattery must always be set regardless of which meter caps exist.
-            # Only include meterPower* keys when the capability actually exists —
-            # if a missing cap causes set_energy() to throw, homeBattery is lost and
-            # the device falls back to the manifest default (solar panel icon).
-            energy: dict = {"homeBattery": True}
-            if self.has_capability("meter_power.battery_charged"):
-                energy["meterPowerImportedCapability"] = "meter_power.battery_charged"
-            if self.has_capability("meter_power.battery_discharged"):
-                energy["meterPowerExportedCapability"] = "meter_power.battery_discharged"
-        elif self._is_grid_meter:
-            # The Homey Python SDK does not reliably support the `cumulative` key
-            # in set_energy() — calling it overwrites (and clears) the correct
-            # energy config that was stored at pairing time.
-            # Reference apps (SMA, Sigenergy) declare cumulative energy in the
-            # driver manifest, not via runtime set_energy().
-            # Fix: skip set_energy() for grid meter and let the pairing-time
-            # energy config ({cumulative: true, ...}) persist unchanged.
-            self.log("Grid meter: skipping set_energy — relying on pairing-time cumulative config")
-            return
-        else:
-            # Inverter: set_energy() overwrites ALL energy properties, so we must
-            # include measurePowerProducedCapability here — omitting it removes the
-            # value set at pairing time and breaks the Solar production tile.
-            produced_cap = (
-                "measure_power.solar"
-                if self.has_capability("measure_power.solar")
-                else "measure_power"
-            )
-            energy = {
-                "measurePowerProducedCapability": produced_cap,
-                "meterPowerExportedCapability": "meter_power",
-            }
-
-        try:
-            await setter(energy)
-            self.log(f"Energy config synced: {energy}")
-        except Exception as e:
-            _LOGGER.warning(f"Could not sync energy settings: {e}")
 
     # ── Sensor map ────────────────────────────────────────────────────────────
 
@@ -285,7 +213,7 @@ class DeyeDevice(Device):
 
         if model in ("deye_hybrid", "deye_sg04lp3", "deye_string", "deye_micro"):
             # measure_power.solar is the Energy Dashboard production source.
-            # Without it, _sync_energy_config falls back to measure_power (AC output).
+            # Without it, the pairing-time measurePowerProducedCapability falls back to measure_power (AC output).
             required = base_pv_caps + power_pv_caps + ("measure_power.solar",)
         else:
             return
