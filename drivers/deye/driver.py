@@ -28,6 +28,58 @@ DEYE_MODELS: dict[str, str] = {
 # String/micro inverters show grid caps directly on the main inverter tile.
 HYBRID_MODELS: frozenset[str] = frozenset({"deye_hybrid", "deye_sg04lp3"})
 
+# ── Capability icon SVG paths (relative to driver assets) ─────────────────────
+# Applied to capabilitiesOptions at pairing time so each capability shows a
+# custom icon in the Homey device detail view.
+_ASSETS = "/drivers/deye/assets"
+
+# Icons shared across device types (capability ID → SVG path)
+_CAP_ICONS_COMMON: dict[str, str] = {
+    "measure_power.solar":           f"{_ASSETS}/solar_power.svg",
+    "measure_power.pv1":             f"{_ASSETS}/solar_panel.svg",
+    "measure_power.pv2":             f"{_ASSETS}/solar_panel.svg",
+    "measure_power.pv3":             f"{_ASSETS}/solar_panel.svg",
+    "measure_power.pv4":             f"{_ASSETS}/solar_panel.svg",
+    "measure_power.load":            f"{_ASSETS}/house_power.svg",
+    "measure_power.grid":            f"{_ASSETS}/grid_power.svg",
+    "measure_power.battery":         f"{_ASSETS}/battery_power.svg",
+    "meter_power.today":             f"{_ASSETS}/daily_production.svg",
+    "meter_power":                   f"{_ASSETS}/solar_production.svg",
+    "meter_power.battery_charged":   f"{_ASSETS}/battery_charged.svg",
+    "meter_power.battery_discharged":f"{_ASSETS}/battery_discharged.svg",
+    "meter_power.grid_import":       f"{_ASSETS}/daily_buy.svg",
+    "meter_power.grid_export":       f"{_ASSETS}/daily_sell.svg",
+    "meter_power.today_import":      f"{_ASSETS}/daily_buy.svg",
+    "meter_power.today_export":      f"{_ASSETS}/daily_sell.svg",
+    "measure_battery":               f"{_ASSETS}/battery.svg",
+    "measure_temperature.battery":   f"{_ASSETS}/battery_temperature.svg",
+    "battery_charging_state":        f"{_ASSETS}/battery_charging.svg",
+    "alarm_generic":                 f"{_ASSETS}/grid_available.svg",
+}
+
+# measure_power icon differs per device type
+_CAP_ICON_POWER_BY_TYPE: dict[str, str] = {
+    "inverter":    f"{_ASSETS}/inverter.svg",
+    "battery":     f"{_ASSETS}/battery_power.svg",
+    "grid_meter":  f"{_ASSETS}/grid_power.svg",
+}
+
+
+def _apply_cap_icons(opts: dict, device_type: str) -> dict:
+    """Inject SVG icon paths into a capabilitiesOptions dict.
+
+    Does not overwrite existing icon entries. Returns the mutated dict.
+    """
+    for cap_id, entry in opts.items():
+        if "icon" in entry:
+            continue
+        icon = _CAP_ICONS_COMMON.get(cap_id)
+        if icon is None and cap_id == "measure_power":
+            icon = _CAP_ICON_POWER_BY_TYPE.get(device_type)
+        if icon:
+            entry["icon"] = icon
+    return opts
+
 _INVERTER_DEFS_DIR = os.path.join(os.path.dirname(__file__), "..", "..", "inverter_definitions")
 
 # ── Advanced capabilities (excluded by default) ───────────────────────────────
@@ -693,7 +745,7 @@ class DeyeDriver(Driver):
                 "icon": "/drivers/deye/assets/icon_inverter.svg",
                 "data": {"id": f"deye_{serial}_inverter"},
                 "capabilities": inverter_caps,
-                "capabilitiesOptions": inverter_opts,
+                "capabilitiesOptions": _apply_cap_icons(inverter_opts, "inverter"),
                 "energy": {
                     "measurePowerProducedCapability": produced_cap,
                     "meterPowerExportedCapability":   "meter_power",
@@ -715,7 +767,7 @@ class DeyeDriver(Driver):
                     "data": {"id": f"deye_{serial}_battery"},
                     "class": "battery",
                     "capabilities": batt_caps_final,
-                    "capabilitiesOptions": batt_opts_final,
+                    "capabilitiesOptions": _apply_cap_icons(batt_opts_final, "battery"),
                     "energy": {
                         "homeBattery": True,
                         "meterPowerImportedCapability": "meter_power.battery_charged",
@@ -751,7 +803,7 @@ class DeyeDriver(Driver):
                     "data": {"id": f"deye_{serial}_grid"},
                     "class": "sensor",
                     "capabilities": grid_caps_final,
-                    "capabilitiesOptions": grid_opts_final,
+                    "capabilitiesOptions": _apply_cap_icons(grid_opts_final, "grid_meter"),
                     "energy": {
                         "cumulative": True,
                         "cumulativeImportedCapability": "meter_power",
