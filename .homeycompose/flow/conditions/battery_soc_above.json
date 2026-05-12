@@ -12,6 +12,18 @@
     "da": "Batteri SOC !{{er|er ikke}} over",
     "pl": "SOC baterii !{{jest|nie jest}} powyżej"
   },
+  "titleFormatted": {
+    "en": "Battery SOC !{{is|is not}} above [[value]]%",
+    "nl": "Batterij SOC !{{is|is niet}} boven [[value]]%",
+    "de": "Batterie-SOC !{{ist|ist nicht}} über [[value]]%",
+    "fr": "SOC batterie !{{est|n'est pas}} supérieur à [[value]]%",
+    "it": "SOC batteria !{{è|non è}} sopra [[value]]%",
+    "sv": "Batteri SOC !{{är|är inte}} över [[value]]%",
+    "no": "Batteri SOC !{{er|er ikke}} over [[value]]%",
+    "es": "SOC batería !{{está|no está}} por encima de [[value]]%",
+    "da": "Batteri SOC !{{er|er ikke}} over [[value]]%",
+    "pl": "SOC baterii !{{jest|nie jest}} powyżej [[value]]%"
+  },
   "args": [
     {
       "type": "device",
