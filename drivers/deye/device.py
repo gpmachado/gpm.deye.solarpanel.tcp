@@ -166,11 +166,10 @@ class DeyeDevice(Device):
             if self.has_capability("measure_power"):
                 energy["measurePowerConsumedCapability"] = "measure_power"
         else:
-            produced_cap = "measure_power.solar" if self.has_capability("measure_power.solar") else "measure_power"
-            energy = {
-                "measurePowerProducedCapability": produced_cap,
-                "meterPowerExportedCapability": "meter_power",
-            }
+            # Inverter: measure_power is set to PV total at poll time, so Homey Energy
+            # reads solar production directly from measure_power via class=solarpanel.
+            # No measurePowerProducedCapability needed — matches SMA/SigenEnergy pattern.
+            energy = {"meterPowerExportedCapability": "meter_power"}
 
         try:
             await setter(energy)
@@ -416,11 +415,11 @@ class DeyeDevice(Device):
                     # measure_power.solar is synthetic — no single sensor maps to it directly.
                     pv_total = sum(float(values.get(n) or 0) for n in pv_names)
                     await self._set("measure_power.solar", pv_total)
-                    # Track PV total for flow triggers (solar_production_started/stopped).
-                    # Do NOT override measure_power here: for hybrid/sg04lp3 the sensor loop
-                    # already wrote it from the Total Power register (AC output), and the
-                    # Energy Dashboard reads solar production via measure_power.solar
-                    # (measurePowerProducedCapability), so AC Output Power stays accurate.
+                    # Also write to measure_power so Homey Energy (class=solarpanel) reads
+                    # solar production from the main capability — no measurePowerProducedCapability
+                    # needed. Matches SMA/SigenEnergy pattern and restores 1.3.2 behaviour.
+                    if self.has_capability("measure_power"):
+                        await self._set("measure_power", pv_total)
                     self._last_power_w = pv_total
                 else:
                     # String models: measure_power.solar was already set by the "Input Power"
