@@ -62,6 +62,8 @@ class DeyeDevice(Device):
     _was_producing: bool = False
     _grid_was_available: bool = True
     _is_unavailable: bool = False
+    _prev_charging_state: str | None = None   # battery: last known charging state
+    _prev_grid_exporting: bool | None = None  # grid meter: last known export direction
     _sun_cache: tuple | None = None   # (cache_date, sunrise_utc, sunset_utc)
 
     # ── Lifecycle ─────────────────────────────────────────────────────────────
@@ -500,6 +502,29 @@ class DeyeDevice(Device):
             elif grid_available and not self._grid_was_available:
                 self._grid_was_available = True
                 await self._trigger("grid_restored", {})
+
+        # Battery charging/discharging started (battery device only)
+        if self._is_battery:
+            state = self.get_capability_value("battery_charging_state")
+            if state and state != self._prev_charging_state:
+                soc = float(self.get_capability_value("measure_battery") or 0)
+                if state == "charge":
+                    await self._trigger("battery_charging_started", {"soc": soc})
+                elif state == "discharge":
+                    await self._trigger("battery_discharging_started", {"soc": soc})
+                self._prev_charging_state = state
+
+        # Grid export/import started (grid meter device only)
+        if self._is_grid_meter:
+            grid_pwr = self.get_capability_value("measure_power")
+            if grid_pwr is not None:
+                is_exporting = float(grid_pwr) < -10  # 10 W deadband
+                if self._prev_grid_exporting is not None:
+                    if is_exporting and not self._prev_grid_exporting:
+                        await self._trigger("grid_export_started", {"power": abs(float(grid_pwr))})
+                    elif not is_exporting and self._prev_grid_exporting:
+                        await self._trigger("grid_import_started", {"power": float(grid_pwr)})
+                self._prev_grid_exporting = is_exporting
 
         # Data updated — fires every successful poll with current values as tokens
         tokens = {"power": power, "daily_production": 0.0, "battery_soc": 0.0, "grid_power": 0.0}

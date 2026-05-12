@@ -211,6 +211,142 @@
             "filter": "driver_id=deye&capabilities=meter_power.today"
           }
         ]
+      },
+      {
+        "id": "battery_charging_started",
+        "title": {
+          "en": "Battery started charging",
+          "nl": "Batterij begon met opladen",
+          "de": "Batterie begann zu laden",
+          "fr": "La batterie a commencé à se charger",
+          "it": "La batteria ha iniziato a caricarsi",
+          "sv": "Batteriet började laddas",
+          "no": "Batteriet begynte å lade",
+          "es": "La batería empezó a cargarse",
+          "da": "Batteriet begyndte at lade",
+          "pl": "Bateria zaczęła się ładować"
+        },
+        "hint": {
+          "en": "Triggered when the battery transitions from discharging/standby to charging."
+        },
+        "args": [
+          {
+            "type": "device",
+            "name": "device",
+            "filter": "driver_id=deye&capabilities=measure_power.battery"
+          }
+        ],
+        "tokens": [
+          {
+            "name": "soc",
+            "type": "number",
+            "title": {
+              "en": "Battery SOC (%)"
+            }
+          }
+        ]
+      },
+      {
+        "id": "battery_discharging_started",
+        "title": {
+          "en": "Battery started discharging",
+          "nl": "Batterij begon te ontladen",
+          "de": "Batterie begann zu entladen",
+          "fr": "La batterie a commencé à se décharger",
+          "it": "La batteria ha iniziato a scaricarsi",
+          "sv": "Batteriet började urladdas",
+          "no": "Batteriet begynte å lade ut",
+          "es": "La batería empezó a descargarse",
+          "da": "Batteriet begyndte at aflade",
+          "pl": "Bateria zaczęła się rozładowywać"
+        },
+        "hint": {
+          "en": "Triggered when the battery transitions from charging/standby to discharging."
+        },
+        "args": [
+          {
+            "type": "device",
+            "name": "device",
+            "filter": "driver_id=deye&capabilities=measure_power.battery"
+          }
+        ],
+        "tokens": [
+          {
+            "name": "soc",
+            "type": "number",
+            "title": {
+              "en": "Battery SOC (%)"
+            }
+          }
+        ]
+      },
+      {
+        "id": "grid_export_started",
+        "title": {
+          "en": "Grid export started",
+          "nl": "Netinjectie gestart",
+          "de": "Netzeinspeisung gestartet",
+          "fr": "Injection sur le réseau démarrée",
+          "it": "Inizio esportazione in rete",
+          "sv": "Nätexport startad",
+          "no": "Netteksport startet",
+          "es": "Exportación a la red iniciada",
+          "da": "Neteksport startet",
+          "pl": "Eksport do sieci rozpoczęty"
+        },
+        "hint": {
+          "en": "Triggered when the inverter starts feeding surplus power to the grid."
+        },
+        "args": [
+          {
+            "type": "device",
+            "name": "device",
+            "filter": "driver_id=deye&capabilities=meter_power.exported"
+          }
+        ],
+        "tokens": [
+          {
+            "name": "power",
+            "type": "number",
+            "title": {
+              "en": "Power (W)"
+            }
+          }
+        ]
+      },
+      {
+        "id": "grid_import_started",
+        "title": {
+          "en": "Grid import started",
+          "nl": "Netstroom afname gestart",
+          "de": "Netzbezug gestartet",
+          "fr": "Importation du réseau démarrée",
+          "it": "Inizio importazione dalla rete",
+          "sv": "Nätimport startad",
+          "no": "Nettimport startet",
+          "es": "Importación de la red iniciada",
+          "da": "Netimport startet",
+          "pl": "Import z sieci rozpoczęty"
+        },
+        "hint": {
+          "en": "Triggered when the system starts drawing power from the grid."
+        },
+        "args": [
+          {
+            "type": "device",
+            "name": "device",
+            "filter": "driver_id=deye&capabilities=meter_power.exported"
+          }
+        ],
+        "tokens": [
+          {
+            "name": "power",
+            "type": "number",
+            "title": {
+              "en": "Power (W)"
+            }
+          }
+        ]
       }
     ],
     "conditions": [
@@ -277,6 +413,37 @@
             "type": "device",
             "name": "device",
             "filter": "driver_id=deye&capabilities=meter_power.today"
+          }
+        ]
+      },
+      {
+        "id": "battery_soc_above",
+        "title": {
+          "en": "Battery SOC !{{is|is not}} above",
+          "nl": "Batterij SOC !{{is|is niet}} boven",
+          "de": "Batterie-SOC !{{ist|ist nicht}} über",
+          "fr": "SOC de la batterie !{{est|n'est pas}} au-dessus de",
+          "it": "SOC batteria !{{è|non è}} sopra",
+          "sv": "Batteriets SOC !{{är|är inte}} över",
+          "no": "Batteri SOC !{{er|er ikke}} over",
+          "es": "SOC de batería !{{está|no está}} por encima de",
+          "da": "Batteri SOC !{{er|er ikke}} over",
+          "pl": "SOC baterii !{{jest|nie jest}} powyżej"
+        },
+        "args": [
+          {
+            "type": "device",
+            "name": "device",
+            "filter": "driver_id=deye&capabilities=measure_battery"
+          },
+          {
+            "type": "number",
+            "name": "value",
+            "min": 0,
+            "max": 100,
+            "placeholder": {
+              "en": "%"
+            }
           }
         ]
       }

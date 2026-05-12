@@ -38,6 +38,16 @@ class MyApp(App):
             grid = device.get_capability_value("measure_power.grid") or 0
             return float(grid) < 0  # negative = exporting to grid
 
+        async def _battery_soc_above(args, state):
+            device = args.get("device")
+            if not device:
+                return False
+            soc = device.get_capability_value("measure_battery")
+            threshold = args.get("value")
+            if soc is None or threshold is None:
+                return False
+            return float(soc) >= float(threshold)
+
         try:
             self.homey.flow.get_condition_card("is_solar_producing") \
                 .register_run_listener(_is_solar_producing)
@@ -45,6 +55,8 @@ class MyApp(App):
                 .register_run_listener(_is_battery_charging)
             self.homey.flow.get_condition_card("is_grid_feeding") \
                 .register_run_listener(_is_grid_feeding)
+            self.homey.flow.get_condition_card("battery_soc_above") \
+                .register_run_listener(_battery_soc_above)
         except Exception as e:
             self.log(f"Flow condition registration failed: {e}")
 
