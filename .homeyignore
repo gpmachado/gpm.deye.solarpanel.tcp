@@ -1,8 +1,15 @@
-node
 third_Party
 .homeybuild
 .git
 .claude
+.DS_Store
 *.md
+*.txt
 analise/
 scan-auto-detect/
+*.log
+ha/
+__pycache__/
+*.pyc
+pyrightconfig.json
+inverter_definitions/*.yaml
