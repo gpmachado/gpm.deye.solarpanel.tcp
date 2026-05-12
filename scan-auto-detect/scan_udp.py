@@ -7,15 +7,42 @@ Usage:
 
 No dependencies — works with Python 3 out of the box.
 Sends both known discovery payloads and listens for 5 seconds.
+When the serial is not numeric (some firmware returns the Wi-Fi name instead),
+falls back to the logger's HTTP config page to retrieve the real serial.
 Prints IP, MAC and serial number of any logger that responds.
 """
 
 import socket
 import time
+import urllib.request
+import urllib.error
+import re
 
 DISCOVERY_PORT = 48899
 PAYLOADS = [b"WIFIKIT-214028-READ", b"HF-A11ASSISTHREAD"]
 TIMEOUT = 5.0
+
+
+def _fetch_serial_http(ip: str, timeout: float = 3.0) -> str | None:
+    """Try to read the logger serial from its HTTP config page."""
+    for path in ("/", "/index.html", "/status.html"):
+        try:
+            url = f"http://{ip}{path}"
+            with urllib.request.urlopen(url, timeout=timeout) as resp:
+                html = resp.read().decode("utf-8", errors="replace")
+            # Solarman logger pages expose serial as webdata_sn or sn=
+            for pattern in (
+                r'webdata_sn\s*=\s*["\']?(\d{8,12})',
+                r'"sn"\s*:\s*["\']?(\d{8,12})',
+                r'[Ss]erial\s*[Nn]o?\W{0,5}(\d{8,12})',
+            ):
+                m = re.search(pattern, html)
+                if m:
+                    return m.group(1)
+        except Exception:
+            pass
+    return None
+
 
 def scan() -> None:
     found: dict[str, str] = {}  # ip -> raw reply
@@ -48,8 +75,12 @@ def scan() -> None:
         try:
             data, addr = sock.recvfrom(1024)
             ip = addr[0]
+            raw = data.decode("utf-8", errors="replace").strip()
+            # Ignore echo: device returned our own payload unchanged
+            if raw in ("WIFIKIT-214028-READ", "HF-A11ASSISTHREAD"):
+                continue
             if ip not in found:
-                found[ip] = data.decode("utf-8", errors="replace").strip()
+                found[ip] = raw
         except socket.timeout:
             pass
         except Exception:
@@ -73,6 +104,19 @@ def scan() -> None:
         parts = [p.strip() for p in reply.split(",")]
         mac    = parts[1] if len(parts) > 1 else "—"
         serial = parts[2] if len(parts) > 2 else "—"
+
+        # Some firmware returns the Wi-Fi module name instead of the numeric serial.
+        # Fall back to HTTP to retrieve the real serial.
+        if not serial.isdigit():
+            print(f"  [info] UDP serial '{serial}' is not numeric — trying HTTP...")
+            http_serial = _fetch_serial_http(ip)
+            if http_serial:
+                serial = http_serial
+                print(f"  [info] Serial found via HTTP: {serial}")
+            else:
+                print(f"  [warn] Could not retrieve serial via HTTP.")
+                print(f"         Check the sticker on the Wi-Fi logger stick for a 10-digit number.")
+
         print(f"  IP     : {ip}")
         print(f"  MAC    : {mac}")
         print(f"  Serial : {serial}")
@@ -80,6 +124,7 @@ def scan() -> None:
         print()
 
     print("Use the IP and Serial above when pairing manually in the Homey app.")
+
 
 if __name__ == "__main__":
     scan()
