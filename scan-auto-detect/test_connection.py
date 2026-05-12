@@ -41,7 +41,7 @@ async def test():
         print(f"Register 0x0003 = {r}")
 
         # Read all registers from the YAML/JSON definition
-        project_root = os.path.dirname(os.path.dirname(__file__))
+        project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         yaml_path = os.path.join(project_root, "inverter_definitions", f"{MODEL}.json")
         if os.path.exists(yaml_path):
             sys.path.insert(0, project_root)

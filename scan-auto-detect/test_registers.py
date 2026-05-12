@@ -17,15 +17,15 @@ import json
 import sys
 import os
 
-sys.path.insert(0, os.path.dirname(__file__))
+_SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+_PROJECT_ROOT = os.path.dirname(_SCRIPT_DIR)
+sys.path.insert(0, _SCRIPT_DIR)
 
 from pysolarmanv5 import PySolarmanV5Async
 
 
 async def main(host: str, serial: int, model: str):
-    definition_path = os.path.join(
-        os.path.dirname(os.path.dirname(__file__)), "inverter_definitions", f"{model}.json"
-    )
+    definition_path = os.path.join(_PROJECT_ROOT, "inverter_definitions", f"{model}.json")
     if not os.path.exists(definition_path):
         print(f"ERROR: model '{model}' not found at {definition_path}")
         print("Available models: deye_string, deye_micro, deye_hybrid, deye_sg04lp3")
