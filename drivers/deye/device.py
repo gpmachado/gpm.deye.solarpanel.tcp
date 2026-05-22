@@ -25,9 +25,12 @@ _BACKOFF_NIGHT   = 30 * 60   # 30 min — inverter expected offline at night
 _WARN_THRESHOLD  = 3          # consecutive failures before set_warning (~3 min at 60 s polling)
 _ERROR_THRESHOLD = 120        # consecutive failures before set_unavailable (~2 h at 60 s polling)
 
-# Set to True locally when debugging — logs one line per poll to the console.
-# Change back to False before publishing to the store.
+# ── Debug verbosity ───────────────────────────────────────────────────────────
+# True  → one log line per poll (solar/battery/grid values) — homey app run --remote
+# False → silent (production)
+# Flip this ONE constant instead of hunting across device.py.
 _DEBUG_LOG = False
+# ─────────────────────────────────────────────────────────────────────────────
 
 # Capabilities zeroed on the inverter device at night
 _INVERTER_NIGHT_ZERO = frozenset({
