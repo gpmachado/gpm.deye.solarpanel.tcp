@@ -34,10 +34,6 @@ class SolarmanClient:
         self._modbus: V5Transport | None = None
         self._parameter_definition: dict | None = None
 
-    def load_definition(self, json_path: str) -> None:
-        with open(json_path, encoding="utf-8") as f:
-            self._parameter_definition = json.load(f)
-
     # ── Connection ────────────────────────────────────────────────────────────
 
     async def _connect(self) -> None:
@@ -143,19 +139,3 @@ class SolarmanClient:
         finally:
             await self._disconnect()
 
-    async def read_register(self, addr: int) -> int:
-        """Read a single holding register."""
-        try:
-            await self._connect()
-            result = await self._modbus.read_holding_registers(register_addr=addr, quantity=1)
-            return result[0] if result else 0
-        except Exception:
-            return 0
-        finally:
-            await self._disconnect()
-
-    def get_sensors(self) -> list:
-        """Return all sensor definitions from the loaded JSON."""
-        if not self._parameter_definition:
-            return []
-        return ParameterParser(self._parameter_definition).get_sensors()

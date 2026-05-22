@@ -8,7 +8,6 @@ import asyncio
 import json
 import logging
 import os
-import socket
 
 from homey.driver import Driver
 from app.lib.solarman_client import SolarmanClient

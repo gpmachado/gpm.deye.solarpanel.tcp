@@ -257,7 +257,7 @@ class DeyeDevice(Device):
         poller.subscribe(self._on_values)
         self.log(f"Subscribed to SharedPoller serial={serial}")
 
-    def _detach_poller(self, serial_override: int | None = None) -> None:
+    def _detach_poller(self) -> None:
         _poller_mod.release_callback(self._on_values)
 
     # ── Value handler ─────────────────────────────────────────────────────────
@@ -647,10 +647,6 @@ class DeyeDevice(Device):
         except Exception as e:
             self.log(f"Night backoff disabled — sun calculation failed: {e}")
             return None
-
-    def _is_night_time(self) -> bool:
-        """True when outside solar window. Convenience wrapper."""
-        return self._is_night_time_from(self._get_sunrise_sunset())
 
     def _is_night_time_from(self, sun_times: tuple[float, float] | None) -> bool:
         """True when outside solar window.
