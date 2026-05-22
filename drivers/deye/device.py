@@ -740,8 +740,8 @@ class DeyeDevice(Device):
     async def _set(self, cap: str, value) -> None:
         try:
             await self.set_capability_value(cap, value)
-        except Exception:
-            pass
+        except Exception as e:
+            _LOGGER.debug(f"set_capability_value({cap!r}, {value!r}) failed: {e}")
 
 
 homey_export = DeyeDevice
