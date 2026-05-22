@@ -70,5 +70,11 @@
   },
   "1.3.8": {
     "en": "Energy Dashboard now correctly shows solar production instead of AC output power — existing hybrid devices are repaired automatically on next restart, no re-pairing required. Battery discharge energy tracking fixed (devices paired with earlier versions recover automatically). Auto-discovery (UDP) improved for loggers that only respond on port 48899. Missing pairing screen translations added for DE, FR, ES, IT, NL, NO, PL, SV, DA."
+  },
+  "1.3.9": {
+    "en": "Inverter device is now registered as class solarpanel — Solar production now appears correctly in the Homey Energy Dashboard. Devices paired with earlier versions are migrated automatically on restart, no re-pairing required. Improved Modbus compatibility: partial register responses accepted and large register blocks split to respect inverter limits."
+  },
+  "1.3.22": {
+    "en": "Fixed TCP socket leak that caused 15-20 min polling blackouts when a poll was interrupted (CancelledError now always closes the socket). String/micro inverters no longer go unavailable at night — warning triangle shows during daytime outages, unavailable state reserved for persistent failures (~2 h). Timeline notification when logger is unreachable for a configurable number of minutes (default 10, set 0 to disable). Sunrise/sunset coordinates auto-filled from Homey geolocation. Wi-Fi signal display fixed (logger reports percentage, not dBm)."
   }
 }

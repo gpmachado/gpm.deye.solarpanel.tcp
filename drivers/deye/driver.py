@@ -435,7 +435,11 @@ async def _fetch_logger_info(host: str) -> dict:
             except ValueError:
                 result["rssi"] = rssi_raw
         elif rssi_raw:
-            result["rssi"] = f"{rssi_raw} dBm"
+            try:
+                rssi_int = int(rssi_raw.replace("%", "").strip())
+                result["rssi"] = f"{rssi_int} dBm" if rssi_int < 0 else f"{rssi_int}%"
+            except ValueError:
+                result["rssi"] = rssi_raw
 
     except Exception as e:
         _LOGGER.debug(f"Logger info fetch failed: {e}")
@@ -744,6 +748,7 @@ class DeyeDriver(Driver):
                 "name": f"{DEYE_MODELS[model_id]} — Inverter",
                 "icon": "/drivers/deye/assets/icon_inverter.svg",
                 "data": {"id": f"deye_{serial}_inverter"},
+                "class": "solarpanel",
                 "capabilities": inverter_caps,
                 "capabilitiesOptions": _apply_cap_icons(inverter_opts, "inverter"),
                 "energy": {

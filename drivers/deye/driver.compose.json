@@ -11,7 +11,7 @@
     "da": "Deye Inverter",
     "pl": "Falownik Deye"
   },
-  "class": "other",
+  "class": "solarpanel",
   "capabilities": [],
   "platforms": ["local"],
   "connectivity": ["lan"],
@@ -150,6 +150,13 @@
       "value": "—"
     },
     {
+      "id": "offlineNotifyMinutes",
+      "type": "number",
+      "label": { "en": "Notify after offline (minutes)" },
+      "hint": { "en": "Send a timeline notification when the logger is unreachable for this many minutes. Set 0 to disable. Default: 10." },
+      "value": 10, "min": 0, "max": 120
+    },
+    {
       "type": "group",
       "label": {
         "en": "Advanced",
@@ -219,7 +226,7 @@
           "id": "solar_latitude",
           "type": "number",
           "label": { "en": "Solar latitude" },
-          "hint": { "en": "Optional. Fallback when Homey location is unavailable. Example: -23.5505" },
+          "hint": { "en": "String/micro inverters only. Optional fallback when Homey location is unavailable — used to determine sunrise/sunset so the logger going offline at night is not treated as an error. Example: -23.5505. Hybrid inverters stay online 24/7 and do not use this setting." },
           "min": -90,
           "max": 90
         },
@@ -227,7 +234,7 @@
           "id": "solar_longitude",
           "type": "number",
           "label": { "en": "Solar longitude" },
-          "hint": { "en": "Optional. Fallback when Homey location is unavailable. Example: -46.6333" },
+          "hint": { "en": "String/micro inverters only. Example: -46.6333" },
           "min": -180,
           "max": 180
         }

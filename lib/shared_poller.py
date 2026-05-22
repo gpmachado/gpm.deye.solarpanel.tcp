@@ -10,6 +10,7 @@ import os
 _LOGGER = logging.getLogger(__name__)
 
 _registry: dict[int, "SharedPoller"] = {}
+_definitions_cache: dict[str, dict] = {}  # model → parsed JSON, loaded once per process
 
 
 def get_or_create(serial: int, *, host: str, port: int,
@@ -90,22 +91,41 @@ class SharedPoller:
             self._task = asyncio.create_task(self._loop())
 
     def _build_client(self):
+        import json
         from app.lib.solarman_client import SolarmanClient
-        defs_dir = os.path.join(os.path.dirname(__file__), "..", "inverter_definitions")
-        json_path = os.path.join(defs_dir, f"{self._model}.json")
+        if self._model not in _definitions_cache:
+            defs_dir = os.path.join(os.path.dirname(__file__), "..", "inverter_definitions")
+            json_path = os.path.join(defs_dir, f"{self._model}.json")
+            with open(json_path, encoding="utf-8") as f:
+                _definitions_cache[self._model] = json.load(f)
         client = SolarmanClient(self._host, self.serial,
                                 port=self._port, slave_id=self._slave_id)
-        client.load_definition(json_path)
+        client._parameter_definition = _definitions_cache[self._model]
         return client
 
     async def _loop(self) -> None:
         _LOGGER.info(f"SharedPoller start serial={self.serial} host={self._host}")
-        try:
-            while self._subscribers:
-                await self._poll()
+        while self._subscribers:
+            try:
+                # Hard cap: one poll must complete within 120 s regardless of internal timeouts.
+                # Guards against half-open TCP connections that block drain() or readexactly().
+                await asyncio.wait_for(self._poll(), timeout=120)
+            except asyncio.TimeoutError:
+                _LOGGER.warning(f"SharedPoller poll hard-timeout serial={self.serial} — resetting client")
+                self._client = None
+                for cb in list(self._subscribers):
+                    try:
+                        await cb(None)
+                    except Exception as e:
+                        _LOGGER.debug(f"SharedPoller subscriber error after timeout: {e}")
+            except asyncio.CancelledError:
+                break
+            except Exception as e:
+                _LOGGER.warning(f"SharedPoller unexpected loop error serial={self.serial}: {e}")
+            try:
                 await asyncio.sleep(self._interval)
-        except asyncio.CancelledError:
-            pass
+            except asyncio.CancelledError:
+                break
         _LOGGER.info(f"SharedPoller stop serial={self.serial}")
 
     async def _poll(self) -> None:

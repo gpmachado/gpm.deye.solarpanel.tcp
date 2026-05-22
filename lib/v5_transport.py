@@ -204,7 +204,7 @@ class V5Transport:
         v5_frame    = _build_v5_frame(self.serial, seq, modbus_req)
 
         self._writer.write(v5_frame)
-        await self._writer.drain()
+        await asyncio.wait_for(self._writer.drain(), timeout=self.timeout)
 
         # Read full V5 response frame
         response = await self._read_v5_frame()

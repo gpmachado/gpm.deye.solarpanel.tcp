@@ -94,36 +94,42 @@ class SolarmanClient:
         if not self._parameter_definition:
             raise ValueError("No definition loaded. Call load_definition() first.")
 
-        params = ParameterParser(self._parameter_definition)
-        requests = self._parameter_definition["requests"]
+        try:
+            params = ParameterParser(self._parameter_definition)
+            requests = self._parameter_definition["requests"]
 
-        for request in requests:
-            start = request["start"]
-            end = request["end"]
-            mb_fc = request["mb_functioncode"]
+            for request in requests:
+                start = request["start"]
+                end = request["end"]
+                mb_fc = request["mb_functioncode"]
 
-            success = False
-            for attempt in range(QUERY_RETRY_ATTEMPTS):
-                try:
-                    await self._connect()
-                    await self._send_request(params, start, end, mb_fc)
-                    success = True
-                    break
-                except Exception as e:
-                    log.warning(
-                        f"Query [{start:#x}-{end:#x}] attempt {attempt + 1}/{QUERY_RETRY_ATTEMPTS} "
-                        f"failed: {type(e).__name__}: {e}"
-                    )
-                    await self._disconnect()
-                    if attempt < QUERY_RETRY_ATTEMPTS - 1:
-                        await asyncio.sleep(_RETRY_SLEEP_S)
+                success = False
+                for attempt in range(QUERY_RETRY_ATTEMPTS):
+                    try:
+                        await self._connect()
+                        await self._send_request(params, start, end, mb_fc)
+                        success = True
+                        break
+                    except Exception as e:
+                        log.warning(
+                            f"Query [{start:#x}-{end:#x}] attempt {attempt + 1}/{QUERY_RETRY_ATTEMPTS} "
+                            f"failed: {type(e).__name__}: {e}"
+                        )
+                        await self._disconnect()
+                        if attempt < QUERY_RETRY_ATTEMPTS - 1:
+                            await asyncio.sleep(_RETRY_SLEEP_S)
 
-            if not success:
-                await self._disconnect()
-                raise ConnectionError(f"Failed to query registers [{start:#x}-{end:#x}] after {QUERY_RETRY_ATTEMPTS} attempts")
+                if not success:
+                    raise ConnectionError(f"Failed to query registers [{start:#x}-{end:#x}] after {QUERY_RETRY_ATTEMPTS} attempts")
 
-        await self._disconnect()
-        return params.get_result()
+            return params.get_result()
+        finally:
+            # Ensures socket is closed on success, error, OR asyncio task cancellation.
+            # CancelledError inherits from BaseException (not Exception) so the inner
+            # except blocks above would miss it, leaving a half-open TCP connection.
+            # The Solarman logger only accepts one connection at a time — a stale socket
+            # blocks all polls for 15-20 min until the logger's idle timeout fires.
+            await self._disconnect()
 
     async def test_connection(self) -> bool:
         """Test basic TCP connectivity by reading one register."""

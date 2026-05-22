@@ -22,7 +22,8 @@ from app.lib import shared_poller as _poller_mod
 _LOGGER = logging.getLogger(__name__)
 
 _BACKOFF_NIGHT   = 30 * 60   # 30 min — inverter expected offline at night
-_ERROR_THRESHOLD = 5          # consecutive failures before set_unavailable
+_WARN_THRESHOLD  = 3          # consecutive failures before set_warning (~3 min at 60 s polling)
+_ERROR_THRESHOLD = 120        # consecutive failures before set_unavailable (~2 h at 60 s polling)
 
 # Capabilities zeroed on the inverter device at night
 _INVERTER_NIGHT_ZERO = frozenset({
@@ -62,6 +63,7 @@ class DeyeDevice(Device):
     _was_producing: bool = False
     _grid_was_available: bool = True
     _is_unavailable: bool = False
+    _notification_sent: bool = False  # offline notification already sent this outage
     _prev_charging_state: str | None = None   # battery: last known charging state
     _prev_grid_exporting: bool | None = None  # grid meter: last known export direction
     _sun_cache: tuple | None = None   # (cache_date, sunrise_utc, sunset_utc)
@@ -74,6 +76,17 @@ class DeyeDevice(Device):
         self._is_grid_meter = (device_type == "grid_meter")
         host = self.get_setting("host") or ""
         self.log(f"DeyeDevice init — type={device_type} host={host}")
+
+        # Homey Energy requires the inverter/solar producer to be a solarpanel
+        # device. Older paired devices inherited the generic driver class
+        # ("other"), which makes Solar disappear from the Energy Dashboard.
+        if not self._is_battery and not self._is_grid_meter:
+            try:
+                if self.get_class() != "solarpanel":
+                    await self.set_class("solarpanel")
+                    self.log("Updated inverter device class to solarpanel")
+            except Exception as e:
+                _LOGGER.warning(f"Could not update inverter class to solarpanel: {e}")
 
         self._build_sensor_map()
 
@@ -271,6 +284,9 @@ class DeyeDevice(Device):
             # For string/micro inverters: logger loses power at night — expected, not an error
             if self._is_string_night_from(sun_times):
                 self._consecutive_errors = 0
+                if self._is_unavailable:
+                    self._is_unavailable = False
+                    await self.set_available()
                 await self._apply_zeros()
                 self.log("night offline (expected) — logger without power")
                 return
@@ -280,6 +296,9 @@ class DeyeDevice(Device):
         # Night backoff — inverter only, and only for non-hybrid (hybrid stays on 24/7 via battery)
         if self._is_string_night_from(sun_times):
             self._consecutive_errors = 0
+            if self._is_unavailable:
+                self._is_unavailable = False
+                await self.set_available()
             await self._apply_zeros()
             if sun_times:
                 sr, ss = sun_times
@@ -291,6 +310,9 @@ class DeyeDevice(Device):
 
         self._consecutive_errors = 0
         await self._clear_warning()
+        if self._notification_sent:
+            self._notification_sent = False
+            await self._notify_recovery()
         if self._is_unavailable:
             self._is_unavailable = False
             await self.set_available()
@@ -513,14 +535,60 @@ class DeyeDevice(Device):
     async def _handle_error(self) -> None:
         self._consecutive_errors += 1
 
+        # Warning triangle — device stays available, tile shows last known values
+        if self._consecutive_errors == _WARN_THRESHOLD:
+            self.log(f"poll failed {self._consecutive_errors}x — showing warning")
+            if not self._has_warning:
+                self._has_warning = True
+                await self.set_warning("Connection failed")
+
+        # Timeline notification — fired once per outage after user-configured delay
+        if not self._notification_sent:
+            notify_min = self._safe_int("offlineNotifyMinutes", 10)
+            if notify_min > 0:
+                interval = max(35, self._safe_int("pollingInterval", 60))
+                notify_errors = max(1, (notify_min * 60) // interval)
+                if self._consecutive_errors >= notify_errors:
+                    self._notification_sent = True
+                    await self._notify_offline(notify_min)
+
+        # Mark unavailable only after a very long outage (genuine persistent failure)
         if self._consecutive_errors == _ERROR_THRESHOLD:
-            self.log(f"poll failed {self._consecutive_errors}x during daytime — marking unavailable")
+            self.log(f"poll failed {self._consecutive_errors}x — marking unavailable")
             self._is_unavailable = True
             await self.set_unavailable("Connection failed")
         elif self._consecutive_errors > _ERROR_THRESHOLD:
             pass  # already unavailable — do not spam set_unavailable on every poll
-        else:
-            self.log(f"poll error {self._consecutive_errors}/{_ERROR_THRESHOLD}")
+        elif self._consecutive_errors < _WARN_THRESHOLD:
+            self.log(f"poll error {self._consecutive_errors}/{_WARN_THRESHOLD}")
+
+    # ── Offline notifications ─────────────────────────────────────────────────
+
+    async def _notify_offline(self, minutes: int) -> None:
+        try:
+            name = self.get_name()
+        except Exception:
+            name = "Deye inverter"
+        try:
+            await self.homey.notifications.create_notification({
+                "excerpt": f"**{name}** offline for {minutes} min — logger unreachable"
+            })
+            self.log(f"Offline notification sent ({minutes} min)")
+        except Exception as e:
+            _LOGGER.debug(f"Offline notification failed: {e}")
+
+    async def _notify_recovery(self) -> None:
+        try:
+            name = self.get_name()
+        except Exception:
+            name = "Deye inverter"
+        try:
+            await self.homey.notifications.create_notification({
+                "excerpt": f"**{name}** back online"
+            })
+            self.log("Recovery notification sent")
+        except Exception as e:
+            _LOGGER.debug(f"Recovery notification failed: {e}")
 
     # ── Night detection (astral) ──────────────────────────────────────────────
 
@@ -540,14 +608,32 @@ class DeyeDevice(Device):
             lat = self._get_float_setting("solar_latitude")
             lng = self._get_float_setting("solar_longitude")
 
-            if lat is None:
+            from_geolocation = False
+            if lat is None or lat == 0.0:
                 lat = self.homey.geolocation.get_latitude()
-            if lng is None:
+                from_geolocation = True
+            if lng is None or lng == 0.0:
                 lng = self.homey.geolocation.get_longitude()
+                from_geolocation = True
 
             if lat is None or lng is None:
                 self.log("Night backoff disabled — location not available")
                 return None
+
+            # Back-fill settings so the user can see which coordinates are in use.
+            # Only written once per day (sun_cache miss) and only when the fields are
+            # still at their default 0 values (i.e. not manually overridden).
+            if from_geolocation:
+                try:
+                    cur_lat = self._get_float_setting("solar_latitude")
+                    cur_lng = self._get_float_setting("solar_longitude")
+                    if (cur_lat is None or cur_lat == 0.0) and (cur_lng is None or cur_lng == 0.0):
+                        asyncio.create_task(self.set_settings({
+                            "solar_latitude":  round(lat, 6),
+                            "solar_longitude": round(lng, 6),
+                        }))
+                except Exception:
+                    pass
 
             loc = LocationInfo(latitude=lat, longitude=lng)
             s   = sun(loc.observer, date=today, tzinfo=timezone.utc)
@@ -565,7 +651,11 @@ class DeyeDevice(Device):
         return self._is_night_time_from(self._get_sunrise_sunset())
 
     def _is_night_time_from(self, sun_times: tuple[float, float] | None) -> bool:
-        """True when outside solar window with a 30-minute buffer on each side.
+        """True when outside solar window.
+        30-minute buffer on both sides: before sunrise and before sunset.
+        The pre-sunset buffer covers the common case where the logger loses power
+        a few minutes before the official sunset time (inverter enters standby as
+        irradiance drops), preventing those failures from counting as daytime errors.
         Compares UTC current time against UTC sunrise/sunset."""
         if sun_times is None:
             return False
@@ -573,7 +663,7 @@ class DeyeDevice(Device):
         try:
             now      = datetime.now(timezone.utc)
             utc_hour = now.hour + now.minute / 60
-            return utc_hour < (sunrise - 0.5) or utc_hour >= (sunset + 0.5)
+            return utc_hour < (sunrise - 0.5) or utc_hour >= (sunset - 0.5)
         except Exception as e:
             self.log(f"Night time check failed ({e}) — assuming daytime")
             return False
@@ -628,7 +718,8 @@ class DeyeDevice(Device):
             if ssid_m:
                 updates["wifiSsid"] = ssid_m.group(1)
             if rssi_m:
-                updates["wifiRssi"] = rssi_m.group(1) + " dBm"
+                rssi_val = int(rssi_m.group(1))
+                updates["wifiRssi"] = f"{rssi_val} dBm" if rssi_val < 0 else f"{rssi_val}%"
             if updates:
                 await self.set_settings(updates)
                 self.log(f"Wi-Fi info updated: {updates}")
