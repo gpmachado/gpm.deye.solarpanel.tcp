@@ -15,7 +15,7 @@ from app.lib.capability_map import build_capabilities, BATTERY_CAPS, GRID_METER_
 
 _LOGGER = logging.getLogger(__name__)
 
-# ── Available Deye models (yaml filename → display name) ─────────────────────
+# ── Available Deye models (model_id → display name) ──────────────────────────
 DEYE_MODELS: dict[str, str] = {
     "deye_string":  "Deye String Inverter (2/4 MPPT)",
     "deye_micro":   "Deye Microinverter (4 MPPT) — SUN-M/SUN2000G3",
@@ -144,7 +144,7 @@ _STRING_OPTION_GROUPS: dict[str, frozenset[str]] = {
 }
 
 
-def _yaml_path(model_id: str) -> str:
+def _def_path(model_id: str) -> str:
     return os.path.join(_INVERTER_DEFS_DIR, f"{model_id}.json")
 
 
@@ -231,7 +231,7 @@ def _score_model_values(model_id: str, values: dict) -> int:
 
 
 def _load_sensors(model_id: str) -> list:
-    path = _yaml_path(model_id)
+    path = _def_path(model_id)
     with open(path, encoding="utf-8") as f:
         definition = json.load(f)
     sensors = []
@@ -293,7 +293,7 @@ async def _detect_model(host: str, serial: int, port: int = 8899) -> tuple[str, 
         return values, score
 
     for model_id in DEYE_MODELS:
-        path = _yaml_path(model_id)
+        path = _def_path(model_id)
         with open(path, encoding="utf-8") as f:
             definition = json.load(f)
 
