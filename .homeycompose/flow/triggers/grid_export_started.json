@@ -1,0 +1,32 @@
+{
+  "id": "grid_export_started",
+  "title": {
+    "en": "Grid export started",
+    "nl": "Netlevering gestart",
+    "de": "Netzeinspeisung gestartet",
+    "fr": "Injection sur le réseau démarrée",
+    "it": "Immissione in rete iniziata",
+    "sv": "Nätexport startad",
+    "no": "Netteksport startet",
+    "es": "Exportación a la red iniciada",
+    "da": "Neteksport startet",
+    "pl": "Rozpoczęto eksport do sieci"
+  },
+  "hint": {
+    "en": "Triggered when the inverter starts exporting power to the grid (grid meter device)."
+  },
+  "args": [
+    {
+      "type": "device",
+      "name": "device",
+      "filter": "driver_id=deye&capabilities=meter_power.grid_exported"
+    }
+  ],
+  "tokens": [
+    {
+      "name": "power",
+      "type": "number",
+      "title": { "en": "Export power (W)" }
+    }
+  ]
+}

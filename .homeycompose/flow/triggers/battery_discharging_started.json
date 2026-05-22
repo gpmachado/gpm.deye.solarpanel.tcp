@@ -1,0 +1,32 @@
+{
+  "id": "battery_discharging_started",
+  "title": {
+    "en": "Battery started discharging",
+    "nl": "Batterij begon met ontladen",
+    "de": "Batterie beginnt sich zu entladen",
+    "fr": "La batterie commence à se décharger",
+    "it": "La batteria ha iniziato a scaricarsi",
+    "sv": "Batteriet börjar laddas ur",
+    "no": "Batteriet begynte å utlade",
+    "es": "La batería comenzó a descargarse",
+    "da": "Batteriet begyndte at aflade",
+    "pl": "Bateria zaczęła się rozładowywać"
+  },
+  "hint": {
+    "en": "Triggered when the battery transitions from charging or standby to discharging."
+  },
+  "args": [
+    {
+      "type": "device",
+      "name": "device",
+      "filter": "driver_id=deye&capabilities=measure_power.battery"
+    }
+  ],
+  "tokens": [
+    {
+      "name": "soc",
+      "type": "number",
+      "title": { "en": "Battery SOC (%)" }
+    }
+  ]
+}

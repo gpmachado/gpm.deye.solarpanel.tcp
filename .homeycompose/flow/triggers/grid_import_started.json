@@ -1,0 +1,32 @@
+{
+  "id": "grid_import_started",
+  "title": {
+    "en": "Grid import started",
+    "nl": "Netafname gestart",
+    "de": "Netzbezug gestartet",
+    "fr": "Importation du réseau démarrée",
+    "it": "Importazione dalla rete iniziata",
+    "sv": "Nätimport startad",
+    "no": "Nettimport startet",
+    "es": "Importación de la red iniciada",
+    "da": "Netimport startet",
+    "pl": "Rozpoczęto import z sieci"
+  },
+  "hint": {
+    "en": "Triggered when the inverter starts drawing power from the grid (grid meter device)."
+  },
+  "args": [
+    {
+      "type": "device",
+      "name": "device",
+      "filter": "driver_id=deye&capabilities=meter_power.grid_exported"
+    }
+  ],
+  "tokens": [
+    {
+      "name": "power",
+      "type": "number",
+      "title": { "en": "Import power (W)" }
+    }
+  ]
+}

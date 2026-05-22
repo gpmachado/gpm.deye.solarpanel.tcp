@@ -576,6 +576,7 @@ class DeyeDevice(Device):
             self.log(f"Offline notification sent ({minutes} min)")
         except Exception as e:
             _LOGGER.debug(f"Offline notification failed: {e}")
+        await self._trigger("logger_offline", {"minutes": minutes})
 
     async def _notify_recovery(self) -> None:
         try:
@@ -589,6 +590,7 @@ class DeyeDevice(Device):
             self.log("Recovery notification sent")
         except Exception as e:
             _LOGGER.debug(f"Recovery notification failed: {e}")
+        await self._trigger("logger_online", {})
 
     # ── Night detection (astral) ──────────────────────────────────────────────
 

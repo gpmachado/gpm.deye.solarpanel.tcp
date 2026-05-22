@@ -1,0 +1,25 @@
+{
+  "id": "logger_online",
+  "title": {
+    "en": "Logger came back online",
+    "nl": "Logger is weer online",
+    "de": "Logger ist wieder online",
+    "fr": "Le logger est revenu en ligne",
+    "it": "Il logger è tornato online",
+    "sv": "Loggern kom tillbaka online",
+    "no": "Loggeren kom tilbake online",
+    "es": "El logger volvió en línea",
+    "da": "Loggeren kom tilbage online",
+    "pl": "Logger wrócił do trybu online"
+  },
+  "hint": {
+    "en": "Triggered when the logger responds again after an offline period."
+  },
+  "args": [
+    {
+      "type": "device",
+      "name": "device",
+      "filter": "driver_id=deye&capabilities=measure_power.solar"
+    }
+  ]
+}

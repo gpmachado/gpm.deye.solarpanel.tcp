@@ -49,6 +49,74 @@
   "flow": {
     "triggers": [
       {
+        "id": "battery_charging_started",
+        "title": {
+          "en": "Battery started charging",
+          "nl": "Batterij begon met opladen",
+          "de": "Batterie beginnt zu laden",
+          "fr": "La batterie commence à se charger",
+          "it": "La batteria ha iniziato a caricarsi",
+          "sv": "Batteriet börjar laddas",
+          "no": "Batteriet begynte å lade",
+          "es": "La batería comenzó a cargarse",
+          "da": "Batteriet begyndte at oplade",
+          "pl": "Bateria zaczęła się ładować"
+        },
+        "hint": {
+          "en": "Triggered when the battery transitions from discharging or standby to charging."
+        },
+        "args": [
+          {
+            "type": "device",
+            "name": "device",
+            "filter": "driver_id=deye&capabilities=measure_power.battery"
+          }
+        ],
+        "tokens": [
+          {
+            "name": "soc",
+            "type": "number",
+            "title": {
+              "en": "Battery SOC (%)"
+            }
+          }
+        ]
+      },
+      {
+        "id": "battery_discharging_started",
+        "title": {
+          "en": "Battery started discharging",
+          "nl": "Batterij begon met ontladen",
+          "de": "Batterie beginnt sich zu entladen",
+          "fr": "La batterie commence à se décharger",
+          "it": "La batteria ha iniziato a scaricarsi",
+          "sv": "Batteriet börjar laddas ur",
+          "no": "Batteriet begynte å utlade",
+          "es": "La batería comenzó a descargarse",
+          "da": "Batteriet begyndte at aflade",
+          "pl": "Bateria zaczęła się rozładowywać"
+        },
+        "hint": {
+          "en": "Triggered when the battery transitions from charging or standby to discharging."
+        },
+        "args": [
+          {
+            "type": "device",
+            "name": "device",
+            "filter": "driver_id=deye&capabilities=measure_power.battery"
+          }
+        ],
+        "tokens": [
+          {
+            "name": "soc",
+            "type": "number",
+            "title": {
+              "en": "Battery SOC (%)"
+            }
+          }
+        ]
+      },
+      {
         "id": "data_updated",
         "title": {
           "en": "Inverter data updated",
@@ -104,6 +172,74 @@
         ]
       },
       {
+        "id": "grid_export_started",
+        "title": {
+          "en": "Grid export started",
+          "nl": "Netlevering gestart",
+          "de": "Netzeinspeisung gestartet",
+          "fr": "Injection sur le réseau démarrée",
+          "it": "Immissione in rete iniziata",
+          "sv": "Nätexport startad",
+          "no": "Netteksport startet",
+          "es": "Exportación a la red iniciada",
+          "da": "Neteksport startet",
+          "pl": "Rozpoczęto eksport do sieci"
+        },
+        "hint": {
+          "en": "Triggered when the inverter starts exporting power to the grid (grid meter device)."
+        },
+        "args": [
+          {
+            "type": "device",
+            "name": "device",
+            "filter": "driver_id=deye&capabilities=meter_power.grid_exported"
+          }
+        ],
+        "tokens": [
+          {
+            "name": "power",
+            "type": "number",
+            "title": {
+              "en": "Export power (W)"
+            }
+          }
+        ]
+      },
+      {
+        "id": "grid_import_started",
+        "title": {
+          "en": "Grid import started",
+          "nl": "Netafname gestart",
+          "de": "Netzbezug gestartet",
+          "fr": "Importation du réseau démarrée",
+          "it": "Importazione dalla rete iniziata",
+          "sv": "Nätimport startad",
+          "no": "Nettimport startet",
+          "es": "Importación de la red iniciada",
+          "da": "Netimport startet",
+          "pl": "Rozpoczęto import z sieci"
+        },
+        "hint": {
+          "en": "Triggered when the inverter starts drawing power from the grid (grid meter device)."
+        },
+        "args": [
+          {
+            "type": "device",
+            "name": "device",
+            "filter": "driver_id=deye&capabilities=meter_power.grid_exported"
+          }
+        ],
+        "tokens": [
+          {
+            "name": "power",
+            "type": "number",
+            "title": {
+              "en": "Import power (W)"
+            }
+          }
+        ]
+      },
+      {
         "id": "grid_lost",
         "title": {
           "en": "Grid connection lost",
@@ -144,6 +280,65 @@
         },
         "hint": {
           "en": "Triggered when the inverter reports grid power has returned (hybrid models only)."
+        },
+        "args": [
+          {
+            "type": "device",
+            "name": "device",
+            "filter": "driver_id=deye&capabilities=measure_power.solar"
+          }
+        ]
+      },
+      {
+        "id": "logger_offline",
+        "title": {
+          "en": "Logger went offline",
+          "nl": "Logger ging offline",
+          "de": "Logger ging offline",
+          "fr": "Le logger est passé hors ligne",
+          "it": "Il logger è andato offline",
+          "sv": "Loggern gick offline",
+          "no": "Loggeren gikk offline",
+          "es": "El logger se desconectó",
+          "da": "Loggeren gik offline",
+          "pl": "Logger przeszedł w tryb offline"
+        },
+        "hint": {
+          "en": "Triggered when the logger is unreachable for the configured number of minutes. Use this instead of (or alongside) the timeline notification."
+        },
+        "args": [
+          {
+            "type": "device",
+            "name": "device",
+            "filter": "driver_id=deye&capabilities=measure_power.solar"
+          }
+        ],
+        "tokens": [
+          {
+            "name": "minutes",
+            "type": "number",
+            "title": {
+              "en": "Minutes offline"
+            }
+          }
+        ]
+      },
+      {
+        "id": "logger_online",
+        "title": {
+          "en": "Logger came back online",
+          "nl": "Logger is weer online",
+          "de": "Logger ist wieder online",
+          "fr": "Le logger est revenu en ligne",
+          "it": "Il logger è tornato online",
+          "sv": "Loggern kom tillbaka online",
+          "no": "Loggeren kom tilbake online",
+          "es": "El logger volvió en línea",
+          "da": "Loggeren kom tilbage online",
+          "pl": "Logger wrócił do trybu online"
+        },
+        "hint": {
+          "en": "Triggered when the logger responds again after an offline period."
         },
         "args": [
           {
