@@ -456,6 +456,24 @@ class DeyeDevice(Device):
             # ── Flow triggers ──────────────────────────────────────────────
             await self._fire_flow_triggers(values)
 
+        # ── Poll heartbeat ─────────────────────────────────────────────────
+        # One log line per successful poll — visible in homey app run --remote.
+        # Helps confirm polling is alive and diagnose value/sign issues.
+        if self._is_battery:
+            raw_pwr = float(values.get("Battery Power") or 0)
+            soc = values.get("Battery SOC") or 0
+            state = ("discharge" if raw_pwr > 50
+                     else "charge" if raw_pwr < -50
+                     else "standby")
+            self.log(f"poll ok | battery={raw_pwr:+.0f}W({state}) SOC={soc}%")
+        elif self._is_grid_meter:
+            grid = values.get("Total Grid Power") or 0
+            self.log(f"poll ok | grid={float(grid):+.0f}W")
+        else:
+            solar = self._last_power_w or 0
+            daily = values.get("Daily Production") or 0
+            self.log(f"poll ok | solar={solar:.0f}W daily={daily}kWh")
+
     async def _fire_flow_triggers(self, values: dict) -> None:
         """Fire flow triggers based on state transitions detected in poll values."""
         power = float(self._last_power_w or 0)
