@@ -18,6 +18,7 @@ from astral.sun import sun
 from homey.device import Device
 from app.lib.capability_map import get_sensor_capability_map, BATTERY_CAPS, GRID_METER_CAPS, GRID_CAP_REMAP
 from app.lib import shared_poller as _poller_mod
+from app.app import DEBUG_LOG as _DEBUG_LOG
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -25,12 +26,6 @@ _BACKOFF_NIGHT   = 30 * 60   # 30 min — inverter expected offline at night
 _WARN_THRESHOLD  = 3          # consecutive failures before set_warning (~3 min at 60 s polling)
 _ERROR_THRESHOLD = 120        # consecutive failures before set_unavailable (~2 h at 60 s polling)
 
-# ── Debug verbosity ───────────────────────────────────────────────────────────
-# True  → one log line per poll (solar/battery/grid values) — homey app run --remote
-# False → silent (production)
-# Flip this ONE constant instead of hunting across device.py.
-_DEBUG_LOG = False
-# ─────────────────────────────────────────────────────────────────────────────
 
 # Capabilities zeroed on the inverter device at night
 _INVERTER_NIGHT_ZERO = frozenset({

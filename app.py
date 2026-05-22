@@ -3,6 +3,13 @@ import os
 
 from homey.app import App
 
+# ── Debug verbosity ───────────────────────────────────────────────────────────
+# True  → one log line per poll (solar/battery/grid values) — homey app run --remote
+# False → silent (production)
+# Flip this ONE constant instead of hunting across device.py.
+DEBUG_LOG = False
+# ─────────────────────────────────────────────────────────────────────────────
+
 
 def _app_version() -> str:
     try:
