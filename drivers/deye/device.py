@@ -475,7 +475,7 @@ class DeyeDevice(Device):
             else:
                 solar = self._last_power_w or 0
                 daily = values.get("Today Production") or values.get("Daily Production") or 0
-                self.log(f"poll ok | solar={solar:.0f}W daily={daily}kWh")
+                self.log(f"poll ok | solar={solar:.0f}W daily={float(daily):.1f}kWh")
 
     async def _fire_flow_triggers(self, values: dict) -> None:
         """Fire flow triggers based on state transitions detected in poll values."""
