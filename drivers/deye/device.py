@@ -474,7 +474,7 @@ class DeyeDevice(Device):
                 self.log(f"poll ok | grid={float(grid):+.0f}W")
             else:
                 solar = self._last_power_w or 0
-                daily = values.get("Daily Production") or 0
+                daily = values.get("Today Production") or values.get("Daily Production") or 0
                 self.log(f"poll ok | solar={solar:.0f}W daily={daily}kWh")
 
     async def _fire_flow_triggers(self, values: dict) -> None:
