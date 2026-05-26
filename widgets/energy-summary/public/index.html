@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: var(--homey-font-family, -apple-system, BlinkMacSystemFont, sans-serif);
+      background: transparent;
+      color: var(--homey-text-color, #111827);
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 10px;
+    }
+
+    .grid {
+      display: grid;
+      width: 100%;
+      gap: 8px;
+      justify-content: center;
+    }
+
+    .cell {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 3px;
+      padding: 8px 4px;
+      border-radius: 10px;
+      background: rgba(0, 0, 0, 0.04);
+      min-height: 64px;
+    }
+    .homey-dark-mode .cell {
+      background: rgba(255, 255, 255, 0.07);
+    }
+
+    .icon {
+      width: 22px;
+      height: 22px;
+      flex-shrink: 0;
+    }
+
+    .value {
+      font-size: 13px;
+      font-weight: 700;
+      line-height: 1;
+      letter-spacing: -0.3px;
+    }
+
+    .label {
+      font-size: 9px;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      opacity: 0.5;
+      line-height: 1;
+    }
+
+    /* Per-metric accent colours applied to the icon */
+    .solar    .icon { color: #F59E0B; }
+    .load     .icon { color: #6366F1; }
+    .exporting .icon { color: #10B981; }
+    .importing .icon { color: #EF4444; }
+    .charging    .icon { color: #10B981; }
+    .discharging .icon { color: #F59E0B; }
+    .standby     .icon { color: #94A3B8; }
+  </style>
+</head>
+<body>
+  <div class="grid" id="grid"></div>
+
+  <script>
+    // ── SVG icons (inline, uses currentColor) ─────────────────────────────────
+    const ICONS = {
+      solar: `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="4"/>
+        <line x1="12" y1="2"  x2="12" y2="5"/>
+        <line x1="12" y1="19" x2="12" y2="22"/>
+        <line x1="4.22" y1="4.22" x2="6.34" y2="6.34"/>
+        <line x1="17.66" y1="17.66" x2="19.78" y2="19.78"/>
+        <line x1="2"  y1="12" x2="5"  y2="12"/>
+        <line x1="19" y1="12" x2="22" y2="12"/>
+        <line x1="4.22" y1="19.78" x2="6.34" y2="17.66"/>
+        <line x1="17.66" y1="6.34" x2="19.78" y2="4.22"/>
+      </svg>`,
+
+      grid: `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+      </svg>`,
+
+      load: `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
+        <polyline points="9 22 9 12 15 12 15 22"/>
+      </svg>`,
+
+      battery: `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="1" y="6" width="18" height="12" rx="2"/>
+        <line x1="23" y1="10" x2="23" y2="14"/>
+      </svg>`,
+    };
+
+    // ── Formatting ─────────────────────────────────────────────────────────────
+    function fmtW(val) {
+      if (val == null) return '—';
+      const w = Math.round(val);
+      if (Math.abs(w) >= 1000) return (w / 1000).toFixed(1) + ' kW';
+      return w + ' W';
+    }
+
+    // ── Render ─────────────────────────────────────────────────────────────────
+    function render(data) {
+      const cells = [];
+
+      if (data.solar != null) {
+        cells.push({ cls: 'solar', icon: ICONS.solar, value: fmtW(data.solar), label: 'Solar' });
+      }
+
+      if (data.grid != null) {
+        const gridW = data.grid;
+        const cls   = gridW < -10 ? 'exporting' : 'importing';
+        const label = gridW < -10 ? 'Export'    : 'Import';
+        cells.push({ cls, icon: ICONS.grid, value: fmtW(Math.abs(gridW)), label });
+      }
+
+      if (data.load != null) {
+        cells.push({ cls: 'load', icon: ICONS.load, value: fmtW(data.load), label: 'Home' });
+      }
+
+      if (data.battery != null) {
+        const battW   = data.battery;
+        let battClass = 'standby';
+        if (battW >  10) battClass = 'charging';
+        if (battW < -10) battClass = 'discharging';
+        const battLabel = data.battery_soc != null
+          ? `Bat ${Math.round(data.battery_soc)}%`
+          : 'Battery';
+        cells.push({ cls: battClass, icon: ICONS.battery, value: fmtW(Math.abs(battW)), label: battLabel });
+      }
+
+      const container = document.getElementById('grid');
+      container.className = 'grid';
+
+      // Set columns dynamically: 1→centred, 2→2col, 3→3col, 4→2×2
+      const cols = cells.length === 4 ? 2 : cells.length;
+      container.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
+      container.style.width = cells.length === 1 ? 'fit-content' : '100%';
+
+      container.innerHTML = cells.map(c => `
+        <div class="cell ${c.cls}">
+          ${c.icon}
+          <span class="value">${c.value}</span>
+          <span class="label">${c.label}</span>
+        </div>
+      `).join('');
+    }
+
+    // ── Poll ───────────────────────────────────────────────────────────────────
+    async function onHomeyReady(Homey) {
+      try {
+        const data = await Homey.api('GET', '/');
+        if (!data) {
+          document.getElementById('grid').innerHTML = '<span style="opacity:.4;font-size:12px">No device found</span>';
+        } else {
+          render(data);
+        }
+      } catch (err) {
+        console.error('Widget update failed:', err);
+        document.getElementById('grid').innerHTML = '<span style="opacity:.4;font-size:12px">Error: ' + err.message + '</span>';
+      }
+
+      Homey.ready();
+
+      setInterval(async () => {
+        try {
+          const data = await Homey.api('GET', '/');
+          if (data) render(data);
+        } catch (err) {
+          console.error('Widget poll failed:', err);
+        }
+      }, 30_000);
+    }
+  </script>
+</body>
+</html>

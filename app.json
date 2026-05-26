@@ -814,6 +814,22 @@
       "id": "deye"
     }
   ],
+  "widgets": {
+    "energy-summary": {
+      "name": {
+        "en": "Energy Summary"
+      },
+      "height": 160,
+      "api": {
+        "getSummary": {
+          "method": "GET",
+          "path": "/"
+        }
+      },
+      "id": "energy-summary",
+      "settings": []
+    }
+  },
   "capabilities": {
     "battery_charging_state": {
       "type": "enum",

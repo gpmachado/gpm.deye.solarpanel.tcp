@@ -1,0 +1,12 @@
+{
+  "name": {
+    "en": "Energy Summary"
+  },
+  "height": 160,
+  "api": {
+    "getSummary": {
+      "method": "GET",
+      "path": "/"
+    }
+  }
+}

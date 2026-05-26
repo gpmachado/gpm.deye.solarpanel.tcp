@@ -1,6 +1,7 @@
 {
-  "pythonVersion": "3.14",
-  "pythonPath": "/Users/gabriel/.pyenv/versions/3.14.0/bin/python3",
+  "pythonVersion": "3.13",
+  "venvPath": ".",
+  "venv": ".venv",
   "typeCheckingMode": "basic",
   "reportMissingModuleSource": "none"
 }

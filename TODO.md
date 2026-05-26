@@ -2,6 +2,9 @@
 
 ## Concluído ✅
 
+- **Widget Homey** (v1.4.0) — `energy-summary` com layout dinâmico por capabilities.
+  Dark/light mode. Primeiro app Python na Homey store com widget.
+
 - **Advanced sensors checkbox no pairing** — capabilities básicas vs opcionais separadas.
 - **PV3/PV4 apenas quando detectados** — filtro por valores reais no pairing.
 - **Derived PV power para string/micro** — calculado em runtime (V×I).
@@ -34,3 +37,6 @@
   - Condition `is_producing`, `grid_is_exporting`
   - Trigger `battery_soc_changed` (hybrid)
 - [ ] **L2/L3 no deye_string.json** — registros 74,75,77,78 para trifásicos.
+- [x] **Widget Homey** — `widgets/energy-summary/` implementado (v1.4.0).
+  Layout dinâmico por capabilities: 1–4 células conforme Solar/Grid/Load/Battery disponíveis.
+  Dark mode automático. Primeiro app Python na store com widget.
