@@ -1,0 +1,38 @@
+{
+  "id": "daily_data_updated",
+  "title": {
+    "en": "Daily data updated"
+  },
+  "hint": {
+    "en": "Triggered on every successful poll. Use tokens to read today's accumulated energy values."
+  },
+  "args": [
+    {
+      "type": "device",
+      "name": "device",
+      "filter": "driver_id=deye&capabilities=meter_power.today"
+    }
+  ],
+  "tokens": [
+    {
+      "name": "daily_production",
+      "type": "number",
+      "title": { "en": "Daily Production (kWh)" }
+    },
+    {
+      "name": "daily_consumption",
+      "type": "number",
+      "title": { "en": "Daily Consumption (kWh)" }
+    },
+    {
+      "name": "daily_sell",
+      "type": "number",
+      "title": { "en": "Daily Energy Sell (kWh)" }
+    },
+    {
+      "name": "daily_buy",
+      "type": "number",
+      "title": { "en": "Daily Energy Buy (kWh)" }
+    }
+  ]
+}

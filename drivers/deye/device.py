@@ -538,6 +538,27 @@ class DeyeDevice(Device):
                 tokens["grid_power"] = float(v)
         await self._trigger("data_updated", tokens)
 
+        # Daily data updated — fires every poll with today's accumulated energy values
+        daily_tokens = {
+            "daily_production": 0.0,
+            "daily_consumption": 0.0,
+            "daily_sell": 0.0,
+            "daily_buy": 0.0,
+        }
+        for sname, cap in self._sensor_cap_map.items():
+            v = values.get(sname)
+            if v is None:
+                continue
+            if cap == "meter_power.today":
+                daily_tokens["daily_production"] = float(v)
+            elif cap == "meter_power.today_load":
+                daily_tokens["daily_consumption"] = float(v)
+            elif cap == "meter_power.today_export":
+                daily_tokens["daily_sell"] = float(v)
+            elif cap == "meter_power.today_import":
+                daily_tokens["daily_buy"] = float(v)
+        await self._trigger("daily_data_updated", daily_tokens)
+
     async def _trigger(self, card_id: str, tokens: dict) -> None:
         """Fire a flow trigger card."""
         try:
