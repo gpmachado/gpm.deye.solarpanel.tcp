@@ -4,7 +4,7 @@
     "en": "Daily data updated"
   },
   "hint": {
-    "en": "Triggered on every successful poll. Use tokens to read today's accumulated energy values."
+    "en": "Triggered on every successful poll. Use tokens to read today's accumulated energy values. Sell and buy tokens are only available on hybrid inverters with a CT clamp."
   },
   "args": [
     {
@@ -23,6 +23,16 @@
       "name": "daily_consumption",
       "type": "number",
       "title": { "en": "Daily Consumption (kWh)" }
+    },
+    {
+      "name": "daily_sell",
+      "type": "number",
+      "title": { "en": "Daily Energy Sell (kWh)" }
+    },
+    {
+      "name": "daily_buy",
+      "type": "number",
+      "title": { "en": "Daily Energy Buy (kWh)" }
     }
   ]
 }
