@@ -44,5 +44,14 @@
     "ip_hint": "Die lokale IP des Solarman Wi-Fi-Loggers (Port 8899).",
     "save_button": "Speichern",
     "saving": "Wird gespeichert…"
+  },
+  "widget": {
+    "energy_summary": {
+      "solar": "Solar",
+      "export": "Einspeisung",
+      "import": "Bezug",
+      "home": "Heim",
+      "battery": "Batterie"
+    }
   }
 }

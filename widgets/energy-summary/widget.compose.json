@@ -1,6 +1,15 @@
 {
   "name": {
-    "en": "Energy Summary"
+    "en": "Energy Summary",
+    "nl": "Energie Overzicht",
+    "de": "Energie Übersicht",
+    "fr": "Résumé Énergétique",
+    "it": "Riepilogo Energetico",
+    "es": "Resumen Energético",
+    "da": "Energioversigt",
+    "sv": "Energiöversikt",
+    "no": "Energioversikt",
+    "pl": "Podsumowanie Energii"
   },
   "height": 160,
   "api": {

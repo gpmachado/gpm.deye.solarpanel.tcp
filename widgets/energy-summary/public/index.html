@@ -117,18 +117,18 @@
       const cells = [];
 
       if (data.solar != null) {
-        cells.push({ cls: 'solar', icon: ICONS.solar, value: fmtW(data.solar), label: 'Solar' });
+        cells.push({ cls: 'solar', icon: ICONS.solar, value: fmtW(data.solar), label: t('solar') });
       }
 
       if (data.grid != null) {
         const gridW = data.grid;
         const cls   = gridW < -10 ? 'exporting' : 'importing';
-        const label = gridW < -10 ? 'Export'    : 'Import';
+        const label = gridW < -10 ? t('export') : t('import');
         cells.push({ cls, icon: ICONS.grid, value: fmtW(Math.abs(gridW)), label });
       }
 
       if (data.load != null) {
-        cells.push({ cls: 'load', icon: ICONS.load, value: fmtW(data.load), label: 'Home' });
+        cells.push({ cls: 'load', icon: ICONS.load, value: fmtW(data.load), label: t('home') });
       }
 
       if (data.battery != null) {
@@ -137,8 +137,8 @@
         if (battW >  10) battClass = 'charging';
         if (battW < -10) battClass = 'discharging';
         const battLabel = data.battery_soc != null
-          ? `Bat ${Math.round(data.battery_soc)}%`
-          : 'Battery';
+          ? `${Math.round(data.battery_soc)}%`
+          : t('battery');
         cells.push({ cls: battClass, icon: ICONS.battery, value: fmtW(Math.abs(battW)), label: battLabel });
       }
 
@@ -160,6 +160,11 @@
     }
 
     // ── Poll ───────────────────────────────────────────────────────────────────
+    // ── i18n ───────────────────────────────────────────────────────────────────
+    function t(key) {
+      return Homey.__('widget.energy_summary.' + key) || key;
+    }
+
     async function onHomeyReady(Homey) {
       try {
         const data = await Homey.api('GET', '/');

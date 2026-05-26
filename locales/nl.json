@@ -44,5 +44,14 @@
     "ip_hint": "Het lokale IP-adres van uw Solarman Wi-Fi-logger (poort 8899).",
     "save_button": "Opslaan",
     "saving": "Opslaan…"
+  },
+  "widget": {
+    "energy_summary": {
+      "solar": "Zonne-energie",
+      "export": "Export",
+      "import": "Import",
+      "home": "Huis",
+      "battery": "Batterij"
+    }
   }
 }

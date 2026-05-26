@@ -1,8 +1,8 @@
 {
   "pair": {
     "intro": {
-      "subtitle":      "Scan your local network for the Solarman logger",
-      "scan_button":   "Scan Network",
+      "subtitle": "Scan your local network for the Solarman logger",
+      "scan_button": "Scan Network",
       "manual_toggle": "Enter IP address manually"
     },
     "status_detecting": "Detecting inverter model…",
@@ -44,5 +44,14 @@
     "ip_hint": "The local IP of your Solarman Wi-Fi logger (port 8899).",
     "save_button": "Save",
     "saving": "Saving…"
+  },
+  "widget": {
+    "energy_summary": {
+      "solar": "Solar",
+      "export": "Export",
+      "import": "Import",
+      "home": "Home",
+      "battery": "Battery"
+    }
   }
 }
