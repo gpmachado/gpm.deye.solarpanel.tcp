@@ -23,16 +23,6 @@
       "name": "daily_consumption",
       "type": "number",
       "title": { "en": "Daily Consumption (kWh)" }
-    },
-    {
-      "name": "daily_sell",
-      "type": "number",
-      "title": { "en": "Daily Energy Sell (kWh)" }
-    },
-    {
-      "name": "daily_buy",
-      "type": "number",
-      "title": { "en": "Daily Energy Buy (kWh)" }
     }
   ]
 }
