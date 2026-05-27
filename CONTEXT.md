@@ -155,6 +155,13 @@ respond during pairing (matches davidrapan/ha-solarman scanner.py).
 | Gabriel | deye_string | Main dev/tester, Brazil |
 | Luis | deye_hybrid (SUN-5K-SG05LP1-EU-AM2-P) | Battery not in Energy dashboard; AC Output Power shown instead of PV1 Power for instantaneous production |
 
+## Design decisions
+
+- **`meter_power.today` (and `_load`, `_export`, `_import`) are never zeroed by the app.**
+  DTU/inverter firmware resets the daily counters at sunrise. App preserves the last known
+  value so the user can consult today's (or yesterday's) production at any time.
+  `_INVERTER_NIGHT_ZERO` intentionally excludes all `meter_power.*` variants.
+
 ## Pending tasks
 
 ### High priority
