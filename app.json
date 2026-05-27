@@ -117,6 +117,52 @@
         ]
       },
       {
+        "id": "daily_data_updated",
+        "title": {
+          "en": "Daily data updated"
+        },
+        "hint": {
+          "en": "Triggered on every successful poll. Use tokens to read today's accumulated energy values. Sell and buy tokens are only available on hybrid inverters with a CT clamp."
+        },
+        "args": [
+          {
+            "type": "device",
+            "name": "device",
+            "filter": "driver_id=deye&capabilities=meter_power.today"
+          }
+        ],
+        "tokens": [
+          {
+            "name": "daily_production",
+            "type": "number",
+            "title": {
+              "en": "Daily Production (kWh)"
+            }
+          },
+          {
+            "name": "daily_consumption",
+            "type": "number",
+            "title": {
+              "en": "Daily Consumption (kWh)"
+            }
+          },
+          {
+            "name": "daily_sell",
+            "type": "number",
+            "title": {
+              "en": "Daily Energy Sell (kWh)"
+            }
+          },
+          {
+            "name": "daily_buy",
+            "type": "number",
+            "title": {
+              "en": "Daily Energy Buy (kWh)"
+            }
+          }
+        ]
+      },
+      {
         "id": "data_updated",
         "title": {
           "en": "Inverter data updated",
@@ -435,6 +481,18 @@
           "da": "Batteri SOC !{{er|er ikke}} over [[value]]%",
           "pl": "SOC baterii !{{jest|nie jest}} powyżej [[value]]%"
         },
+        "hint": {
+          "en": "Only available on hybrid inverters with a paired battery device.",
+          "nl": "Alleen beschikbaar op hybride omvormers met een gekoppeld batterijapparaat.",
+          "de": "Nur verfügbar bei Hybrid-Wechselrichtern mit einem gekoppelten Batteriegerät.",
+          "fr": "Disponible uniquement sur les onduleurs hybrides avec un dispositif batterie jumelé.",
+          "it": "Disponibile solo su inverter ibridi con un dispositivo batteria abbinato.",
+          "sv": "Endast tillgängligt på hybridinriktare med en parkopplad batterienhet.",
+          "no": "Kun tilgjengelig på hybridinvertere med en paret batterienhet.",
+          "es": "Solo disponible en inversores híbridos con un dispositivo de batería emparejado.",
+          "da": "Kun tilgængelig på hybridinvertere med en paret batterienhed.",
+          "pl": "Dostępne tylko w falownikach hybrydowych ze sparowanym urządzeniem bateryjnym."
+        },
         "args": [
           {
             "type": "device",
@@ -463,6 +521,18 @@
           "da": "Batteriet !{{oplades|oplades ikke}}",
           "pl": "Bateria !{{ładuje się|nie ładuje się}}"
         },
+        "hint": {
+          "en": "Only available on hybrid inverters with a paired battery device.",
+          "nl": "Alleen beschikbaar op hybride omvormers met een gekoppeld batterijapparaat.",
+          "de": "Nur verfügbar bei Hybrid-Wechselrichtern mit einem gekoppelten Batteriegerät.",
+          "fr": "Disponible uniquement sur les onduleurs hybrides avec un dispositif batterie jumelé.",
+          "it": "Disponibile solo su inverter ibridi con un dispositivo batteria abbinato.",
+          "sv": "Endast tillgängligt på hybridinriktare med en parkopplad batterienhet.",
+          "no": "Kun tilgjengelig på hybridinvertere med en paret batterienhet.",
+          "es": "Solo disponible en inversores híbridos con un dispositivo de batería emparejado.",
+          "da": "Kun tilgængelig på hybridinvertere med en paret batterienhed.",
+          "pl": "Dostępne tylko w falownikach hybrydowych ze sparowanym urządzeniem bateryjnym."
+        },
         "args": [
           {
             "type": "device",
@@ -484,6 +554,18 @@
           "es": "El inversor !{{está|no está}} inyectando a la red",
           "da": "Inverteren !{{leverer|leverer ikke}} til nettet",
           "pl": "Falownik !{{zasila|nie zasila}} sieć"
+        },
+        "hint": {
+          "en": "Only available on hybrid inverters with a CT clamp and grid import/export enabled during pairing.",
+          "nl": "Alleen beschikbaar op hybride omvormers met een CT-klem en netimport/-export ingeschakeld tijdens het koppelen.",
+          "de": "Nur verfügbar bei Hybrid-Wechselrichtern mit CT-Klemme und aktiviertem Netzimport/-export beim Koppeln.",
+          "fr": "Disponible uniquement sur les onduleurs hybrides avec une pince CT et l'import/export réseau activé lors du jumelage.",
+          "it": "Disponibile solo su inverter ibridi con pinza CT e importazione/esportazione rete abilitata durante il pairing.",
+          "sv": "Endast tillgängligt på hybridinriktare med CT-klämma och nätimport/-export aktiverat under parkoppling.",
+          "no": "Kun tilgjengelig på hybridinvertere med CT-klemme og nettimport/-eksport aktivert under paring.",
+          "es": "Solo disponible en inversores híbridos con pinza CT e importación/exportación de red habilitada durante el emparejamiento.",
+          "da": "Kun tilgængelig på hybridinvertere med CT-klemme og netimport/-eksport aktiveret under parring.",
+          "pl": "Dostępne tylko w falownikach hybrydowych z przekładnikiem CT i włączonym importem/eksportem sieci podczas parowania."
         },
         "args": [
           {
@@ -817,7 +899,16 @@
   "widgets": {
     "energy-summary": {
       "name": {
-        "en": "Energy Summary"
+        "en": "Energy Summary",
+        "nl": "Energie Overzicht",
+        "de": "Energie Übersicht",
+        "fr": "Résumé Énergétique",
+        "it": "Riepilogo Energetico",
+        "es": "Resumen Energético",
+        "da": "Energioversigt",
+        "sv": "Energiöversikt",
+        "no": "Energioversikt",
+        "pl": "Podsumowanie Energii"
       },
       "height": 160,
       "api": {
