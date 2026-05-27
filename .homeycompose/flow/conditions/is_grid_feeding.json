@@ -12,6 +12,9 @@
     "da": "Inverteren !{{leverer|leverer ikke}} til nettet",
     "pl": "Falownik !{{zasila|nie zasila}} sieć"
   },
+  "hint": {
+    "en": "Only available on hybrid inverters with a CT clamp and grid import/export enabled during pairing."
+  },
   "args": [
     {
       "type": "device",

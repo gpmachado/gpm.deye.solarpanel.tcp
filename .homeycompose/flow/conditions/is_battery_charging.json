@@ -12,6 +12,9 @@
     "da": "Batteriet !{{oplades|oplades ikke}}",
     "pl": "Bateria !{{ładuje się|nie ładuje się}}"
   },
+  "hint": {
+    "en": "Only available on hybrid inverters with a paired battery device."
+  },
   "args": [
     {
       "type": "device",

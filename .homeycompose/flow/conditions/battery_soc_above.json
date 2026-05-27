@@ -24,6 +24,9 @@
     "da": "Batteri SOC !{{er|er ikke}} over [[value]]%",
     "pl": "SOC baterii !{{jest|nie jest}} powyżej [[value]]%"
   },
+  "hint": {
+    "en": "Only available on hybrid inverters with a paired battery device."
+  },
   "args": [
     {
       "type": "device",
