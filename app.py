@@ -42,8 +42,8 @@ class MyApp(App):
         for device in driver.get_devices():
             dtype = device.get_setting("device_type") or "inverter"
             if dtype == "inverter":
-                if device.has_capability("measure_power.solar"):
-                    solar = device.get_capability_value("measure_power.solar")
+                if device.has_capability("measure_power"):
+                    solar = device.get_capability_value("measure_power")
                 if device.has_capability("measure_power.load"):
                     load = device.get_capability_value("measure_power.load")
                 if device.has_capability("measure_power.grid"):

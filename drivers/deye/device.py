@@ -62,7 +62,7 @@ class DeyeDevice(Device):
     _last_power_w: float = 0.0
     _is_battery: bool = False
     _is_grid_meter: bool = False
-    _was_producing: bool = False
+    _was_producing: bool | None = None  # None = first poll, state not yet known
     _grid_was_available: bool = True
     _is_unavailable: bool = False
     _notification_sent: bool = False  # offline notification already sent this outage
@@ -458,24 +458,21 @@ class DeyeDevice(Device):
             # ── Flow triggers ──────────────────────────────────────────────
             await self._fire_flow_triggers(values)
 
-        # ── Poll heartbeat (debug mode only) ───────────────────────────────
-        # Flip _DEBUG_LOG = True at the top of this file to enable.
-        # Run with: homey app run --remote
-        if _DEBUG_LOG:
-            if self._is_battery:
-                raw_pwr = float(values.get("Battery Power") or 0)
-                soc = values.get("Battery SOC") or 0
-                state = ("discharge" if raw_pwr > 50
-                         else "charge" if raw_pwr < -50
-                         else "standby")
-                self.log(f"poll ok | battery={raw_pwr:+.0f}W({state}) SOC={soc}%")
-            elif self._is_grid_meter:
-                grid = values.get("Total Grid Power") or 0
-                self.log(f"poll ok | grid={float(grid):+.0f}W")
-            else:
-                solar = self._last_power_w or 0
-                daily = values.get("Today Production") or values.get("Daily Production") or 0
-                self.log(f"poll ok | solar={solar:.0f}W daily={float(daily):.1f}kWh")
+        # ── Poll heartbeat ──────────────────────────────────────────────────
+        if self._is_battery:
+            raw_pwr = float(values.get("Battery Power") or 0)
+            soc = values.get("Battery SOC") or 0
+            state = ("discharge" if raw_pwr > 50
+                     else "charge" if raw_pwr < -50
+                     else "standby")
+            self.log(f"poll ok | battery={raw_pwr:+.0f}W({state}) SOC={soc}%")
+        elif self._is_grid_meter:
+            grid = values.get("Total Grid Power") or 0
+            self.log(f"poll ok | grid={float(grid):+.0f}W")
+        else:
+            solar = self._last_power_w or 0
+            daily = values.get("Today Production") or values.get("Daily Production") or 0
+            self.log(f"poll ok | solar={solar:.0f}W daily={float(daily):.1f}kWh")
 
     async def _fire_flow_triggers(self, values: dict) -> None:
         """Fire flow triggers based on state transitions detected in poll values."""
@@ -483,8 +480,12 @@ class DeyeDevice(Device):
         is_producing = power > 5.0
 
         # Solar production started / stopped
-        if is_producing and not self._was_producing:
+        if self._was_producing is None:
+            # First poll after startup — record state silently, no transition to fire.
+            self._was_producing = is_producing
+        elif is_producing and not self._was_producing:
             self._was_producing = True
+            self.log(f"production started — {power:.0f}W")
             await self._trigger("solar_production_started", {"power": power})
         elif not is_producing and self._was_producing:
             self._was_producing = False
@@ -509,6 +510,7 @@ class DeyeDevice(Device):
                     daily_tokens["daily_sell"] = float(v)
                 elif cap == "meter_power.today_import":
                     daily_tokens["daily_buy"] = float(v)
+            self.log(f"production stopped — daily {daily_tokens['daily_production']:.2f}kWh")
             await self._trigger("daily_data_updated", daily_tokens)
 
         # Grid lost / restored (hybrid only — needs Grid-connected Status sensor)
@@ -661,14 +663,14 @@ class DeyeDevice(Device):
                 lng = self.homey.geolocation.get_longitude()
                 from_geolocation = True
 
-            if lat is None or lng is None:
-                self.log("Night backoff disabled — location not available")
+            if lat is None or lng is None or (lat == 0.0 and lng == 0.0):
+                self.log("Night backoff disabled — location not available (Homey location not configured?)")
                 return None
 
             # Back-fill settings so the user can see which coordinates are in use.
-            # Only written once per day (sun_cache miss) and only when the fields are
-            # still at their default 0 values (i.e. not manually overridden).
-            if from_geolocation:
+            # Only written once per day (sun_cache miss), only when fields are still
+            # at default 0 values, and only when geolocation returned a real fix.
+            if from_geolocation and (lat != 0.0 or lng != 0.0):
                 try:
                     cur_lat = self._get_float_setting("solar_latitude")
                     cur_lng = self._get_float_setting("solar_longitude")
