@@ -13,7 +13,16 @@
     "pl": "Bateria !{{ładuje się|nie ładuje się}}"
   },
   "hint": {
-    "en": "Only available on hybrid inverters with a paired battery device."
+    "en": "Only available on hybrid inverters with a paired battery device.",
+    "nl": "Alleen beschikbaar op hybride omvormers met een gekoppeld batterijapparaat.",
+    "de": "Nur verfügbar bei Hybrid-Wechselrichtern mit einem gekoppelten Batteriegerät.",
+    "fr": "Disponible uniquement sur les onduleurs hybrides avec un dispositif batterie jumelé.",
+    "it": "Disponibile solo su inverter ibridi con un dispositivo batteria abbinato.",
+    "sv": "Endast tillgängligt på hybridinriktare med en parkopplad batterienhet.",
+    "no": "Kun tilgjengelig på hybridinvertere med en paret batterienhet.",
+    "es": "Solo disponible en inversores híbridos con un dispositivo de batería emparejado.",
+    "da": "Kun tilgængelig på hybridinvertere med en paret batterienhed.",
+    "pl": "Dostępne tylko w falownikach hybrydowych ze sparowanym urządzeniem bateryjnym."
   },
   "args": [
     {

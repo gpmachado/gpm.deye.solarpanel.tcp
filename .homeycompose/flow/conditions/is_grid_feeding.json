@@ -13,7 +13,16 @@
     "pl": "Falownik !{{zasila|nie zasila}} sieć"
   },
   "hint": {
-    "en": "Only available on hybrid inverters with a CT clamp and grid import/export enabled during pairing."
+    "en": "Only available on hybrid inverters with a CT clamp and grid import/export enabled during pairing.",
+    "nl": "Alleen beschikbaar op hybride omvormers met een CT-klem en netimport/-export ingeschakeld tijdens het koppelen.",
+    "de": "Nur verfügbar bei Hybrid-Wechselrichtern mit CT-Klemme und aktiviertem Netzimport/-export beim Koppeln.",
+    "fr": "Disponible uniquement sur les onduleurs hybrides avec une pince CT et l'import/export réseau activé lors du jumelage.",
+    "it": "Disponibile solo su inverter ibridi con pinza CT e importazione/esportazione rete abilitata durante il pairing.",
+    "sv": "Endast tillgängligt på hybridinriktare med CT-klämma och nätimport/-export aktiverat under parkoppling.",
+    "no": "Kun tilgjengelig på hybridinvertere med CT-klemme og nettimport/-eksport aktivert under paring.",
+    "es": "Solo disponible en inversores híbridos con pinza CT e importación/exportación de red habilitada durante el emparejamiento.",
+    "da": "Kun tilgængelig på hybridinvertere med CT-klemme og netimport/-eksport aktiveret under parring.",
+    "pl": "Dostępne tylko w falownikach hybrydowych z przekładnikiem CT i włączonym importem/eksportem sieci podczas parowania."
   },
   "args": [
     {
