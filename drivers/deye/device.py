@@ -671,16 +671,18 @@ class DeyeDevice(Device):
             # Only written once per day (sun_cache miss), only when fields are still
             # at default 0 values, and only when geolocation returned a real fix.
             if from_geolocation and (lat != 0.0 or lng != 0.0):
-                try:
-                    cur_lat = self._get_float_setting("solar_latitude")
-                    cur_lng = self._get_float_setting("solar_longitude")
-                    if (cur_lat is None or cur_lat == 0.0) and (cur_lng is None or cur_lng == 0.0):
-                        asyncio.create_task(self.set_settings({
-                            "solar_latitude":  round(lat, 6),
-                            "solar_longitude": round(lng, 6),
-                        }))
-                except Exception:
-                    pass
+                cur_lat = self._get_float_setting("solar_latitude")
+                cur_lng = self._get_float_setting("solar_longitude")
+                if (cur_lat is None or cur_lat == 0.0) and (cur_lng is None or cur_lng == 0.0):
+                    async def _save_location(la: float, lo: float) -> None:
+                        try:
+                            await self.set_settings({
+                                "solar_latitude":  round(la, 6),
+                                "solar_longitude": round(lo, 6),
+                            })
+                        except Exception as exc:
+                            _LOGGER.debug(f"Back-fill location settings failed: {exc}")
+                    asyncio.create_task(_save_location(lat, lng))
 
             loc = LocationInfo(latitude=lat, longitude=lng)
             s   = sun(loc.observer, date=today, tzinfo=timezone.utc)
