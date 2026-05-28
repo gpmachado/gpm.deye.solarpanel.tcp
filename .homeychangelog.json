@@ -76,5 +76,8 @@
   },
   "1.4.0": {
     "en": "Fixed TCP socket leak that caused 15-20 min polling blackouts when a poll was interrupted (CancelledError now always closes the socket). String/micro inverters no longer go unavailable at night — warning triangle shows during daytime outages, unavailable state reserved for persistent failures (~2 h). Timeline notification when logger is unreachable for a configurable number of minutes (default 10, set 0 to disable). Sunrise/sunset coordinates auto-filled from Homey geolocation. Wi-Fi signal display fixed (logger reports percentage, not dBm)."
+  },
+  "1.4.1": {
+    "en": "Fixed"
   }
 }
