@@ -5,6 +5,314 @@ Handles dynamic capability building for all Deye inverter models.
 
 import re
 
+
+_CAPABILITY_TITLES: dict[str, dict[str, str]] = {
+    'AC Output Power': {
+        'en': 'AC Output Power', 'da': 'AC Udgangseffekt', 'de': 'AC-Ausgangsleistung',
+        'es': 'Potencia de Salida CA', 'fr': 'Puissance de Sortie CA', 'it': 'Potenza Uscita CA',
+        'nl': 'AC-uitgangsvermogen', 'no': 'AC Utgangseffekt', 'pl': 'Moc Wyjściowa AC',
+        'sv': 'AC-utgångseffekt',
+    },
+    'Battery Charged Energy': {
+        'en': 'Battery Charged Energy', 'da': 'Batteriopladet Energi', 'de': 'Batterie-Ladeenergie',
+        'es': 'Energía de Carga de Batería', 'fr': "Énergie de Charge Batterie", 'it': 'Energia di Carica Batteria',
+        'nl': 'Batterij Laadenergie', 'no': 'Batteriladet Energi', 'pl': 'Energia Naładowana Baterii',
+        'sv': 'Batteriladdad Energi',
+    },
+    'Battery Current': {
+        'en': 'Battery Current', 'da': 'Batteristrøm', 'de': 'Batteriestrom',
+        'es': 'Corriente de Batería', 'fr': 'Courant Batterie', 'it': 'Corrente Batteria',
+        'nl': 'Batterijstroom', 'no': 'Batteristrøm', 'pl': 'Prąd Baterii',
+        'sv': 'Batteriström',
+    },
+    'Battery Discharged Energy': {
+        'en': 'Battery Discharged Energy', 'da': 'Batteriafladet Energi', 'de': 'Batterie-Entladeenergie',
+        'es': 'Energía de Descarga de Batería', 'fr': 'Énergie de Décharge Batterie', 'it': 'Energia di Scarica Batteria',
+        'nl': 'Batterij Ontlaadenergie', 'no': 'Batteriutladet Energi', 'pl': 'Energia Rozładowana Baterii',
+        'sv': 'Batteriurladdad Energi',
+    },
+    'Battery SOC': {
+        'en': 'Battery SOC', 'da': 'Batteri SOC', 'de': 'Batterie-Ladezustand',
+        'es': 'Estado de Carga', 'fr': 'État de Charge', 'it': 'Stato di Carica',
+        'nl': 'Batterij Laadstatus', 'no': 'Batteri Ladenivå', 'pl': 'Stan Naładowania',
+        'sv': 'Batteriets Laddstatus',
+    },
+    'Battery Status': {
+        'en': 'Battery Status', 'da': 'Batteristatus', 'de': 'Batteriestatus',
+        'es': 'Estado de Batería', 'fr': 'État Batterie', 'it': 'Stato Batteria',
+        'nl': 'Batterijstatus', 'no': 'Batteristatus', 'pl': 'Status Baterii',
+        'sv': 'Batteristatus',
+    },
+    'Battery Temperature': {
+        'en': 'Battery Temperature', 'da': 'Batteritemperatur', 'de': 'Batterietemperatur',
+        'es': 'Temperatura de Batería', 'fr': 'Température Batterie', 'it': 'Temperatura Batteria',
+        'nl': 'Batterijtemperatuur', 'no': 'Batteritemperatur', 'pl': 'Temperatura Baterii',
+        'sv': 'Batteritemperatur',
+    },
+    'Battery Voltage': {
+        'en': 'Battery Voltage', 'da': 'Batterispænding', 'de': 'Batteriespannung',
+        'es': 'Voltaje de Batería', 'fr': 'Tension Batterie', 'it': 'Tensione Batteria',
+        'nl': 'Batterijspanning', 'no': 'Batterispenning', 'pl': 'Napięcie Baterii',
+        'sv': 'Batterispänning',
+    },
+    'Daily Production': {
+        'en': 'Daily Production', 'da': 'Daglig Produktion', 'de': 'Tagesproduktion',
+        'es': 'Producción Diaria', 'fr': 'Production Journalière', 'it': 'Produzione Giornaliera',
+        'nl': 'Dagelijkse Productie', 'no': 'Daglig Produksjon', 'pl': 'Produkcja Dzienna',
+        'sv': 'Daglig Produktion',
+    },
+    'Fault / Alarm': {
+        'en': 'Fault / Alarm', 'da': 'Fejl / Alarm', 'de': 'Fehler / Alarm',
+        'es': 'Falla / Alarma', 'fr': 'Défaut / Alarme', 'it': 'Guasto / Allarme',
+        'nl': 'Storing / Alarm', 'no': 'Feil / Alarm', 'pl': 'Usterka / Alarm',
+        'sv': 'Fel / Larm',
+    },
+    'Grid Current': {
+        'en': 'Grid Current', 'da': 'Netstrøm', 'de': 'Netzstrom',
+        'es': 'Corriente de Red', 'fr': 'Courant Réseau', 'it': 'Corrente di Rete',
+        'nl': 'Netstroom', 'no': 'Nettstrøm', 'pl': 'Prąd Sieci',
+        'sv': 'Nätström',
+    },
+    'Grid Export Energy': {
+        'en': 'Grid Export Energy', 'da': 'Nettilbageført Energi', 'de': 'Netzeinspeiseenergie',
+        'es': 'Energía Exportada a Red', 'fr': "Énergie Exportée Réseau", 'it': 'Energia Esportata in Rete',
+        'nl': 'Teruggeleverde Energie', 'no': 'Eksportert Nettenergi', 'pl': 'Energia Eksportowana do Sieci',
+        'sv': 'Exporterad Nätenergi',
+    },
+    'Grid Frequency': {
+        'en': 'Grid Frequency', 'da': 'Netfrekvens', 'de': 'Netzfrequenz',
+        'es': 'Frecuencia de Red', 'fr': 'Fréquence Réseau', 'it': 'Frequenza di Rete',
+        'nl': 'Netfrequentie', 'no': 'Nettfrekvens', 'pl': 'Częstotliwość Sieci',
+        'sv': 'Nätfrekvens',
+    },
+    'Grid Import Energy': {
+        'en': 'Grid Import Energy', 'da': 'Nettrukket Energi', 'de': 'Netzbezugsenergie',
+        'es': 'Energía Importada de Red', 'fr': 'Énergie Importée Réseau', 'it': 'Energia Importata da Rete',
+        'nl': 'Afgenomen Energie', 'no': 'Importert Nettenergi', 'pl': 'Energia Importowana z Sieci',
+        'sv': 'Importerad Nätenergi',
+    },
+    'Grid Power': {
+        'en': 'Grid Power', 'da': 'Neteffekt', 'de': 'Netzleistung',
+        'es': 'Potencia de Red', 'fr': 'Puissance Réseau', 'it': 'Potenza di Rete',
+        'nl': 'Netvermogen', 'no': 'Netteffekt', 'pl': 'Moc Sieci',
+        'sv': 'Näteffekt',
+    },
+    'Grid Power (Live)': {
+        'en': 'Grid Power (Live)', 'da': 'Neteffekt (Live)', 'de': 'Netzleistung (Live)',
+        'es': 'Potencia de Red (en Vivo)', 'fr': 'Puissance Réseau (en Direct)', 'it': 'Potenza di Rete (in Tempo Reale)',
+        'nl': 'Netvermogen (Live)', 'no': 'Netteffekt (Live)', 'pl': 'Moc Sieci (na Żywo)',
+        'sv': 'Näteffekt (Live)',
+    },
+    'Grid Voltage': {
+        'en': 'Grid Voltage', 'da': 'Netspænding', 'de': 'Netzspannung',
+        'es': 'Voltaje de Red', 'fr': 'Tension Réseau', 'it': 'Tensione di Rete',
+        'nl': 'Netspanning', 'no': 'Nettspenning', 'pl': 'Napięcie Sieci',
+        'sv': 'Nätspänning',
+    },
+    'L1 Current': {
+        'en': 'L1 Current', 'da': 'L1 Strøm', 'de': 'L1 Strom',
+        'es': 'Corriente L1', 'fr': 'Courant L1', 'it': 'Corrente L1',
+        'nl': 'L1 Stroom', 'no': 'L1 Strøm', 'pl': 'Prąd L1',
+        'sv': 'L1 Ström',
+    },
+    'L1 Voltage': {
+        'en': 'L1 Voltage', 'da': 'L1 Spænding', 'de': 'L1 Spannung',
+        'es': 'Voltaje L1', 'fr': 'Tension L1', 'it': 'Tensione L1',
+        'nl': 'L1 Spanning', 'no': 'L1 Spenning', 'pl': 'Napięcie L1',
+        'sv': 'L1 Spänning',
+    },
+    'L2 Current': {
+        'en': 'L2 Current', 'da': 'L2 Strøm', 'de': 'L2 Strom',
+        'es': 'Corriente L2', 'fr': 'Courant L2', 'it': 'Corrente L2',
+        'nl': 'L2 Stroom', 'no': 'L2 Strøm', 'pl': 'Prąd L2',
+        'sv': 'L2 Ström',
+    },
+    'L2 Voltage': {
+        'en': 'L2 Voltage', 'da': 'L2 Spænding', 'de': 'L2 Spannung',
+        'es': 'Voltaje L2', 'fr': 'Tension L2', 'it': 'Tensione L2',
+        'nl': 'L2 Spanning', 'no': 'L2 Spenning', 'pl': 'Napięcie L2',
+        'sv': 'L2 Spänning',
+    },
+    'L3 Current': {
+        'en': 'L3 Current', 'da': 'L3 Strøm', 'de': 'L3 Strom',
+        'es': 'Corriente L3', 'fr': 'Courant L3', 'it': 'Corrente L3',
+        'nl': 'L3 Stroom', 'no': 'L3 Strøm', 'pl': 'Prąd L3',
+        'sv': 'L3 Ström',
+    },
+    'L3 Voltage': {
+        'en': 'L3 Voltage', 'da': 'L3 Spænding', 'de': 'L3 Spannung',
+        'es': 'Voltaje L3', 'fr': 'Tension L3', 'it': 'Tensione L3',
+        'nl': 'L3 Spanning', 'no': 'L3 Spenning', 'pl': 'Napięcie L3',
+        'sv': 'L3 Spänning',
+    },
+    'Load Power': {
+        'en': 'Load Power', 'da': 'Belastningseffekt', 'de': 'Lastleistung',
+        'es': 'Potencia de Carga', 'fr': 'Puissance Charge', 'it': 'Potenza di Carico',
+        'nl': 'Belastingsvermogen', 'no': 'Belastningseffekt', 'pl': 'Moc Obciążenia',
+        'sv': 'Lasteffekt',
+    },
+    'Micro-inverter Power': {
+        'en': 'Micro-inverter Power', 'da': 'Mikroinverter-effekt', 'de': 'Mikrowechselrichter-Leistung',
+        'es': 'Potencia de Microinversor', 'fr': 'Puissance Micro-onduleur', 'it': 'Potenza Microinverter',
+        'nl': 'Micro-omvormer Vermogen', 'no': 'Mikroinverter-effekt', 'pl': 'Moc Mikroinwertera',
+        'sv': 'Mikroväxelriktareffekt',
+    },
+    'Output Apparent Power': {
+        'en': 'Output Apparent Power', 'da': 'Udgangs Skinneffekt', 'de': 'Ausgangsscheinleistung',
+        'es': 'Potencia Aparente de Salida', 'fr': 'Puissance Apparente Sortie', 'it': 'Potenza Apparente Uscita',
+        'nl': 'Schijnbaar Uitgangsvermogen', 'no': 'Utgangs Skinneffekt', 'pl': 'Moc Pozorna Wyjściowa',
+        'sv': 'Skenbar Utgångseffekt',
+    },
+    'Output Reactive Power': {
+        'en': 'Output Reactive Power', 'da': 'Udgangs Reaktiv Effekt', 'de': 'Ausgangsblindleistung',
+        'es': 'Potencia Reactiva de Salida', 'fr': 'Puissance Réactive Sortie', 'it': 'Potenza Reattiva Uscita',
+        'nl': 'Reactief Uitgangsvermogen', 'no': 'Utgangs Reaktiv Effekt', 'pl': 'Moc Bierna Wyjściowa',
+        'sv': 'Reaktiv Utgångseffekt',
+    },
+    'Power Delivery': {
+        'en': 'Power Delivery', 'da': 'Effektafgivelse', 'de': 'Leistungsabgabe',
+        'es': 'Potencia de Descarga', 'fr': 'Puissance de Décharge', 'it': 'Potenza di Scarica',
+        'nl': 'Vermogensafgifte', 'no': 'Effektavgivelse', 'pl': 'Moc Rozładowania',
+        'sv': 'Effektleverans',
+    },
+    'Power Usage': {
+        'en': 'Power Usage', 'da': 'Effektforbrug', 'de': 'Leistungsaufnahme',
+        'es': 'Consumo de Potencia', 'fr': 'Consommation Électrique', 'it': 'Consumo di Potenza',
+        'nl': 'Vermogensverbruik', 'no': 'Effektforbruk', 'pl': 'Zużycie Mocy',
+        'sv': 'Effektförbrukning',
+    },
+    'PV1 Current': {
+        'en': 'PV1 Current', 'da': 'PV1 Strøm', 'de': 'PV1 Strom',
+        'es': 'Corriente PV1', 'fr': 'Courant PV1', 'it': 'Corrente FV1',
+        'nl': 'PV1 Stroom', 'no': 'PV1 Strøm', 'pl': 'Prąd PV1',
+        'sv': 'PV1 Ström',
+    },
+    'PV1 Power': {
+        'en': 'PV1 Power', 'da': 'PV1 Effekt', 'de': 'PV1 Leistung',
+        'es': 'Potencia PV1', 'fr': 'Puissance PV1', 'it': 'Potenza FV1',
+        'nl': 'PV1 Vermogen', 'no': 'PV1 Effekt', 'pl': 'Moc PV1',
+        'sv': 'PV1 Effekt',
+    },
+    'PV1 Voltage': {
+        'en': 'PV1 Voltage', 'da': 'PV1 Spænding', 'de': 'PV1 Spannung',
+        'es': 'Voltaje PV1', 'fr': 'Tension PV1', 'it': 'Tensione FV1',
+        'nl': 'PV1 Spanning', 'no': 'PV1 Spenning', 'pl': 'Napięcie PV1',
+        'sv': 'PV1 Spänning',
+    },
+    'PV2 Current': {
+        'en': 'PV2 Current', 'da': 'PV2 Strøm', 'de': 'PV2 Strom',
+        'es': 'Corriente PV2', 'fr': 'Courant PV2', 'it': 'Corrente FV2',
+        'nl': 'PV2 Stroom', 'no': 'PV2 Strøm', 'pl': 'Prąd PV2',
+        'sv': 'PV2 Ström',
+    },
+    'PV2 Power': {
+        'en': 'PV2 Power', 'da': 'PV2 Effekt', 'de': 'PV2 Leistung',
+        'es': 'Potencia PV2', 'fr': 'Puissance PV2', 'it': 'Potenza FV2',
+        'nl': 'PV2 Vermogen', 'no': 'PV2 Effekt', 'pl': 'Moc PV2',
+        'sv': 'PV2 Effekt',
+    },
+    'PV2 Voltage': {
+        'en': 'PV2 Voltage', 'da': 'PV2 Spænding', 'de': 'PV2 Spannung',
+        'es': 'Voltaje PV2', 'fr': 'Tension PV2', 'it': 'Tensione FV2',
+        'nl': 'PV2 Spanning', 'no': 'PV2 Spenning', 'pl': 'Napięcie PV2',
+        'sv': 'PV2 Spänning',
+    },
+    'PV3 Current': {
+        'en': 'PV3 Current', 'da': 'PV3 Strøm', 'de': 'PV3 Strom',
+        'es': 'Corriente PV3', 'fr': 'Courant PV3', 'it': 'Corrente FV3',
+        'nl': 'PV3 Stroom', 'no': 'PV3 Strøm', 'pl': 'Prąd PV3',
+        'sv': 'PV3 Ström',
+    },
+    'PV3 Power': {
+        'en': 'PV3 Power', 'da': 'PV3 Effekt', 'de': 'PV3 Leistung',
+        'es': 'Potencia PV3', 'fr': 'Puissance PV3', 'it': 'Potenza FV3',
+        'nl': 'PV3 Vermogen', 'no': 'PV3 Effekt', 'pl': 'Moc PV3',
+        'sv': 'PV3 Effekt',
+    },
+    'PV3 Voltage': {
+        'en': 'PV3 Voltage', 'da': 'PV3 Spænding', 'de': 'PV3 Spannung',
+        'es': 'Voltaje PV3', 'fr': 'Tension PV3', 'it': 'Tensione FV3',
+        'nl': 'PV3 Spanning', 'no': 'PV3 Spenning', 'pl': 'Napięcie PV3',
+        'sv': 'PV3 Spänning',
+    },
+    'PV4 Current': {
+        'en': 'PV4 Current', 'da': 'PV4 Strøm', 'de': 'PV4 Strom',
+        'es': 'Corriente PV4', 'fr': 'Courant PV4', 'it': 'Corrente FV4',
+        'nl': 'PV4 Stroom', 'no': 'PV4 Strøm', 'pl': 'Prąd PV4',
+        'sv': 'PV4 Ström',
+    },
+    'PV4 Power': {
+        'en': 'PV4 Power', 'da': 'PV4 Effekt', 'de': 'PV4 Leistung',
+        'es': 'Potencia PV4', 'fr': 'Puissance PV4', 'it': 'Potenza FV4',
+        'nl': 'PV4 Vermogen', 'no': 'PV4 Effekt', 'pl': 'Moc PV4',
+        'sv': 'PV4 Effekt',
+    },
+    'PV4 Voltage': {
+        'en': 'PV4 Voltage', 'da': 'PV4 Spænding', 'de': 'PV4 Spannung',
+        'es': 'Voltaje PV4', 'fr': 'Tension PV4', 'it': 'Tensione FV4',
+        'nl': 'PV4 Spanning', 'no': 'PV4 Spenning', 'pl': 'Napięcie PV4',
+        'sv': 'PV4 Spänning',
+    },
+    'Radiator Temperature': {
+        'en': 'Radiator Temperature', 'da': 'Kølepladetemperatur', 'de': 'Kühlkörpertemperatur',
+        'es': 'Temperatura del Radiador', 'fr': 'Température Radiateur', 'it': 'Temperatura Radiatore',
+        'nl': 'Radiatortemperatuur', 'no': 'Kjøleribbetemperatur', 'pl': 'Temperatura Radiatora',
+        'sv': 'Kylflänstemperatur',
+    },
+    'Solar Power (DC Input)': {
+        'en': 'Solar Power (DC Input)', 'da': 'Solenergi (DC Input)', 'de': 'Solarleistung (DC-Eingang)',
+        'es': 'Potencia Solar (Entrada CC)', 'fr': 'Puissance Solaire (Entrée CC)', 'it': 'Potenza Solare (Ingresso CC)',
+        'nl': 'Zonne-energie (DC-ingang)', 'no': 'Solenergi (DC-inngang)', 'pl': 'Moc Solarna (Wejście DC)',
+        'sv': 'Solenergi (DC-ingång)',
+    },
+    'Temperature': {
+        'en': 'Temperature', 'da': 'Temperatur', 'de': 'Temperatur',
+        'es': 'Temperatura', 'fr': 'Température', 'it': 'Temperatura',
+        'nl': 'Temperatuur', 'no': 'Temperatur', 'pl': 'Temperatura',
+        'sv': 'Temperatur',
+    },
+    'Today Energy Export': {
+        'en': 'Today Energy Export', 'da': 'Dagens Eksport', 'de': 'Heutige Einspeisung',
+        'es': 'Exportación Hoy', 'fr': "Export Aujourd'hui", 'it': 'Esportazione Oggi',
+        'nl': 'Teruglevering Vandaag', 'no': 'Dagens Eksport', 'pl': 'Eksport Dzisiaj',
+        'sv': 'Dagens Export',
+    },
+    'Today Energy Import': {
+        'en': 'Today Energy Import', 'da': 'Dagens Import', 'de': 'Heutiger Netzbezug',
+        'es': 'Importación Hoy', 'fr': "Import Aujourd'hui", 'it': 'Importazione Oggi',
+        'nl': 'Afname Vandaag', 'no': 'Dagens Import', 'pl': 'Import Dzisiaj',
+        'sv': 'Dagens Import',
+    },
+    'Today Load Consumption': {
+        'en': 'Today Load Consumption', 'da': 'Dagens Forbrug', 'de': 'Heutiger Lastverbrauch',
+        'es': 'Consumo de Carga Hoy', 'fr': 'Consommation Charge Aujourd\u2019hui', 'it': 'Consumo Carico Oggi',
+        'nl': 'Belastingsverbruik Vandaag', 'no': 'Dagens Belastningsforbruk', 'pl': 'Zużycie Obciążenia Dzisiaj',
+        'sv': 'Dagens Lastförbrukning',
+    },
+    'Total Load Consumption': {
+        'en': 'Total Load Consumption', 'da': 'Samlet Forbrug', 'de': 'Gesamter Lastverbrauch',
+        'es': 'Consumo Total de Carga', 'fr': 'Consommation Totale Charge', 'it': 'Consumo Totale Carico',
+        'nl': 'Totaal Belastingsverbruik', 'no': 'Total Belastningsforbruk', 'pl': 'Całkowite Zużycie Obciążenia',
+        'sv': 'Total Lastförbrukning',
+    },
+    'Total Production': {
+        'en': 'Total Production', 'da': 'Samlet Produktion', 'de': 'Gesamtproduktion',
+        'es': 'Producción Total', 'fr': 'Production Totale', 'it': 'Produzione Totale',
+        'nl': 'Totale Productie', 'no': 'Total Produksjon', 'pl': 'Całkowita Produkcja',
+        'sv': 'Total Produktion',
+    },
+}
+
+
+def capability_title(english_title: str) -> dict[str, str]:
+    """
+    Returns the full translation object for a given English title.
+    Falls back to {'en': english_title} if no translation entry exists,
+    so an untranslated title never breaks capability generation.
+    """
+    return dict(_CAPABILITY_TITLES.get(english_title, {'en': english_title}))
+
+
 # ── Name-based pattern rules ──────────────────────────────────────────────────
 # Ordered by specificity. First match wins.
 # (regex_pattern, homey_capability_id, english_title)
@@ -15,7 +323,7 @@ _NAME_RULES: list[tuple[str, str, str]] = [
     (r'\bpv3\b.+power|power.+\bpv3\b',        'measure_power.pv3',     'PV3 Power'),
     (r'\bpv4\b.+power|power.+\bpv4\b',        'measure_power.pv4',     'PV4 Power'),
     # Other power variants
-    (r'battery.+power|power.+battery',         'measure_power.battery', 'Battery Power'),
+    (r'battery.+power|power.+battery',         'measure_power.battery', 'Power Delivery'),
     (r'\bload\b.+power|power.+\bload\b',       'measure_power.load',    'Load Power'),
     (r'grid.+power|power.+grid',               'measure_power.grid',    'Grid Power'),
     (r'micro.+power|power.+micro',             'measure_power.micro',   'Micro-inverter Power'),
@@ -170,7 +478,7 @@ def build_capabilities(sensors: list) -> tuple[list, dict]:
             continue
         seen.add(cap_id)
         capabilities.append(cap_id)
-        opt: dict = {'title': {'en': title}}
+        opt: dict = {'title': capability_title(title)}
         if cap_id in _METER_SUBCAPS:
             opt['usingInsights'] = False
         options[cap_id] = opt

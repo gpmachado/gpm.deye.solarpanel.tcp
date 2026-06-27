@@ -11,7 +11,7 @@ import os
 
 from homey.driver import Driver
 from app.lib.solarman_client import SolarmanClient
-from app.lib.capability_map import build_capabilities, BATTERY_CAPS, GRID_METER_CAPS, GRID_CAP_REMAP
+from app.lib.capability_map import build_capabilities, capability_title, BATTERY_CAPS, GRID_METER_CAPS, GRID_CAP_REMAP
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -712,7 +712,7 @@ class DeyeDriver(Driver):
                 ):
                     if cap_id not in inverter_caps:
                         inverter_caps.append(cap_id)
-                        inverter_opts[cap_id] = {"title": {"en": title}}
+                        inverter_opts[cap_id] = {"title": capability_title(title)}
 
             # Add measure_power.solar for inverters with PV sub-capabilities or Input Power.
             # Points Energy Dashboard to solar-only production (not AC output).
@@ -722,9 +722,9 @@ class DeyeDriver(Driver):
             has_solar = "measure_power.solar" in inverter_caps
             if pv_caps and not has_solar:
                 inverter_caps = ["measure_power.solar"] + inverter_caps
-                inverter_opts["measure_power.solar"] = {"title": {"en": "Solar Power (DC Input)"}}
+                inverter_opts["measure_power.solar"] = {"title": capability_title("Solar Power (DC Input)")}
             elif has_solar and "measure_power.solar" not in inverter_opts:
-                inverter_opts["measure_power.solar"] = {"title": {"en": "Solar Power (DC Input)"}}
+                inverter_opts["measure_power.solar"] = {"title": capability_title("Solar Power (DC Input)")}
             produced_cap = "measure_power.solar" if (pv_caps or has_solar) else "measure_power"
 
             base_settings = {
@@ -763,7 +763,7 @@ class DeyeDriver(Driver):
                 # Energy Dashboard needs measure_power to track charge/discharge flow
                 if "measure_power.battery" in batt_caps_final and "measure_power" not in batt_caps_final:
                     batt_caps_final.insert(0, "measure_power")
-                    batt_opts_final["measure_power"] = {"title": {"en": "Battery Power"}}
+                    batt_opts_final["measure_power"] = {"title": capability_title("Power Usage")}
 
                 devices.append({
                     "name": f"{DEYE_MODELS[model_id]} — Battery",
@@ -789,17 +789,17 @@ class DeyeDriver(Driver):
                 grid_opts_final = {GRID_CAP_REMAP.get(k, k): v for k, v in grid_opts_raw.items()}
                 # Fix titles for remapped caps
                 if "meter_power" in grid_opts_final:
-                    grid_opts_final["meter_power"]["title"]["en"] = "Grid Import Energy"
+                    grid_opts_final["meter_power"]["title"] = capability_title("Grid Import Energy")
                 if "meter_power.exported" in grid_opts_final:
-                    grid_opts_final["meter_power.exported"] = {"title": {"en": "Grid Export Energy"}}
+                    grid_opts_final["meter_power.exported"] = {"title": capability_title("Grid Export Energy")}
                 if "measure_power.grid" in grid_opts_final:
-                    grid_opts_final["measure_power.grid"]["title"]["en"] = "Grid Power"
+                    grid_opts_final["measure_power.grid"]["title"] = capability_title("Grid Power")
 
                 # Add base measure_power cap so Homey Energy can track live grid consumption.
                 # measurePowerConsumedCapability requires a base measure_power (not a sub-cap).
                 if "measure_power.grid" in grid_caps_final and "measure_power" not in grid_caps_final:
                     grid_caps_final = ["measure_power"] + grid_caps_final
-                    grid_opts_final["measure_power"] = {"title": {"en": "Grid Power (Live)"}}
+                    grid_opts_final["measure_power"] = {"title": capability_title("Grid Power (Live)")}
 
                 devices.append({
                     "name": f"{DEYE_MODELS[model_id]} — Meter",

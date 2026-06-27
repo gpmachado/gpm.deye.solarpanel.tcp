@@ -153,8 +153,8 @@
       "id": "offlineNotifyMinutes",
       "type": "number",
       "label": { "en": "Notify after offline (minutes)" },
-      "hint": { "en": "Send a timeline notification when the logger is unreachable for this many minutes. Set 0 to disable. Default: 10." },
-      "value": 10, "min": 0, "max": 120
+      "hint": { "en": "Send a timeline notification when the logger is unreachable for this many minutes. Set 0 to disable. Default: disabled." },
+      "value": 0, "min": 0, "max": 120
     },
     {
       "type": "group",

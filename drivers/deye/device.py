@@ -589,7 +589,7 @@ class DeyeDevice(Device):
 
         # Timeline notification — fired once per outage after user-configured delay
         if not self._notification_sent:
-            notify_min = self._safe_int("offlineNotifyMinutes", 10)
+            notify_min = self._safe_int("offlineNotifyMinutes", 0)
             if notify_min > 0:
                 interval = max(35, self._safe_int("pollingInterval", 60))
                 notify_errors = max(1, (notify_min * 60) // interval)
