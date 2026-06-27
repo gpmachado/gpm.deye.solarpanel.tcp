@@ -1,5 +1,5 @@
 {
-  "1.4.2": {
+  "1.4.3": {
     "en": "Added multilingual titles for dynamically detected capabilities; newly paired devices now follow Homey's language changes. Renamed the two battery power readings to \"Power Usage\" and \"Power Delivery\" to avoid duplicate labels, without changing values, signs, or Homey Energy behavior. Offline timeline notifications are now disabled by default for newly paired devices. Re-pairing is required to apply translated capability titles to existing devices."
   },
   "1.3.5": {
