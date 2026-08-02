@@ -1,4 +1,7 @@
 {
+  "1.4.4": {
+    "en": "Fixed night-time detection for locations west of UTC (e.g. UTC-6) where the sunset returned by astral falls on the next calendar day in UTC. The old logic inverted day and night, causing string/micro inverters to stay in night backoff during local daytime and show zero values."
+  },
   "1.4.3": {
     "en": "Added multilingual titles for dynamically detected capabilities; newly paired devices now follow Homey's language changes. Renamed the two battery power readings to \"Power Usage\" and \"Power Delivery\" to avoid duplicate labels, without changing values, signs, or Homey Energy behavior. Offline timeline notifications are now disabled by default for newly paired devices. Re-pairing is required to apply translated capability titles to existing devices."
   },
