@@ -113,9 +113,13 @@ class SharedPoller:
             except asyncio.TimeoutError:
                 _LOGGER.warning(f"SharedPoller poll hard-timeout serial={self.serial} — resetting client")
                 self._client = None
+                # Reason travels with the callback so the device can put it in its own
+                # log line — self.log() output is what a submitted diagnostic report
+                # actually captures, not this module's logging.warning() calls.
+                timeout_err = TimeoutError("poll hard-timeout (120s)")
                 for cb in list(self._subscribers):
                     try:
-                        await cb(None)
+                        await cb(None, timeout_err)
                     except Exception as e:
                         _LOGGER.debug(f"SharedPoller subscriber error after timeout: {e}")
             except asyncio.CancelledError:
@@ -129,6 +133,7 @@ class SharedPoller:
         _LOGGER.info(f"SharedPoller stop serial={self.serial}")
 
     async def _poll(self) -> None:
+        error: Exception | None = None
         try:
             if not self._client:
                 # _build_client does file I/O — keep inside try so FileNotFoundError
@@ -139,9 +144,10 @@ class SharedPoller:
             _LOGGER.warning(f"SharedPoller poll error serial={self.serial}: {e}")
             self._client = None
             values = None
+            error = e
 
         for cb in list(self._subscribers):
             try:
-                await cb(values)
+                await cb(values, error)
             except Exception as e:
                 _LOGGER.debug(f"SharedPoller subscriber error: {e}")

@@ -1,4 +1,7 @@
 {
+  "1.4.5": {
+    "en": "Improved crash resilience in polling and the dashboard widget so a single bad reading no longer skips the rest of an update. Reduced routine log verbosity so diagnostic reports capture more useful history leading up to an issue instead of repeated status lines."
+  },
   "1.4.4": {
     "en": "Fixed night-time detection for locations west of UTC (e.g. UTC-6) where the sunset returned by astral falls on the next calendar day in UTC. The old logic inverted day and night, causing string/micro inverters to stay in night backoff during local daytime and show zero values."
   },

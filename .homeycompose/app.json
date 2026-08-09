@@ -1,6 +1,6 @@
 {
   "id": "gpm.deye.solarpanel.tcp",
-  "version": "1.4.4",
+  "version": "1.4.5",
   "compatibility": ">=13.0.0",
   "sdk": 3,
   "runtime": "python",

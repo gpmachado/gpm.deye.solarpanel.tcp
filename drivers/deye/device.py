@@ -10,6 +10,7 @@ the battery device keeps polling through the night to track SOC and discharge.
 import asyncio
 import logging
 import os
+import time
 from datetime import datetime, timezone
 
 from astral import LocationInfo
@@ -25,6 +26,13 @@ _LOGGER = logging.getLogger(__name__)
 _BACKOFF_NIGHT   = 30 * 60   # 30 min — inverter expected offline at night
 _WARN_THRESHOLD  = 3          # consecutive failures before set_warning (~3 min at 60 s polling)
 _ERROR_THRESHOLD = 120        # consecutive failures before set_unavailable (~2 h at 60 s polling)
+
+# Diagnostic reports submitted from the Homey app only include the last ~100
+# lines of stdout. A "poll ok" line on every single poll (every 35-60 s) fills
+# that budget in under 2 hours, pushing the actual failure out of the report.
+# Routine heartbeat lines are throttled to this interval; state transitions
+# (error, recovery, night enter/exit) always log immediately regardless.
+_HEARTBEAT_INTERVAL_S = 15 * 60
 
 
 # Capabilities zeroed on the inverter device at night
@@ -69,6 +77,16 @@ class DeyeDevice(Device):
     _prev_charging_state: str | None = None   # battery: last known charging state
     _prev_grid_exporting: bool | None = None  # grid meter: last known export direction
     _sun_cache: tuple | None = None   # (cache_date, sunrise_utc, sunset_utc)
+    _was_night: bool = False          # last poll's night/day state, for transition logging
+    _last_heartbeat_at: float = 0.0   # monotonic time of the last routine "poll ok" log line
+
+    def _heartbeat_due(self) -> bool:
+        """Throttle routine (non-transition) log lines to _HEARTBEAT_INTERVAL_S apart."""
+        now = time.monotonic()
+        if now - self._last_heartbeat_at >= _HEARTBEAT_INTERVAL_S:
+            self._last_heartbeat_at = now
+            return True
+        return False
 
     # ── Lifecycle ─────────────────────────────────────────────────────────────
 
@@ -278,7 +296,7 @@ class DeyeDevice(Device):
         is_hybrid = "hybrid" in model.lower() or model == "deye_sg04lp3"
         return not is_hybrid and self._is_night_time_from(sun_times)
 
-    async def _on_values(self, values: dict | None) -> None:
+    async def _on_values(self, values: dict | None, error: Exception | None = None) -> None:
         # Compute sun_times once — shared by both night checks below.
         sun_times = self._get_sunrise_sunset()
 
@@ -290,9 +308,11 @@ class DeyeDevice(Device):
                     self._is_unavailable = False
                     await self.set_available()
                 await self._apply_zeros()
-                self.log("night offline (expected) — logger without power")
+                if not self._was_night or self._heartbeat_due():
+                    self.log("night offline (expected) — logger without power")
+                self._was_night = True
                 return
-            await self._handle_error()
+            await self._handle_error(error)
             return
 
         # Night backoff — inverter only, and only for non-hybrid (hybrid stays on 24/7 via battery)
@@ -302,14 +322,30 @@ class DeyeDevice(Device):
                 self._is_unavailable = False
                 await self.set_available()
             await self._apply_zeros()
-            if sun_times:
-                sr, ss = sun_times
-                self.log(f"night offline (expected) — backing off 30 min "
-                         f"| sunrise≈{sr:.2f}h sunset≈{ss:.2f}h (UTC)")
-            else:
-                self.log("night offline (expected) — backing off 30 min")
+            # Log immediately on entering night (transition) or every _HEARTBEAT_INTERVAL_S
+            # while it persists — every single 30-min backoff cycle would burn through the
+            # ~100-line diagnostic report window in under 2 days of normal operation.
+            if not self._was_night or self._heartbeat_due():
+                if sun_times:
+                    sr, ss = sun_times
+                    self.log(f"night offline (expected) — backing off 30 min "
+                             f"| sunrise≈{sr:.2f}h sunset≈{ss:.2f}h (UTC)")
+                else:
+                    self.log("night offline (expected) — backing off 30 min")
+            self._was_night = True
             return
 
+        # A transition (day resumed / recovered from failures) always forces the
+        # upcoming heartbeat line through immediately, bypassing the throttle,
+        # so the report shows fresh values right when something changed.
+        force_heartbeat = self._was_night or self._consecutive_errors > 0
+        if self._was_night:
+            self.log("day resumed — polling normally")
+            self._was_night = False
+        if self._consecutive_errors > 0:
+            self.log(f"poll recovered after {self._consecutive_errors} failed attempt(s) "
+                     f"| first failure was: {self._first_error_reason}")
+            self._first_error_reason = None
         self._consecutive_errors = 0
         await self._clear_warning()
         if self._notification_sent:
@@ -358,64 +394,76 @@ class DeyeDevice(Device):
             if cap_id == "measure_power" and isinstance(value, (int, float)):
                 self._last_power_w = float(value)
 
+        # Each block below is independently guarded: a single malformed register
+        # value (unexpected type from a bad JSON definition) must not abort the
+        # remaining mirrors, flow triggers, or heartbeat log for this poll.
         if self._is_battery:
-            # Derive battery_charging_state from Battery Power sign — more reliable than the
-            # textual battery status register on hybrid models. Follow the more conservative
-            # davidrapan HA convention: only switch state outside a +-50 W deadband.
-            # Deye convention: positive Battery Power = discharging, negative = charging.
-            if "Battery Power" in values and self.has_capability("battery_charging_state"):
-                raw_pwr = float(values.get("Battery Power") or 0)
-                if raw_pwr > 50:
-                    await self._set("battery_charging_state", "discharge")
-                elif raw_pwr < -50:
-                    await self._set("battery_charging_state", "charge")
-                else:
-                    await self._set("battery_charging_state", "standby")
+            try:
+                # Derive battery_charging_state from Battery Power sign — more reliable than
+                # the textual battery status register on hybrid models. Follow the more
+                # conservative davidrapan HA convention: only switch state outside a +-50 W
+                # deadband. Deye convention: positive Battery Power = discharging, negative = charging.
+                if "Battery Power" in values and self.has_capability("battery_charging_state"):
+                    raw_pwr = float(values.get("Battery Power") or 0)
+                    if raw_pwr > 50:
+                        await self._set("battery_charging_state", "discharge")
+                    elif raw_pwr < -50:
+                        await self._set("battery_charging_state", "charge")
+                    else:
+                        await self._set("battery_charging_state", "standby")
 
-            # Mirror battery power to measure_power for the Energy Dashboard.
-            # Deye: positive = discharging → negate for Homey convention (positive = charging).
-            if "Battery Power" in values and self.has_capability("measure_power"):
-                raw = values.get("Battery Power") or 0
-                await self._set("measure_power", -float(raw))
+                # Mirror battery power to measure_power for the Energy Dashboard.
+                # Deye: positive = discharging → negate for Homey convention (positive = charging).
+                if "Battery Power" in values and self.has_capability("measure_power"):
+                    raw = values.get("Battery Power") or 0
+                    await self._set("measure_power", -float(raw))
+            except Exception as e:
+                _LOGGER.debug(f"Battery mirror update failed: {e}")
         elif self._is_grid_meter:
-            # Mirror live grid power to base measure_power for measurePowerConsumedCapability.
-            # Homey Energy reads measure_power to display instantaneous grid consumption (W).
-            if self.has_capability("measure_power"):
-                grid_pwr = values.get("Total Grid Power")
-                if grid_pwr is not None:
-                    await self._set("measure_power", float(grid_pwr))
+            try:
+                # Mirror live grid power to base measure_power for measurePowerConsumedCapability.
+                # Homey Energy reads measure_power to display instantaneous grid consumption (W).
+                if self.has_capability("measure_power"):
+                    grid_pwr = values.get("Total Grid Power")
+                    if grid_pwr is not None:
+                        await self._set("measure_power", float(grid_pwr))
+            except Exception as e:
+                _LOGGER.debug(f"Grid meter mirror update failed: {e}")
         else:
-            # Inverter: ensure measure_power reflects solar production (not AC output,
-            # which includes battery discharge and overstates production).
-            if self.has_capability("measure_power.solar"):
-                pv_names = [n for n, c in self._sensor_cap_map.items()
-                            if c.startswith("measure_power.pv")]
-                if pv_names:
-                    # Multi-channel models (hybrid, sg04lp3): sum all individual PV channel powers.
-                    # measure_power.solar is synthetic — no single sensor maps to it directly.
-                    pv_total = sum(float(values.get(n) or 0) for n in pv_names)
-                    await self._set("measure_power.solar", pv_total)
-                    # Also write to measure_power so Homey Energy (class=solarpanel) reads
-                    # solar production from the main capability — no measurePowerProducedCapability
-                    # needed. Matches SMA/SigenEnergy pattern and restores 1.3.2 behaviour.
-                    if self.has_capability("measure_power"):
-                        await self._set("measure_power", pv_total)
-                    self._last_power_w = pv_total
-                else:
-                    # String models: measure_power.solar was already set by the "Input Power"
-                    # sensor in the loop above (Input Power → measure_power.solar via cap map).
-                    # measure_power (AC Output Power) keeps its sensor-loop value — do NOT
-                    # override it with Input Power (DC). The Energy Dashboard reads solar
-                    # production from measure_power.solar (measurePowerProducedCapability),
-                    # so the AC Output Power tile stays accurate.
-                    # Only update _last_power_w for solar flow triggers.
-                    solar_sensor = next(
-                        (sname for sname, cap in self._sensor_cap_map.items()
-                         if cap == "measure_power.solar"),
-                        None,
-                    )
-                    if solar_sensor is not None:
-                        self._last_power_w = float(values.get(solar_sensor) or 0)
+            try:
+                # Inverter: ensure measure_power reflects solar production (not AC output,
+                # which includes battery discharge and overstates production).
+                if self.has_capability("measure_power.solar"):
+                    pv_names = [n for n, c in self._sensor_cap_map.items()
+                                if c.startswith("measure_power.pv")]
+                    if pv_names:
+                        # Multi-channel models (hybrid, sg04lp3): sum all individual PV channel powers.
+                        # measure_power.solar is synthetic — no single sensor maps to it directly.
+                        pv_total = sum(float(values.get(n) or 0) for n in pv_names)
+                        await self._set("measure_power.solar", pv_total)
+                        # Also write to measure_power so Homey Energy (class=solarpanel) reads
+                        # solar production from the main capability — no measurePowerProducedCapability
+                        # needed. Matches SMA/SigenEnergy pattern and restores 1.3.2 behaviour.
+                        if self.has_capability("measure_power"):
+                            await self._set("measure_power", pv_total)
+                        self._last_power_w = pv_total
+                    else:
+                        # String models: measure_power.solar was already set by the "Input Power"
+                        # sensor in the loop above (Input Power → measure_power.solar via cap map).
+                        # measure_power (AC Output Power) keeps its sensor-loop value — do NOT
+                        # override it with Input Power (DC). The Energy Dashboard reads solar
+                        # production from measure_power.solar (measurePowerProducedCapability),
+                        # so the AC Output Power tile stays accurate.
+                        # Only update _last_power_w for solar flow triggers.
+                        solar_sensor = next(
+                            (sname for sname, cap in self._sensor_cap_map.items()
+                             if cap == "measure_power.solar"),
+                            None,
+                        )
+                        if solar_sensor is not None:
+                            self._last_power_w = float(values.get(solar_sensor) or 0)
+            except Exception as e:
+                _LOGGER.debug(f"Solar mirror update failed: {e}")
 
             # ── Derived PV power for string / micro ────────────────────────
             # These models have no direct PV-power registers in the JSON definition.
@@ -423,56 +471,70 @@ class DeyeDevice(Device):
             # measure_power.pv{N} capability (added at pairing / by _ensure_pv_structural_caps).
             # For deye_micro the derived total also drives measure_power.solar because
             # there is no "Input Power" register to use as a solar proxy.
-            model = self.get_setting("model") or ""
-            if model in ("deye_string", "deye_micro"):
-                derived_total = 0.0
-                for idx in (1, 2, 3, 4):
-                    pwr_cap = f"measure_power.pv{idx}"
-                    if not self.has_capability(pwr_cap):
-                        continue
-                    v_cap = f"measure_voltage.pv{idx}"
-                    i_cap = f"measure_current.pv{idx}"
-                    v_name = next(
-                        (n for n, c in self._sensor_cap_map.items() if c == v_cap), None
-                    )
-                    i_name = next(
-                        (n for n, c in self._sensor_cap_map.items() if c == i_cap), None
-                    )
-                    if v_name and i_name:
-                        v_val = values.get(v_name)
-                        i_val = values.get(i_name)
-                        if v_val is not None and i_val is not None:
-                            pv_power = round(float(v_val) * float(i_val), 1)
-                            await self._set(pwr_cap, pv_power)
-                            derived_total += pv_power
+            try:
+                model = self.get_setting("model") or ""
+                if model in ("deye_string", "deye_micro"):
+                    derived_total = 0.0
+                    for idx in (1, 2, 3, 4):
+                        pwr_cap = f"measure_power.pv{idx}"
+                        if not self.has_capability(pwr_cap):
+                            continue
+                        v_cap = f"measure_voltage.pv{idx}"
+                        i_cap = f"measure_current.pv{idx}"
+                        v_name = next(
+                            (n for n, c in self._sensor_cap_map.items() if c == v_cap), None
+                        )
+                        i_name = next(
+                            (n for n, c in self._sensor_cap_map.items() if c == i_cap), None
+                        )
+                        if v_name and i_name:
+                            v_val = values.get(v_name)
+                            i_val = values.get(i_name)
+                            if v_val is not None and i_val is not None:
+                                pv_power = round(float(v_val) * float(i_val), 1)
+                                await self._set(pwr_cap, pv_power)
+                                derived_total += pv_power
 
-                # deye_micro: no "Input Power" register — use derived PV total as
-                # the solar proxy so the Energy Dashboard shows correct production.
-                if model == "deye_micro" and self.has_capability("measure_power.solar"):
-                    solar_w = round(derived_total, 1)
-                    await self._set("measure_power.solar", solar_w)
-                    if self.has_capability("measure_power"):
-                        await self._set("measure_power", solar_w)
-                    self._last_power_w = solar_w
+                    # deye_micro: no "Input Power" register — use derived PV total as
+                    # the solar proxy so the Energy Dashboard shows correct production.
+                    if model == "deye_micro" and self.has_capability("measure_power.solar"):
+                        solar_w = round(derived_total, 1)
+                        await self._set("measure_power.solar", solar_w)
+                        if self.has_capability("measure_power"):
+                            await self._set("measure_power", solar_w)
+                        self._last_power_w = solar_w
+            except Exception as e:
+                _LOGGER.debug(f"Derived PV power update failed: {e}")
 
             # ── Flow triggers ──────────────────────────────────────────────
-            await self._fire_flow_triggers(values)
+            try:
+                await self._fire_flow_triggers(values)
+            except Exception as e:
+                _LOGGER.debug(f"Flow trigger evaluation failed: {e}")
 
         # ── Poll heartbeat ──────────────────────────────────────────────────
-        if self._is_battery:
-            raw_pwr = float(values.get("Battery Power") or 0)
-            soc = values.get("Battery SOC") or 0
-            state = ("discharge" if raw_pwr > 50
-                     else "charge" if raw_pwr < -50
-                     else "standby")
-            self.log(f"poll ok | battery={raw_pwr:+.0f}W({state}) SOC={soc}%")
-        elif self._is_grid_meter:
-            grid = values.get("Total Grid Power") or 0
-            self.log(f"poll ok | grid={float(grid):+.0f}W")
-        else:
-            solar = self._last_power_w or 0
-            daily = values.get("Today Production") or values.get("Daily Production") or 0
-            self.log(f"poll ok | solar={solar:.0f}W daily={float(daily):.1f}kWh")
+        # Throttled to _HEARTBEAT_INTERVAL_S — logging this on every single poll
+        # (every 35-60 s) would fill the ~100-line diagnostic report window with
+        # routine "poll ok" noise in under 2 hours. force_heartbeat bypasses the
+        # throttle right after a transition so the report shows it happened.
+        if force_heartbeat or self._heartbeat_due():
+            try:
+                if self._is_battery:
+                    raw_pwr = float(values.get("Battery Power") or 0)
+                    soc = values.get("Battery SOC") or 0
+                    state = ("discharge" if raw_pwr > 50
+                             else "charge" if raw_pwr < -50
+                             else "standby")
+                    self.log(f"poll ok | battery={raw_pwr:+.0f}W({state}) SOC={soc}%")
+                elif self._is_grid_meter:
+                    grid = values.get("Total Grid Power") or 0
+                    self.log(f"poll ok | grid={float(grid):+.0f}W")
+                else:
+                    solar = self._last_power_w or 0
+                    daily = values.get("Today Production") or values.get("Daily Production") or 0
+                    self.log(f"poll ok | solar={solar:.0f}W daily={float(daily):.1f}kWh")
+            except Exception as e:
+                _LOGGER.debug(f"Poll heartbeat log failed: {e}")
 
     async def _fire_flow_triggers(self, values: dict) -> None:
         """Fire flow triggers based on state transitions detected in poll values."""
@@ -577,12 +639,18 @@ class DeyeDevice(Device):
             self._has_warning = False
             await self.unset_warning()
 
-    async def _handle_error(self) -> None:
+    _first_error_reason: str | None = None  # captured at the start of the current outage
+
+    async def _handle_error(self, error: Exception | None = None) -> None:
+        reason = f"{type(error).__name__}: {error}" if error is not None else "unknown reason"
         self._consecutive_errors += 1
+        if self._consecutive_errors == 1:
+            self._first_error_reason = reason
 
         # Warning triangle — device stays available, tile shows last known values
         if self._consecutive_errors == _WARN_THRESHOLD:
-            self.log(f"poll failed {self._consecutive_errors}x — showing warning")
+            self.log(f"poll failed {self._consecutive_errors}x — showing warning "
+                     f"| first={self._first_error_reason} latest={reason}")
             if not self._has_warning:
                 self._has_warning = True
                 await self.set_warning("Connection failed")
@@ -599,13 +667,19 @@ class DeyeDevice(Device):
 
         # Mark unavailable only after a very long outage (genuine persistent failure)
         if self._consecutive_errors == _ERROR_THRESHOLD:
-            self.log(f"poll failed {self._consecutive_errors}x — marking unavailable")
+            self.log(f"poll failed {self._consecutive_errors}x — marking unavailable "
+                     f"| first={self._first_error_reason} latest={reason}")
             self._is_unavailable = True
             await self.set_unavailable("Connection failed")
         elif self._consecutive_errors > _ERROR_THRESHOLD:
-            pass  # already unavailable — do not spam set_unavailable on every poll
+            # Still down — repeat this at the same throttle as the routine heartbeat so a
+            # diagnostic pulled hours into a long outage still shows recent failure detail,
+            # without spamming set_unavailable() or the log on every single poll.
+            if self._heartbeat_due():
+                self.log(f"poll still failing ({self._consecutive_errors}x) "
+                         f"| first={self._first_error_reason} latest={reason}")
         elif self._consecutive_errors < _WARN_THRESHOLD:
-            self.log(f"poll error {self._consecutive_errors}/{_WARN_THRESHOLD}")
+            self.log(f"poll error {self._consecutive_errors}/{_WARN_THRESHOLD} | {reason}")
 
     # ── Offline notifications ─────────────────────────────────────────────────
 
