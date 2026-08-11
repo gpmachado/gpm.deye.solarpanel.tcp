@@ -700,6 +700,13 @@ class DeyeDriver(Driver):
                 inverter_caps = [c for c in inverter_caps if c not in advanced_caps]
                 inverter_opts = {k: v for k, v in inverter_opts.items() if k not in advanced_caps}
 
+            # NOTE: PV string / AC connection Voltage+Current (PV_DETAIL_CAPS,
+            # AC_DETAIL_CAPS) are paired normally like any other capability —
+            # they default to shown (showPvDetail/showAcDetail default to true
+            # in driver.compose.json) so existing users see no change. Anyone
+            # who wants a cleaner tile can uncheck those settings after pairing;
+            # device.py's _sync_detail_caps() removes them without re-pairing.
+
             # ── Inject derived PV1/PV2 power for string/micro ────────────────
             # deye_string and deye_micro have no direct PV-power registers.
             # Power is computed at runtime as V×I (see device.py _on_values).
@@ -745,7 +752,7 @@ class DeyeDriver(Driver):
 
             devices = [{
                 "name": f"{DEYE_MODELS[model_id]} — Inverter",
-                "icon": "/drivers/deye/assets/icon_inverter.svg",
+                "icon": "/icon_inverter.svg",
                 "data": {"id": f"deye_{serial}_inverter"},
                 "class": "solarpanel",
                 "capabilities": inverter_caps,
@@ -767,7 +774,7 @@ class DeyeDriver(Driver):
 
                 devices.append({
                     "name": f"{DEYE_MODELS[model_id]} — Battery",
-                    "icon": "/drivers/deye/assets/icon_battery.svg",
+                    "icon": "/icon_battery.svg",
                     "data": {"id": f"deye_{serial}_battery"},
                     "class": "battery",
                     "capabilities": batt_caps_final,
@@ -803,7 +810,7 @@ class DeyeDriver(Driver):
 
                 devices.append({
                     "name": f"{DEYE_MODELS[model_id]} — Meter",
-                    "icon": "/drivers/deye/assets/icon_grid.svg",
+                    "icon": "/icon_grid.svg",
                     "data": {"id": f"deye_{serial}_grid"},
                     "class": "sensor",
                     "capabilities": grid_caps_final,

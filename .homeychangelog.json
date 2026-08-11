@@ -1,6 +1,6 @@
 {
   "1.4.5": {
-    "en": "Improved crash resilience in polling and the dashboard widget so a single bad reading no longer skips the rest of an update. Reduced routine log verbosity so diagnostic reports capture more useful history leading up to an issue instead of repeated status lines."
+    "en": "Improved crash resilience in polling and the dashboard widget so a single bad reading no longer skips the rest of an update. Reduced routine log verbosity so diagnostic reports capture more useful history leading up to an issue instead of repeated status lines. Fixed the offline warning getting stuck through the night after a temporary connection issue at dusk. Fixed the per-device pairing icon (inverter/battery/grid meter) not applying, so all three showed the same icon. Added two device settings, \"Show PV string voltage/current detail\" and \"Show AC connection voltage/current detail\", to hide the per-string and L1 Voltage/Current tiles if you only need the power readings — on by default, no re-pairing needed to change."
   },
   "1.4.4": {
     "en": "Fixed night-time detection for locations west of UTC (e.g. UTC-6) where the sunset returned by astral falls on the next calendar day in UTC. The old logic inverted day and night, causing string/micro inverters to stay in night backoff during local daytime and show zero values."

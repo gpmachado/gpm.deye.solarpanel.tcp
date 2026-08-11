@@ -516,6 +516,25 @@ GRID_CAP_REMAP: dict[str, str] = {
 }
 
 
+# ── Toggleable detail capabilities (inverter device only) ─────────────────────
+# Not added at pairing by default. Shown/hidden after pairing via a device
+# setting (addCapability/removeCapability at runtime) — no re-pairing needed.
+# Voltage/Current per PV string: diagnostic detail, redundant with PV{n} Power.
+PV_DETAIL_CAPS: frozenset[str] = frozenset({
+    "measure_voltage.pv1", "measure_current.pv1",
+    "measure_voltage.pv2", "measure_current.pv2",
+    "measure_voltage.pv3", "measure_current.pv3",
+    "measure_voltage.pv4", "measure_current.pv4",
+})
+
+# L1 Voltage/Current: the inverter's own AC/grid connection point reading —
+# NOT the same as GRID_METER_CAPS (which requires a CT and feeds the grid
+# meter device). Diagnostic detail, redundant with AC Output Power.
+AC_DETAIL_CAPS: frozenset[str] = frozenset({
+    "measure_voltage.l1", "measure_current.l1",
+})
+
+
 def get_sensor_capability_map(sensors: list) -> dict[str, str]:
     """
     Returns {sensor_name: homey_capability_id} for use during polling.

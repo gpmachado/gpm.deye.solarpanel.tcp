@@ -17,7 +17,10 @@ from astral import LocationInfo
 from astral.sun import sun
 
 from homey.device import Device
-from app.lib.capability_map import get_sensor_capability_map, BATTERY_CAPS, GRID_METER_CAPS, GRID_CAP_REMAP
+from app.lib.capability_map import (
+    get_sensor_capability_map, BATTERY_CAPS, GRID_METER_CAPS, GRID_CAP_REMAP,
+    PV_DETAIL_CAPS, AC_DETAIL_CAPS,
+)
 from app.lib import shared_poller as _poller_mod
 from app.app import DEBUG_LOG as _DEBUG_LOG
 
@@ -122,6 +125,8 @@ class DeyeDevice(Device):
                 _LOGGER.warning(f"Could not add measure_power to grid meter: {e}")
 
         await self._ensure_pv_structural_caps()
+        await self._sync_detail_caps("showPvDetail", PV_DETAIL_CAPS)
+        await self._sync_detail_caps("showAcDetail", AC_DETAIL_CAPS)
 
         # Initialise synthetic inverter caps to 0 so Energy Dashboard never shows null
         # before the first successful poll.
@@ -153,6 +158,41 @@ class DeyeDevice(Device):
             if "host" in keys and not self._is_battery:
                 host = self.get_setting("host") or ""
                 asyncio.create_task(self._refresh_wifi_info(host))
+
+        if "showPvDetail" in keys:
+            await self._sync_detail_caps("showPvDetail", PV_DETAIL_CAPS)
+        if "showAcDetail" in keys:
+            await self._sync_detail_caps("showAcDetail", AC_DETAIL_CAPS)
+
+    async def _sync_detail_caps(self, setting_id: str, cap_group: frozenset) -> None:
+        """Add/remove a group of optional detail capabilities to match a device
+        setting — no re-pairing needed. Inverter device only: PV string and AC
+        connection detail don't apply to the battery or grid-meter device.
+
+        Only acts on capabilities this model actually has a sensor for
+        (intersected with _sensor_cap_map) — never adds a capability with no
+        real register behind it.
+        """
+        if self._is_battery or self._is_grid_meter:
+            return
+        # Devices paired before this setting existed have no stored value for
+        # it — get_setting() returns None. Treat that as "show" (matches the
+        # driver.compose.json default of true), not "hide": these capabilities
+        # must never disappear from an existing device unless the user
+        # explicitly unchecks the setting themselves.
+        raw = self.get_setting(setting_id)
+        show = True if raw is None else bool(raw)
+        relevant = cap_group & set(self._sensor_cap_map.values())
+        for cap in relevant:
+            try:
+                if show and not self.has_capability(cap):
+                    await self.add_capability(cap)
+                    self.log(f"Added detail capability {cap} ({setting_id})")
+                elif not show and self.has_capability(cap):
+                    await self.remove_capability(cap)
+                    self.log(f"Removed detail capability {cap} ({setting_id})")
+            except Exception as e:
+                _LOGGER.warning(f"Sync detail capability {cap} ({setting_id}) failed: {e}")
 
     async def on_deleted(self) -> None:
         self._detach_poller()
@@ -304,6 +344,7 @@ class DeyeDevice(Device):
             # For string/micro inverters: logger loses power at night — expected, not an error
             if self._is_string_night_from(sun_times):
                 self._consecutive_errors = 0
+                await self._clear_warning()
                 if self._is_unavailable:
                     self._is_unavailable = False
                     await self.set_available()
@@ -318,6 +359,7 @@ class DeyeDevice(Device):
         # Night backoff — inverter only, and only for non-hybrid (hybrid stays on 24/7 via battery)
         if self._is_string_night_from(sun_times):
             self._consecutive_errors = 0
+            await self._clear_warning()
             if self._is_unavailable:
                 self._is_unavailable = False
                 await self.set_available()

@@ -865,6 +865,28 @@
               },
               "min": -180,
               "max": 180
+            },
+            {
+              "id": "showPvDetail",
+              "type": "checkbox",
+              "label": {
+                "en": "Show PV string voltage/current detail"
+              },
+              "hint": {
+                "en": "Uncheck to remove the per-string Voltage/Current tiles — PV{n} Power already shows what each string produces. Inverter device only; takes effect immediately, no re-pairing needed."
+              },
+              "value": true
+            },
+            {
+              "id": "showAcDetail",
+              "type": "checkbox",
+              "label": {
+                "en": "Show AC connection voltage/current detail (L1)"
+              },
+              "hint": {
+                "en": "Uncheck to remove the inverter's AC/grid connection point Voltage/Current tiles — AC Output Power already shows what matters day to day. Inverter device only; takes effect immediately, no re-pairing needed."
+              },
+              "value": true
             }
           ]
         }
