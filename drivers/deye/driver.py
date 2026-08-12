@@ -54,6 +54,7 @@ _CAP_ICONS_COMMON: dict[str, str] = {
     "measure_temperature.battery":   f"{_ASSETS}/battery_temperature.svg",
     "battery_charging_state":        f"{_ASSETS}/battery_charging.svg",
     "alarm_generic":                 f"{_ASSETS}/grid_available.svg",
+    "fault_description":             f"{_ASSETS}/fault_alarm_detail.svg",
 }
 
 # measure_power icon differs per device type
@@ -725,6 +726,10 @@ class DeyeDriver(Driver):
             # register block exists (deye_hybrid / deye_sg04lp3).
             if is_hybrid and "fault_description" not in inverter_caps:
                 inverter_caps.append("fault_description")
+                # Empty entry so _apply_cap_icons() (below) picks it up and
+                # injects the icon — the capability's own base title
+                # ("Fault / Alarm Detail") is used as-is, no override needed.
+                inverter_opts["fault_description"] = {}
 
             # Add measure_power.solar for inverters with PV sub-capabilities or Input Power.
             # Points Energy Dashboard to solar-only production (not AC output).
