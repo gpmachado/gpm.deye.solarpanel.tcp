@@ -26,6 +26,8 @@ from app.app import DEBUG_LOG as _DEBUG_LOG
 
 _LOGGER = logging.getLogger(__name__)
 
+_UNSET = object()  # sentinel distinguishing "no value passed" from an explicit None
+
 _BACKOFF_NIGHT   = 30 * 60   # 30 min — inverter expected offline at night
 _WARN_THRESHOLD  = 3          # consecutive failures before set_warning (~3 min at 60 s polling)
 _ERROR_THRESHOLD = 120        # consecutive failures before set_unavailable (~2 h at 60 s polling)
@@ -246,11 +248,11 @@ class DeyeDevice(Device):
                 asyncio.create_task(self._refresh_wifi_info(host))
 
         if "showPvDetail" in keys:
-            await self._sync_detail_caps("showPvDetail", PV_DETAIL_CAPS)
+            await self._sync_detail_caps("showPvDetail", PV_DETAIL_CAPS, (new_settings or {}).get("showPvDetail"))
         if "showAcDetail" in keys:
-            await self._sync_detail_caps("showAcDetail", AC_DETAIL_CAPS)
+            await self._sync_detail_caps("showAcDetail", AC_DETAIL_CAPS, (new_settings or {}).get("showAcDetail"))
 
-    async def _sync_detail_caps(self, setting_id: str, cap_group: frozenset) -> None:
+    async def _sync_detail_caps(self, setting_id: str, cap_group: frozenset, value=_UNSET) -> None:
         """Add/remove a group of optional detail capabilities to match a device
         setting — no re-pairing needed. Inverter device only: PV string and AC
         connection detail don't apply to the battery or grid-meter device.
@@ -258,15 +260,22 @@ class DeyeDevice(Device):
         Only acts on capabilities this model actually has a sensor for
         (intersected with _sensor_cap_map) — never adds a capability with no
         real register behind it.
+
+        `value`, when given, is used as-is (the fresh value from on_settings'
+        new_settings — self.get_setting() can still return the *previous*
+        value at the moment on_settings fires, since Homey calls this hook
+        before persisting the change; reading it here inverted the toggle).
+        When omitted (on_init, no settings-change event to read from),
+        falls back to self.get_setting().
         """
         if self._is_battery or self._is_grid_meter:
             return
+        raw = self.get_setting(setting_id) if value is _UNSET else value
         # Devices paired before this setting existed have no stored value for
         # it — get_setting() returns None. Treat that as "show" (matches the
         # driver.compose.json default of true), not "hide": these capabilities
         # must never disappear from an existing device unless the user
         # explicitly unchecks the setting themselves.
-        raw = self.get_setting(setting_id)
         show = True if raw is None else bool(raw)
         relevant = cap_group & set(self._sensor_cap_map.values())
         for cap in relevant:
