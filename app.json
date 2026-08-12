@@ -1018,7 +1018,8 @@
       "getable": true,
       "setable": false,
       "uiComponent": "sensor",
-      "insights": false
+      "insights": false,
+      "icon": "/assets/capabilities/fault_description.svg"
     }
   }
 }
