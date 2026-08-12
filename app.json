@@ -1009,6 +1009,16 @@
       "setable": false,
       "uiComponent": "sensor",
       "insights": false
+    },
+    "fault_description": {
+      "type": "string",
+      "title": {
+        "en": "Fault / Alarm Detail"
+      },
+      "getable": true,
+      "setable": false,
+      "uiComponent": "sensor",
+      "insights": false
     }
   }
 }

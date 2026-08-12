@@ -721,6 +721,11 @@ class DeyeDriver(Driver):
                         inverter_caps.append(cap_id)
                         inverter_opts[cap_id] = {"title": capability_title(title)}
 
+            # Decoded fault/alarm detail — only meaningful where the "Alert"
+            # register block exists (deye_hybrid / deye_sg04lp3).
+            if is_hybrid and "fault_description" not in inverter_caps:
+                inverter_caps.append("fault_description")
+
             # Add measure_power.solar for inverters with PV sub-capabilities or Input Power.
             # Points Energy Dashboard to solar-only production (not AC output).
             # Note: Input Power (DC from PV array) also maps to measure_power.solar via

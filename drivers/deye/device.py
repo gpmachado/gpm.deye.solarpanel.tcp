@@ -19,7 +19,7 @@ from astral.sun import sun
 from homey.device import Device
 from app.lib.capability_map import (
     get_sensor_capability_map, BATTERY_CAPS, GRID_METER_CAPS, GRID_CAP_REMAP,
-    PV_DETAIL_CAPS, AC_DETAIL_CAPS,
+    PV_DETAIL_CAPS, AC_DETAIL_CAPS, DETAIL_CAP_TITLES, capability_title,
 )
 from app.lib import shared_poller as _poller_mod
 from app.app import DEBUG_LOG as _DEBUG_LOG
@@ -29,6 +29,92 @@ _LOGGER = logging.getLogger(__name__)
 _BACKOFF_NIGHT   = 30 * 60   # 30 min — inverter expected offline at night
 _WARN_THRESHOLD  = 3          # consecutive failures before set_warning (~3 min at 60 s polling)
 _ERROR_THRESHOLD = 120        # consecutive failures before set_unavailable (~2 h at 60 s polling)
+
+# ── Hybrid "Alert" bit decoding (deye_hybrid / deye_sg04lp3 only) ────────────
+# The "Alert" sensor is 6 raw registers (rule 6 in parser.py — no built-in
+# lookup). registers[0:2] = "Device Alarm" (32 bits), registers[2:6] =
+# "Device Fault" (64 bits). Bit numbering and register grouping cross-checked
+# against two independent public sources — they agree on every overlapping
+# bit, and the mapping is identical between deye_hybrid and deye_sg04lp3
+# (only the register *addresses* differ, which the JSON definitions already
+# handle correctly):
+#   - github.com/davidrapan/ha-solarman (deye_hybrid.yaml / deye_p3.yaml,
+#     "Device Alarm" / "Device Fault" rule-3 lookups)
+#   - Deye front-panel "F-code" reference (F01-F64), cross-referenced as
+#     bit = F_code - 1 (confirmed via F13/F18/F20/F23/F64 all matching the
+#     ha-solarman bit names exactly)
+# NOT exhaustive — many bits have no publicly documented meaning yet. Unknown
+# set bits are surfaced as "Unknown alarm/fault (bit N)" rather than silently
+# dropped, so a user can report the number back instead of losing the signal.
+_ALARM_BIT_NAMES: dict[int, str] = {
+    1: "Fan failure",
+    2: "Grid phase failure",
+    3: "Meter communication failure",
+    30: "Battery loss",
+    31: "Parallel communication quality",
+}
+_FAULT_BIT_NAMES: dict[int, str] = {
+    6: "DC/DC Soft Start failure",
+    7: "GFDI relay failure (ground-fault protection)",
+    9: "Auxiliary power supply failure",
+    12: "Working mode changed",
+    17: "AC over-current failure",
+    18: "Tz_Integ_Fault failure",
+    19: "DC over-current failure",
+    21: "Emergency-stop fault",
+    22: "AC current leakage failure",
+    23: "DC insulation impedance failure",
+    25: "DC busbar unbalanced",
+    28: "Parallel CAN-bus fault",
+    33: "AC over-current fault",
+    34: "No AC grid detected",
+    40: "Parallel system stop",
+    41: "AC line low voltage",
+    45: "Battery defect",
+    46: "AC over frequency",
+    47: "AC under frequency",
+    54: "DC bus voltage too high",
+    55: "DC busbar voltage too low",
+    57: "Battery BMS communication fault",
+    59: "Battery over/under voltage (BMS protection)",
+    60: "Battery overcurrent (BMS protection)",
+    61: "Battery BMS stopped charge/discharge",
+    62: "Arc fault (AFCI) — fire risk",
+    63: "Temperature is too high",
+}
+
+
+def _decode_alert(raw: list) -> str:
+    """Decode the 6-register "Alert" reading into a human-readable summary.
+    raw is a list of hex strings (parser.py rule 6 output), one per register,
+    in the same order as the JSON's "registers" list — [alarm_lo, alarm_hi,
+    fault_word0..3]."""
+    if not raw or len(raw) < 6:
+        return "OK"
+    try:
+        regs = [int(h, 16) for h in raw]
+    except (TypeError, ValueError):
+        return "OK"
+
+    alarm_word = regs[0] | (regs[1] << 16)
+    fault_word = regs[2] | (regs[3] << 16) | (regs[4] << 32) | (regs[5] << 48)
+
+    active: list[str] = []
+    for bit, name in _ALARM_BIT_NAMES.items():
+        if alarm_word & (1 << bit):
+            active.append(name)
+    for bit in range(32):
+        if bit not in _ALARM_BIT_NAMES and (alarm_word & (1 << bit)):
+            active.append(f"Unknown alarm (bit {bit})")
+
+    for bit, name in _FAULT_BIT_NAMES.items():
+        if fault_word & (1 << bit):
+            active.append(name)
+    for bit in range(64):
+        if bit not in _FAULT_BIT_NAMES and (fault_word & (1 << bit)):
+            active.append(f"Unknown fault (bit {bit})")
+
+    return ", ".join(active) if active else "OK"
 
 # Diagnostic reports submitted from the Homey app only include the last ~100
 # lines of stdout. A "poll ok" line on every single poll (every 35-60 s) fills
@@ -187,6 +273,16 @@ class DeyeDevice(Device):
             try:
                 if show and not self.has_capability(cap):
                     await self.add_capability(cap)
+                    # addCapability() falls back to the capability's generic
+                    # built-in title (e.g. every measure_voltage.* tile just
+                    # says "Voltage") — restore the specific one pairing would
+                    # have set (e.g. "PV1 Voltage").
+                    title_key = DETAIL_CAP_TITLES.get(cap)
+                    if title_key:
+                        try:
+                            await self.set_capability_options(cap, {"title": capability_title(title_key)})
+                        except Exception as e:
+                            _LOGGER.warning(f"Set title for {cap} failed: {e}")
                     self.log(f"Added detail capability {cap} ({setting_id})")
                 elif not show and self.has_capability(cap):
                     await self.remove_capability(cap)
@@ -472,6 +568,14 @@ class DeyeDevice(Device):
             except Exception as e:
                 _LOGGER.debug(f"Grid meter mirror update failed: {e}")
         else:
+            # Hybrid fault/alarm bit decoding — "Alert" only exists on deye_hybrid
+            # and deye_sg04lp3 (see JSON definitions); absent on string/micro.
+            if "Alert" in values and self.has_capability("fault_description"):
+                try:
+                    await self._set("fault_description", _decode_alert(values.get("Alert")))
+                except Exception as e:
+                    _LOGGER.debug(f"Alert decode failed: {e}")
+
             try:
                 # Inverter: ensure measure_power reflects solar production (not AC output,
                 # which includes battery discharge and overstates production).

@@ -1,0 +1,10 @@
+{
+  "type": "string",
+  "title": {
+    "en": "Fault / Alarm Detail"
+  },
+  "getable": true,
+  "setable": false,
+  "uiComponent": "sensor",
+  "insights": false
+}

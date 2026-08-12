@@ -534,6 +534,20 @@ AC_DETAIL_CAPS: frozenset[str] = frozenset({
     "measure_voltage.l1", "measure_current.l1",
 })
 
+# addCapability() at runtime does NOT inherit the per-device title from
+# pairing's capabilitiesOptions — it falls back to the capability's generic
+# built-in title (e.g. every measure_voltage.* tile just shows "Voltage").
+# _sync_detail_caps() in device.py uses this to call setCapabilityOptions()
+# right after adding, restoring the same title build_capabilities() would
+# have set at pairing time.
+DETAIL_CAP_TITLES: dict[str, str] = {
+    "measure_voltage.pv1": "PV1 Voltage", "measure_current.pv1": "PV1 Current",
+    "measure_voltage.pv2": "PV2 Voltage", "measure_current.pv2": "PV2 Current",
+    "measure_voltage.pv3": "PV3 Voltage", "measure_current.pv3": "PV3 Current",
+    "measure_voltage.pv4": "PV4 Voltage", "measure_current.pv4": "PV4 Current",
+    "measure_voltage.l1": "L1 Voltage", "measure_current.l1": "L1 Current",
+}
+
 
 def get_sensor_capability_map(sensors: list) -> dict[str, str]:
     """
