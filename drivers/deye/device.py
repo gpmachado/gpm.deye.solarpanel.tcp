@@ -353,16 +353,20 @@ class DeyeDevice(Device):
             self._sensor_cap_map = {}
 
     async def _ensure_pv_structural_caps(self) -> None:
-        """Add missing PV1/PV2 capabilities to inverter devices paired during weak sunlight.
+        """Add missing PV1/PV2 Power capabilities to inverter devices paired during weak sunlight.
 
         The pairing sensor filter used to exclude PV1/PV2 sensors when they read 0 at
         detection time (e.g. sunset or cloudy startup). The bug affected all models except
         deye_string. This method runs once at startup and silently adds any missing
-        PV1/PV2 caps so existing devices recover without requiring re-pairing.
+        PV1/PV2 Power caps so existing devices recover without requiring re-pairing.
 
-        Cap set for all 4 models: voltage + current + power for PV1/PV2.
-        For string/micro, pv1/pv2 power is derived (V×I) at poll time — the
-        capability still needs to exist so the value can be written.
+        Only Power — never Voltage/Current. Those are governed entirely by the
+        showPvDetail device setting (_sync_detail_caps, called right after this),
+        which must be free to remove them; force-adding them here on every
+        init would fight that setting. Power derivation for string/micro
+        (V×I at poll time) reads raw register values via _sensor_cap_map, not
+        through the Voltage/Current Homey capabilities, so it's unaffected
+        either way.
         """
         if self._is_battery:
             # Battery structural caps: meter_power.battery_discharged was missing on devices
@@ -380,19 +384,10 @@ class DeyeDevice(Device):
         if not model:
             return
 
-        # Caps that should always exist for the PV1/PV2 strings of each model
-        base_pv_caps = (
-            "measure_voltage.pv1", "measure_voltage.pv2",
-            "measure_current.pv1", "measure_current.pv2",
-        )
-        power_pv_caps = (
-            "measure_power.pv1", "measure_power.pv2",
-        )
-
         if model in ("deye_hybrid", "deye_sg04lp3", "deye_string", "deye_micro"):
             # measure_power.solar is the Energy Dashboard production source.
             # Without it, the pairing-time measurePowerProducedCapability falls back to measure_power (AC output).
-            required = base_pv_caps + power_pv_caps + ("measure_power.solar",)
+            required = ("measure_power.pv1", "measure_power.pv2", "measure_power.solar")
         else:
             return
 
