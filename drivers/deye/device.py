@@ -82,6 +82,7 @@ class DeyeDevice(Device):
     _notification_sent: bool = False  # offline notification already sent this outage
     _prev_charging_state: str | None = None   # battery: last known charging state
     _prev_grid_exporting: bool | None = None  # grid meter: last known export direction
+    _had_fault: bool | None = None            # None = first poll, state not yet known
     _sun_cache: tuple | None = None   # (cache_date, sunrise_utc, sunset_utc)
     _was_night: bool = False          # last poll's night/day state, for transition logging
     _last_heartbeat_at: float = 0.0   # monotonic time of the last routine "poll ok" log line
@@ -618,6 +619,19 @@ class DeyeDevice(Device):
         """Fire flow triggers based on state transitions detected in poll values."""
         power = float(self._last_power_w or 0)
         is_producing = power > 5.0
+
+        # Fault/alarm detected — edge-triggered, only on the OK → fault transition
+        # (fault_description was already updated earlier in _on_values for this poll).
+        if self.has_capability("fault_description"):
+            description = self.get_capability_value("fault_description") or "OK"
+            has_fault = description != "OK"
+            if self._had_fault is None:
+                self._had_fault = has_fault
+            elif has_fault and not self._had_fault:
+                self._had_fault = True
+                await self._trigger("fault_detected", {"description": description})
+            elif not has_fault and self._had_fault:
+                self._had_fault = False
 
         # Solar production started / stopped
         if self._was_producing is None:

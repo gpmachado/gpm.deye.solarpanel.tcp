@@ -1,0 +1,34 @@
+{
+  "id": "fault_is",
+  "title": {
+    "en": "Fault !{{is|isn't}} ...",
+    "nl": "Storing !{{is|is niet}} ...",
+    "de": "Störung !{{ist|ist nicht}} ...",
+    "fr": "Défaut !{{est|n'est pas}} ...",
+    "it": "Guasto !{{è|non è}} ...",
+    "sv": "Fel !{{är|är inte}} ...",
+    "no": "Feil !{{er|er ikke}} ...",
+    "es": "Fallo !{{es|no es}} ...",
+    "da": "Fejl !{{er|er ikke}} ...",
+    "pl": "Usterka !{{jest|nie jest}} ..."
+  },
+  "titleFormatted": {
+    "en": "Fault !{{is|isn't}} [[fault]]"
+  },
+  "hint": {
+    "en": "Checks whether a specific fault/alarm is currently active. Multiple faults can be active at once — this matches if the chosen one is among them. The suggestion list is filtered to what's possible on the selected device's model (e.g. battery faults are hidden for string/micro inverters)."
+  },
+  "args": [
+    {
+      "type": "device",
+      "name": "device",
+      "filter": "driver_id=deye&capabilities=fault_description"
+    },
+    {
+      "type": "autocomplete",
+      "name": "fault",
+      "title": { "en": "Fault" },
+      "placeholder": { "en": "Type to search..." }
+    }
+  ]
+}

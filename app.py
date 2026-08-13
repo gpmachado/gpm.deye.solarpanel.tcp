@@ -5,6 +5,9 @@ from typing import Any
 
 from homey.app import App
 
+from app.drivers.deye.driver import HYBRID_MODELS
+from app.lib.fault_codes import known_fault_names
+
 # ── Debug verbosity ───────────────────────────────────────────────────────────
 # True  → one log line per poll (solar/battery/grid values) — homey app run --remote
 # False → silent (production)
@@ -120,6 +123,35 @@ class MyApp(App):
                 return False
             return float(soc) >= float(threshold)
 
+        def _active_faults(device: Any) -> list[str]:
+            current = device.get_capability_value("fault_description") or ""
+            return [s.strip() for s in current.split(",") if s.strip() and s.strip() != "OK"]
+
+        async def _has_active_fault(card_arguments: Mapping[str, Any], **kwargs: Any) -> bool:
+            device = card_arguments.get("device")
+            if not device:
+                return False
+            return bool(_active_faults(device))
+
+        async def _fault_is(card_arguments: Mapping[str, Any], **kwargs: Any) -> bool:
+            device = card_arguments.get("device")
+            fault = card_arguments.get("fault")
+            if not device or not fault:
+                return False
+            name = fault.get("name") if isinstance(fault, dict) else fault
+            return name in _active_faults(device)
+
+        async def _fault_autocomplete(query: str, card_arguments: Mapping[str, Any], **kwargs: Any) -> list[dict]:
+            device = card_arguments.get("device")
+            model = device.get_setting("model") if device else ""
+            names = known_fault_names(model or "")
+            if model not in HYBRID_MODELS:
+                # No battery port on string/micro inverters — never suggest
+                # battery-specific faults for them.
+                names = [n for n in names if "battery" not in n.lower()]
+            query_lower = (query or "").lower()
+            return [{"name": n} for n in names if query_lower in n.lower()]
+
         try:
             self.homey.flow.get_condition_card("is_solar_producing") \
                 .register_run_listener(_is_solar_producing)
@@ -129,6 +161,11 @@ class MyApp(App):
                 .register_run_listener(_is_grid_feeding)
             self.homey.flow.get_condition_card("battery_soc_above") \
                 .register_run_listener(_battery_soc_above)
+            self.homey.flow.get_condition_card("has_active_fault") \
+                .register_run_listener(_has_active_fault)
+            fault_is_card = self.homey.flow.get_condition_card("fault_is")
+            fault_is_card.register_run_listener(_fault_is)
+            fault_is_card.register_argument_autocomplete_listener("fault", _fault_autocomplete)
         except Exception as e:
             self.log(f"Flow condition registration failed: {e}")
 

@@ -90,6 +90,16 @@ _MODEL_ALARM_OVERRIDES: dict[str, dict[int, str]] = {}
 _MODEL_FAULT_OVERRIDES: dict[str, dict[int, str]] = {}
 
 
+def known_fault_names(model: str = "") -> list[str]:
+    """All alarm/fault names decode_alert() can produce for a given model
+    (alphabetically, deduplicated). Used to populate the flow condition
+    autocomplete — battery-specific names are filtered out there for
+    non-hybrid models, since string/micro inverters have no battery port."""
+    alarm_names = {**_ALARM_BIT_NAMES, **_MODEL_ALARM_OVERRIDES.get(model, {})}
+    fault_names = {**_FAULT_BIT_NAMES, **_MODEL_FAULT_OVERRIDES.get(model, {})}
+    return sorted(set(alarm_names.values()) | set(fault_names.values()))
+
+
 def decode_alert(raw: list, model: str = "") -> str:
     """Decode the 6-register "Alert" reading into a human-readable summary.
     raw is a list of hex strings (parser.py rule 6 output), one per register,

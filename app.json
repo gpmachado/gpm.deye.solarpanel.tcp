@@ -218,6 +218,40 @@
         ]
       },
       {
+        "id": "fault_detected",
+        "title": {
+          "en": "Fault/alarm detected",
+          "nl": "Storing/alarm gedetecteerd",
+          "de": "Störung/Alarm erkannt",
+          "fr": "Défaut/alarme détecté",
+          "it": "Guasto/allarme rilevato",
+          "sv": "Fel/larm upptäckt",
+          "no": "Feil/alarm oppdaget",
+          "es": "Fallo/alarma detectado",
+          "da": "Fejl/alarm registreret",
+          "pl": "Wykryto usterkę/alarm"
+        },
+        "hint": {
+          "en": "Triggered when the inverter transitions from OK into a fault/alarm state (fires once per new fault, not on every poll while it persists)."
+        },
+        "args": [
+          {
+            "type": "device",
+            "name": "device",
+            "filter": "driver_id=deye&capabilities=fault_description"
+          }
+        ],
+        "tokens": [
+          {
+            "name": "description",
+            "type": "string",
+            "title": {
+              "en": "Fault Description"
+            }
+          }
+        ]
+      },
+      {
         "id": "grid_export_started",
         "title": {
           "en": "Grid export started",
@@ -504,6 +538,66 @@
             "name": "value",
             "min": 0,
             "max": 100
+          }
+        ]
+      },
+      {
+        "id": "fault_is",
+        "title": {
+          "en": "Fault !{{is|isn't}} ...",
+          "nl": "Storing !{{is|is niet}} ...",
+          "de": "Störung !{{ist|ist nicht}} ...",
+          "fr": "Défaut !{{est|n'est pas}} ...",
+          "it": "Guasto !{{è|non è}} ...",
+          "sv": "Fel !{{är|är inte}} ...",
+          "no": "Feil !{{er|er ikke}} ...",
+          "es": "Fallo !{{es|no es}} ...",
+          "da": "Fejl !{{er|er ikke}} ...",
+          "pl": "Usterka !{{jest|nie jest}} ..."
+        },
+        "titleFormatted": {
+          "en": "Fault !{{is|isn't}} [[fault]]"
+        },
+        "hint": {
+          "en": "Checks whether a specific fault/alarm is currently active. Multiple faults can be active at once — this matches if the chosen one is among them. The suggestion list is filtered to what's possible on the selected device's model (e.g. battery faults are hidden for string/micro inverters)."
+        },
+        "args": [
+          {
+            "type": "device",
+            "name": "device",
+            "filter": "driver_id=deye&capabilities=fault_description"
+          },
+          {
+            "type": "autocomplete",
+            "name": "fault",
+            "title": {
+              "en": "Fault"
+            },
+            "placeholder": {
+              "en": "Type to search..."
+            }
+          }
+        ]
+      },
+      {
+        "id": "has_active_fault",
+        "title": {
+          "en": "Fault/alarm !{{is|isn't}} active",
+          "nl": "Storing/alarm !{{is|is niet}} actief",
+          "de": "Störung/Alarm !{{ist|ist nicht}} aktiv",
+          "fr": "Défaut/alarme !{{est|n'est pas}} actif",
+          "it": "Guasto/allarme !{{è|non è}} attivo",
+          "sv": "Fel/larm !{{är|är inte}} aktivt",
+          "no": "Feil/alarm !{{er|er ikke}} aktiv",
+          "es": "Fallo/alarma !{{está|no está}} activo",
+          "da": "Fejl/alarm !{{er|er ikke}} aktiv",
+          "pl": "Usterka/alarm !{{jest|nie jest}} aktywna"
+        },
+        "args": [
+          {
+            "type": "device",
+            "name": "device",
+            "filter": "driver_id=deye&capabilities=fault_description"
           }
         ]
       },

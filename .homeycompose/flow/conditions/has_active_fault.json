@@ -1,0 +1,22 @@
+{
+  "id": "has_active_fault",
+  "title": {
+    "en": "Fault/alarm !{{is|isn't}} active",
+    "nl": "Storing/alarm !{{is|is niet}} actief",
+    "de": "Störung/Alarm !{{ist|ist nicht}} aktiv",
+    "fr": "Défaut/alarme !{{est|n'est pas}} actif",
+    "it": "Guasto/allarme !{{è|non è}} attivo",
+    "sv": "Fel/larm !{{är|är inte}} aktivt",
+    "no": "Feil/alarm !{{er|er ikke}} aktiv",
+    "es": "Fallo/alarma !{{está|no está}} activo",
+    "da": "Fejl/alarm !{{er|er ikke}} aktiv",
+    "pl": "Usterka/alarm !{{jest|nie jest}} aktywna"
+  },
+  "args": [
+    {
+      "type": "device",
+      "name": "device",
+      "filter": "driver_id=deye&capabilities=fault_description"
+    }
+  ]
+}

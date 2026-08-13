@@ -1,0 +1,32 @@
+{
+  "id": "fault_detected",
+  "title": {
+    "en": "Fault/alarm detected",
+    "nl": "Storing/alarm gedetecteerd",
+    "de": "Störung/Alarm erkannt",
+    "fr": "Défaut/alarme détecté",
+    "it": "Guasto/allarme rilevato",
+    "sv": "Fel/larm upptäckt",
+    "no": "Feil/alarm oppdaget",
+    "es": "Fallo/alarma detectado",
+    "da": "Fejl/alarm registreret",
+    "pl": "Wykryto usterkę/alarm"
+  },
+  "hint": {
+    "en": "Triggered when the inverter transitions from OK into a fault/alarm state (fires once per new fault, not on every poll while it persists)."
+  },
+  "args": [
+    {
+      "type": "device",
+      "name": "device",
+      "filter": "driver_id=deye&capabilities=fault_description"
+    }
+  ],
+  "tokens": [
+    {
+      "name": "description",
+      "type": "string",
+      "title": { "en": "Fault Description" }
+    }
+  ]
+}
