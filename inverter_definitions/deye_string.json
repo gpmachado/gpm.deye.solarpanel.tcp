@@ -352,6 +352,27 @@
           "icon": "mdi:state-machine"
         }
       ]
+    },
+    {
+      "group": "Alert",
+      "items": [
+        {
+          "name": "Alert",
+          "class": "",
+          "state_class": "",
+          "uom": "",
+          "scale": 1,
+          "rule": 6,
+          "registers": [
+            101,
+            102,
+            103,
+            104,
+            105,
+            106
+          ]
+        }
+      ]
     }
   ]
 }

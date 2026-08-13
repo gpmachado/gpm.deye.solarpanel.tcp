@@ -722,9 +722,12 @@ class DeyeDriver(Driver):
                         inverter_caps.append(cap_id)
                         inverter_opts[cap_id] = {"title": capability_title(title)}
 
-            # Decoded fault/alarm detail — only meaningful where the "Alert"
-            # register block exists (deye_hybrid / deye_sg04lp3).
-            if is_hybrid and "fault_description" not in inverter_caps:
+            # Decoded fault/alarm detail — register block 101-106 ("Warning
+            # message word 1-2" + "Fault information word 1-4") is confirmed
+            # present on deye_string too by Deye's official Modbus protocol
+            # V118 doc (covers Single Phase, String & Microinverters), same
+            # layout as the hybrid "Alert" block. See lib/fault_codes.py.
+            if (is_hybrid or model_id == "deye_string") and "fault_description" not in inverter_caps:
                 inverter_caps.append("fault_description")
                 # Empty entry so _apply_cap_icons() (below) picks it up and
                 # injects the icon — the capability's own base title
