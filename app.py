@@ -141,8 +141,8 @@ class MyApp(App):
             name = fault.get("name") if isinstance(fault, dict) else fault
             return name in _active_faults(device)
 
-        async def _fault_autocomplete(query: str, card_arguments: Mapping[str, Any], **kwargs: Any) -> list[dict]:
-            device = card_arguments.get("device")
+        async def _fault_autocomplete(query: str, **kwargs: Any) -> list[dict]:
+            device = kwargs.get("device")
             model = device.get_setting("model") if device else ""
             names = known_fault_names(model or "")
             if model not in HYBRID_MODELS:
