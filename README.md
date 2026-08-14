@@ -17,7 +17,7 @@ The existing Deye app for Homey ([com.heszi.deye](https://github.com/heszegi/com
 |---|---|---|---|
 | `deye_string` | SUN-xK string (2 or 4 MPPT, single-phase) | String | ✅ Tested |
 | `deye_micro` | SUN-M / SUN2000G3 microinverter (4 MPPT) | Microinverter | ⚠️ Untested |
-| `deye_hybrid` | SUN-xK-SG0xLP1 / SG0xHP (single-phase hybrid) | Hybrid + Battery | ⚠️ Untested |
+| `deye_hybrid` | SUN-xK-SG0xLP1 / SG0xHP (single-phase hybrid) | Hybrid + Battery | ✅ Tested (Sun-5k-SG01HP3-EU-AM2) |
 | `deye_sg04lp3` | SUN-8/10/12K-SG04LP3-EU (3-phase hybrid) | 3-phase Hybrid | ⚠️ Untested |
 
 Register definitions are adapted from [ha-solarman](https://github.com/StephanJoubert/home_assistant_solarman) (MIT).
@@ -105,10 +105,24 @@ Temperature registers use `offset: 1000, scale: 0.1` — raw 1261 → 26.1 °C. 
 - TCP port 8899 reachable from Homey
 - UDP port 48899 reachable for auto-discovery (same network segment)
 
+## Fault/Alarm Detail
+
+The `deye_hybrid`, `deye_sg04lp3` and `deye_string` models expose a Fault/Alarm Detail capability that decodes the inverter's raw Alert register (bit-level alarm/fault flags) into readable text instead of just an on/off alarm flag. Added automatically to existing paired devices, no re-pairing needed.
+
+Three flow cards are built on top of it:
+
+- **Fault/alarm detected** (trigger) — fires once when a new fault/alarm becomes active
+- **Fault/alarm is active** (condition)
+- **Fault is ...** (condition) — autocomplete list filtered to what's possible on the selected device's model (e.g. battery faults are hidden for string/micro inverters)
+
+See [docs/sources.md](docs/sources.md) for where the fault/alarm bit meanings come from.
+
 ## Tested hardware
 
 - Inverter: Deye SUN-9K-G03 (single-phase string, 2 MPPT)
+- Inverter: Deye Sun-5k-SG01HP3-EU-AM2 (single-phase hybrid)
 - Logger: Solarman Wi-Fi stick LSW3 (firmware LSW3_15_FFFF_1.0.9E)
+- Logger: Solarman Wi-Fi stick LSW5 (firmware LSW5_32_5406_SS_04_00.00.00.11)
 - Homey Pro (Early 2023)
 
 ## Credits
