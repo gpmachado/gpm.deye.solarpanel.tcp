@@ -41,8 +41,8 @@
     "email": "g.machado@me.com"
   },
   "source": "https://github.com/gpmachado/gpm.deye.solarpanel.tcp",
-  "homepage": "https://github.com/gpmachado/gpm.deye.solarpanel.tcp",
-  "support": "https://github.com/gpmachado/gpm.deye.solarpanel.tcp/issues",
+  "homepage": "https://community.homey.app/t/app-pro-deye-inverter-local",
+  "support": "https://community.homey.app/t/app-pro-deye-inverter-local",
   "pythonPackages": [
     "astral"
   ],
