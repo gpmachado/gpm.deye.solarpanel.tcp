@@ -42,7 +42,10 @@
   },
   "source": "https://github.com/gpmachado/gpm.deye.solarpanel.tcp",
   "homepage": "https://github.com/gpmachado/gpm.deye.solarpanel.tcp",
-  "support": "https://community.homey.app/t/app-pro-deye-inverter-local/158384",
+  "support": "https://github.com/gpmachado/gpm.deye.solarpanel.tcp/issues",
+  "bugs": {
+    "url": "https://github.com/gpmachado/gpm.deye.solarpanel.tcp/issues"
+  },
   "homeyCommunityTopicId": 158384,
   "pythonPackages": [
     "astral"

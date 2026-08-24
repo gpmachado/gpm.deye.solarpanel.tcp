@@ -618,22 +618,31 @@ class DeyeDevice(Device):
     async def _fire_flow_triggers(self, values: dict) -> None:
         """Fire flow triggers based on state transitions detected in poll values."""
         power = float(self._last_power_w or 0)
+        await self._fire_fault_trigger()
+        await self._fire_production_triggers(values, power)
+        await self._fire_grid_connection_triggers(values)
+        await self._fire_battery_triggers()
+        await self._fire_grid_meter_triggers()
+        await self._fire_data_updated_trigger(values, power)
+
+    async def _fire_fault_trigger(self) -> None:
+        """Fault/alarm detected — edge-triggered, only on the OK → fault transition
+        (fault_description was already updated earlier in _on_values for this poll)."""
+        if not self.has_capability("fault_description"):
+            return
+        description = self.get_capability_value("fault_description") or "OK"
+        has_fault = description != "OK"
+        if self._had_fault is None:
+            self._had_fault = has_fault
+        elif has_fault and not self._had_fault:
+            self._had_fault = True
+            await self._trigger("fault_detected", {"description": description})
+        elif not has_fault and self._had_fault:
+            self._had_fault = False
+
+    async def _fire_production_triggers(self, values: dict, power: float) -> None:
+        """Solar production started / stopped, plus the end-of-day daily summary."""
         is_producing = power > 5.0
-
-        # Fault/alarm detected — edge-triggered, only on the OK → fault transition
-        # (fault_description was already updated earlier in _on_values for this poll).
-        if self.has_capability("fault_description"):
-            description = self.get_capability_value("fault_description") or "OK"
-            has_fault = description != "OK"
-            if self._had_fault is None:
-                self._had_fault = has_fault
-            elif has_fault and not self._had_fault:
-                self._had_fault = True
-                await self._trigger("fault_detected", {"description": description})
-            elif not has_fault and self._had_fault:
-                self._had_fault = False
-
-        # Solar production started / stopped
         if self._was_producing is None:
             # First poll after startup — record state silently, no transition to fire.
             self._was_producing = is_producing
@@ -667,41 +676,50 @@ class DeyeDevice(Device):
             self.log(f"production stopped — daily {daily_tokens['daily_production']:.2f}kWh")
             await self._trigger("daily_data_updated", daily_tokens)
 
-        # Grid lost / restored (hybrid only — needs Grid-connected Status sensor)
+    async def _fire_grid_connection_triggers(self, values: dict) -> None:
+        """Grid lost / restored (hybrid only — needs Grid-connected Status sensor)."""
         grid_status = values.get("Grid-connected Status") or values.get("Grid Connected Status")
-        if grid_status is not None:
-            grid_available = str(grid_status).lower() == "on-grid"
-            if not grid_available and self._grid_was_available:
-                self._grid_was_available = False
-                await self._trigger("grid_lost", {})
-            elif grid_available and not self._grid_was_available:
-                self._grid_was_available = True
-                await self._trigger("grid_restored", {})
+        if grid_status is None:
+            return
+        grid_available = str(grid_status).lower() == "on-grid"
+        if not grid_available and self._grid_was_available:
+            self._grid_was_available = False
+            await self._trigger("grid_lost", {})
+        elif grid_available and not self._grid_was_available:
+            self._grid_was_available = True
+            await self._trigger("grid_restored", {})
 
-        # Battery charging/discharging started (battery device only)
-        if self._is_battery:
-            state = self.get_capability_value("battery_charging_state")
-            if state and state != self._prev_charging_state:
-                soc = float(self.get_capability_value("measure_battery") or 0)
-                if state == "charge":
-                    await self._trigger("battery_charging_started", {"soc": soc})
-                elif state == "discharge":
-                    await self._trigger("battery_discharging_started", {"soc": soc})
-                self._prev_charging_state = state
+    async def _fire_battery_triggers(self) -> None:
+        """Battery charging/discharging started (battery device only)."""
+        if not self._is_battery:
+            return
+        state = self.get_capability_value("battery_charging_state")
+        if not state or state == self._prev_charging_state:
+            return
+        soc = float(self.get_capability_value("measure_battery") or 0)
+        if state == "charge":
+            await self._trigger("battery_charging_started", {"soc": soc})
+        elif state == "discharge":
+            await self._trigger("battery_discharging_started", {"soc": soc})
+        self._prev_charging_state = state
 
-        # Grid export/import started (grid meter device only)
-        if self._is_grid_meter:
-            grid_pwr = self.get_capability_value("measure_power")
-            if grid_pwr is not None:
-                is_exporting = float(grid_pwr) < -10  # 10 W deadband
-                if self._prev_grid_exporting is not None:
-                    if is_exporting and not self._prev_grid_exporting:
-                        await self._trigger("grid_export_started", {"power": abs(float(grid_pwr))})
-                    elif not is_exporting and self._prev_grid_exporting:
-                        await self._trigger("grid_import_started", {"power": float(grid_pwr)})
-                self._prev_grid_exporting = is_exporting
+    async def _fire_grid_meter_triggers(self) -> None:
+        """Grid export/import started (grid meter device only)."""
+        if not self._is_grid_meter:
+            return
+        grid_pwr = self.get_capability_value("measure_power")
+        if grid_pwr is None:
+            return
+        is_exporting = float(grid_pwr) < -10  # 10 W deadband
+        if self._prev_grid_exporting is not None:
+            if is_exporting and not self._prev_grid_exporting:
+                await self._trigger("grid_export_started", {"power": abs(float(grid_pwr))})
+            elif not is_exporting and self._prev_grid_exporting:
+                await self._trigger("grid_import_started", {"power": float(grid_pwr)})
+        self._prev_grid_exporting = is_exporting
 
-        # Data updated — fires every successful poll with current values as tokens
+    async def _fire_data_updated_trigger(self, values: dict, power: float) -> None:
+        """Fires every successful poll with current values as tokens."""
         tokens = {"power": power, "daily_production": 0.0, "battery_soc": 0.0, "grid_power": 0.0}
         for sname, cap in self._sensor_cap_map.items():
             v = values.get(sname)
