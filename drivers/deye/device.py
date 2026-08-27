@@ -19,8 +19,9 @@ from astral.sun import sun
 from homey.device import Device
 from app.lib.capability_map import (
     get_sensor_capability_map, BATTERY_CAPS, GRID_METER_CAPS, GRID_CAP_REMAP,
-    PV_DETAIL_CAPS, AC_DETAIL_CAPS, DETAIL_CAP_TITLES, capability_title,
+    PV_DETAIL_CAPS, AC_DETAIL_CAPS, DETAIL_CAP_TITLES, ADVANCED_CAP_TITLES, capability_title,
 )
+from app.drivers.deye.driver import _advanced_caps_for_model
 from app.lib import shared_poller as _poller_mod
 from app.lib.fault_codes import decode_alert as _decode_alert
 from app.app import DEBUG_LOG as _DEBUG_LOG
@@ -226,6 +227,38 @@ class DeyeDevice(Device):
                     self.log(f"Removed detail capability {cap} ({setting_id})")
             except Exception as e:
                 _LOGGER.warning(f"Sync detail capability {cap} ({setting_id}) failed: {e}")
+
+    async def _add_advanced_caps(self) -> None:
+        """Add the inverter-device subset of "Advanced" capabilities that
+        weren't selected at pairing — called from the repair flow so an
+        existing device doesn't have to be removed and re-paired to get
+        them. One-directional (add only, never removes) — unlike
+        _sync_detail_caps, this isn't a persistent setting to toggle back off.
+
+        Grid-meter-bound caps (measure_power.grid, meter_power.grid_import/
+        export) are deliberately excluded — those belong to the separate
+        Grid Meter device with remapped IDs (GRID_CAP_REMAP), which repair
+        doesn't touch (it only ever acts on the device it was opened from).
+        """
+        if self._is_battery or self._is_grid_meter:
+            return
+        model = self.get_setting("model") or ""
+        advanced = set(_advanced_caps_for_model(model)) - GRID_METER_CAPS - BATTERY_CAPS
+        relevant = advanced & set(self._sensor_cap_map.values())
+        for cap in relevant:
+            if self.has_capability(cap):
+                continue
+            try:
+                await self.add_capability(cap)
+                title_key = ADVANCED_CAP_TITLES.get(cap)
+                if title_key:
+                    try:
+                        await self.set_capability_options(cap, {"title": capability_title(title_key)})
+                    except Exception as e:
+                        _LOGGER.warning(f"Set title for {cap} failed: {e}")
+                self.log(f"Added advanced capability {cap} (repair)")
+            except Exception as e:
+                _LOGGER.warning(f"Add advanced capability {cap} failed: {e}")
 
     async def on_deleted(self) -> None:
         self._detach_poller()

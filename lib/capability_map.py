@@ -548,6 +548,27 @@ DETAIL_CAP_TITLES: dict[str, str] = {
     "measure_voltage.l1": "L1 Voltage", "measure_current.l1": "L1 Current",
 }
 
+# Same purpose as DETAIL_CAP_TITLES, for the inverter-device subset of the
+# "Advanced" capability group (see driver.py _BASE_ADVANCED_CAPS) — used when
+# repair adds one of these to an already-paired device (addCapability()
+# doesn't inherit the pairing-time title either). Grid-meter-bound advanced
+# caps (measure_power.grid, meter_power.grid_import/export) are deliberately
+# excluded — those live on a different device with remapped IDs
+# (GRID_CAP_REMAP) and aren't handled by repair yet.
+ADVANCED_CAP_TITLES: dict[str, str] = {
+    "measure_power.load": "Load Power",
+    "measure_power.micro": "Micro-inverter Power",
+    "measure_power.apparent": "Output Apparent Power",
+    "measure_power.reactive": "Output Reactive Power",
+    "measure_temperature.radiator": "Radiator Temperature",
+    "measure_voltage.l2": "L2 Voltage", "measure_current.l2": "L2 Current",
+    "measure_voltage.l3": "L3 Voltage", "measure_current.l3": "L3 Current",
+    "meter_power.today_import": "Today Energy Import",
+    "meter_power.today_export": "Today Energy Export",
+    "meter_power.today_load": "Today Load Consumption",
+    "meter_power.load_total": "Total Load Consumption",
+}
+
 
 def get_sensor_capability_map(sensors: list) -> dict[str, str]:
     """

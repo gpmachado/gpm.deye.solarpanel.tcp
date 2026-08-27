@@ -68,6 +68,16 @@
     <div class="hint" data-i18n="repair.ip_hint">The local IP of your Solarman Wi-Fi logger (port 8899).</div>
   </div>
 
+  <div class="section">
+    <label style="display: flex; align-items: center; gap: 8px; font-weight: normal;">
+      <input type="checkbox" id="advanced" style="width: auto;" />
+      <span data-i18n="repair.advanced_label">Add advanced sensors</span>
+    </label>
+    <div class="hint" data-i18n="repair.advanced_hint">
+      Adds optional sensors (radiator temperature, L2/L3, load power, energy totals) you may have skipped at pairing. Only adds — never removes anything. Grid import/export energy still requires re-pairing.
+    </div>
+  </div>
+
   <button class="primary" id="save-btn" onclick="doSave()">
     <span data-i18n="repair.save_button">Save</span>
   </button>
@@ -177,12 +187,13 @@
       var errEl    = document.getElementById('err');
       var model    = document.getElementById('model').value;
       var host     = document.getElementById('host').value.trim() || _current.host;
+      var advanced = document.getElementById('advanced').checked;
 
       saveBtn.disabled     = true;
       errEl.textContent    = '';
       statusEl.textContent = Homey.__('repair.saving') || 'Saving…';
 
-      Homey.emit('save_repair', { model: model, host: host }, function(err) {
+      Homey.emit('save_repair', { model: model, host: host, advanced: advanced }, function(err) {
         if (err) {
           saveBtn.disabled     = false;
           statusEl.textContent = '';

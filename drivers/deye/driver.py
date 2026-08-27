@@ -850,9 +850,11 @@ class DeyeDriver(Driver):
     async def on_repair(self, session, device) -> None:
         """
         Repair flow — lets the user re-detect the model or fix the logger IP
-        without removing and re-adding the device.
-        Only updates device settings (model, host). Does NOT add or remove
-        capabilities — changing between string and hybrid still requires re-pairing.
+        without removing and re-adding the device. Also offers an "Advanced"
+        checkbox to add the sensors normally only available by checking
+        Advanced at pairing time (see DeyeDevice._add_advanced_caps) —
+        add-only, never removes. Changing between string and hybrid, or
+        adding the Grid Meter's advanced sensors, still requires re-pairing.
         """
         self.log(f"onRepair started for device {device.get_id()}")
 
@@ -939,10 +941,16 @@ class DeyeDriver(Driver):
                 if len(parts) != 4 or not all(p.isdigit() and 0 <= int(p) <= 255 for p in parts):
                     raise Exception(f"Invalid IP address: {host}")
                 new_settings["host"] = host
-            if not new_settings:
-                return True
-            self.log(f"Repair: applying settings {new_settings}")
-            await device.set_settings(new_settings)
+            if new_settings:
+                self.log(f"Repair: applying settings {new_settings}")
+                await device.set_settings(new_settings)
+
+            if bool(data.get("advanced")):
+                try:
+                    await device._add_advanced_caps()
+                except Exception as e:
+                    self.log(f"Repair: adding advanced capabilities failed: {e}")
+
             return True
 
         session.set_handler("get_current",   on_get_current)
