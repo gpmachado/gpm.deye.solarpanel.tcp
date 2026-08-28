@@ -320,6 +320,14 @@
     if (isString) {
       document.getElementById('adv-caps').checked = false;
     } else {
+      // Default on for hybrid/sg04lp3/micro — temperature, load power, and
+      // grid energy counters are useful on nearly every install of these
+      // models, so opt-out reads better than opt-in here. Only the L2/L3
+      // phase sensors are dead weight on a single-phase hybrid, and that's
+      // an acceptable trade-off against the alternative (silently missing
+      // sensors nobody remembered to check, like the forum report that
+      // prompted this).
+      document.getElementById('adv-caps').checked = true;
       document.getElementById('string-grid-import-export').checked = false;
       document.getElementById('string-radiator-temperature').checked = false;
     }
