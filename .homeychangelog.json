@@ -1,6 +1,9 @@
 {
+  "1.4.9": {
+    "en": "The \"Advanced sensors\" checkbox at pairing is now checked by default for hybrid/SG04LP3/micro models — temperature, load power, and grid energy counters are useful on nearly every install of these, so it's opt-out now instead of opt-in (still opt-in for string models)."
+  },
   "1.4.8": {
-    "en": "The \"Advanced sensors\" checkbox at pairing is now checked by default for hybrid/SG04LP3/micro models — temperature, load power, and grid energy counters are useful on nearly every install of these, so it's opt-out now instead of opt-in (still opt-in for string models). EXPERIMENTAL, not yet validated on a hybrid + Grid Meter setup: added an \"Add advanced sensors\" checkbox to the Repair flow too, so an already-paired device can get these without removing and re-pairing — it only adds, never removes. Grid Meter's own advanced sensors (grid import/export energy) still require re-pairing. If it doesn't pick up the new sensors on your setup, remove and re-pair instead (Advanced is now checked by default, per the above)."
+    "en": "EXPERIMENTAL, not yet validated on a hybrid + Grid Meter setup: added an \"Add advanced sensors\" checkbox to the Repair flow, so an already-paired device can get the optional sensors (radiator/AC temperature, L2/L3, load power, energy totals) without removing and re-pairing — it only adds, never removes. Grid Meter's own advanced sensors (grid import/export energy) still require re-pairing. If it doesn't pick up the new sensors on your setup, remove and re-pair with Advanced checked instead."
   },
   "1.4.7": {
     "en": "Internal code cleanup only — no user-facing changes."
