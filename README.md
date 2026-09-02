@@ -17,6 +17,7 @@ The existing Deye app for Homey ([com.heszi.deye](https://github.com/heszegi/com
 |---|---|---|---|
 | `deye_string` | SUN-xK string (2 or 4 MPPT, single-phase) | String | ✅ Tested |
 | `deye_micro` | SUN-M / SUN2000G3 microinverter (4 MPPT) | Microinverter | ⚠️ Untested |
+| `deye_micro_2mppt` | SUN600G3 / SUN800G3 / SUN1000G3 microinverter (2 MPPT) | Microinverter | ⚠️ Untested |
 | `deye_hybrid` | SUN-xK-SG0xLP1 / SG0xHP (single-phase hybrid) | Hybrid + Battery | ✅ Tested (Sun-5k-SG01HP3-EU-AM2) |
 | `deye_sg04lp3` | SUN-8/10/12K-SG04LP3-EU (3-phase hybrid) | 3-phase Hybrid | ⚠️ Untested |
 

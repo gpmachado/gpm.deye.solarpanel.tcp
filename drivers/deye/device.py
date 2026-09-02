@@ -21,7 +21,7 @@ from app.lib.capability_map import (
     get_sensor_capability_map, BATTERY_CAPS, GRID_METER_CAPS, GRID_CAP_REMAP,
     PV_DETAIL_CAPS, AC_DETAIL_CAPS, DETAIL_CAP_TITLES, ADVANCED_CAP_TITLES, capability_title,
 )
-from app.drivers.deye.driver import _advanced_caps_for_model
+from app.drivers.deye.driver import _advanced_caps_for_model, _DERIVED_PV_POWER_MODELS
 from app.lib import shared_poller as _poller_mod
 from app.lib.fault_codes import decode_alert as _decode_alert
 from app.app import DEBUG_LOG as _DEBUG_LOG
@@ -345,7 +345,7 @@ class DeyeDevice(Device):
         if not model:
             return
 
-        if model in ("deye_hybrid", "deye_sg04lp3", "deye_string", "deye_micro"):
+        if model in ("deye_hybrid", "deye_sg04lp3") or model in _DERIVED_PV_POWER_MODELS:
             # measure_power.solar is the Energy Dashboard production source.
             # Without it, the pairing-time measurePowerProducedCapability falls back to measure_power (AC output).
             required = ("measure_power.pv1", "measure_power.pv2", "measure_power.solar")
@@ -585,7 +585,7 @@ class DeyeDevice(Device):
             # there is no "Input Power" register to use as a solar proxy.
             try:
                 model = self.get_setting("model") or ""
-                if model in ("deye_string", "deye_micro"):
+                if model in _DERIVED_PV_POWER_MODELS:
                     derived_total = 0.0
                     for idx in (1, 2, 3, 4):
                         pwr_cap = f"measure_power.pv{idx}"
@@ -607,9 +607,10 @@ class DeyeDevice(Device):
                                 await self._set(pwr_cap, pv_power)
                                 derived_total += pv_power
 
-                    # deye_micro: no "Input Power" register — use derived PV total as
-                    # the solar proxy so the Energy Dashboard shows correct production.
-                    if model == "deye_micro" and self.has_capability("measure_power.solar"):
+                    # deye_micro / deye_micro_2mppt: no "Input Power" register — use
+                    # derived PV total as the solar proxy so the Energy Dashboard
+                    # shows correct production.
+                    if model in ("deye_micro", "deye_micro_2mppt") and self.has_capability("measure_power.solar"):
                         solar_w = round(derived_total, 1)
                         await self._set("measure_power.solar", solar_w)
                         if self.has_capability("measure_power"):

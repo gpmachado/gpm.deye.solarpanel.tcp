@@ -16,12 +16,27 @@ from app.lib.capability_map import build_capabilities, capability_title, BATTERY
 _LOGGER = logging.getLogger(__name__)
 
 # ── Available Deye models (model_id → display name) ──────────────────────────
+# Order matters for auto-detection tie-breaks: models probed earlier win ties
+# in _detect_model() (it only replaces the leader on a strictly higher score).
+# Microinverant variants are listed before deye_string on purpose — a real
+# microinverter (2 or 4 MPPT) shares deye_string's core PV/production/grid
+# registers but has no CT-based energy meter, so it ties deye_string's score
+# once that block genuinely reads zero. Putting micro first means the tie goes
+# to the narrower, correct claim; a real string inverter with a real energy
+# meter still wins outright since that gives it a strictly higher score.
 DEYE_MODELS: dict[str, str] = {
-    "deye_string":  "Deye String Inverter (2/4 MPPT)",
-    "deye_micro":   "Deye Microinverter (4 MPPT) — SUN-M/SUN2000G3",
-    "deye_hybrid":  "Deye Hybrid (Battery + 2 MPPT)",
-    "deye_sg04lp3": "Deye SG04LP3 Hybrid 3-phase — SUN-8/10/12K",
+    "deye_micro_2mppt": "Deye Microinverter (2 MPPT) — SUN600G3/SUN800G3/SUN1000G3",
+    "deye_micro":       "Deye Microinverter (4 MPPT) — SUN-M/SUN2000G3",
+    "deye_string":      "Deye String Inverter (2/4 MPPT)",
+    "deye_hybrid":      "Deye Hybrid (Battery + 2 MPPT)",
+    "deye_sg04lp3":     "Deye SG04LP3 Hybrid 3-phase — SUN-8/10/12K",
 }
+
+# Models that share deye_string/deye_micro's register layout but derive PV
+# power from V×I instead of reading a direct power register.
+_DERIVED_PV_POWER_MODELS: frozenset[str] = frozenset({
+    "deye_string", "deye_micro", "deye_micro_2mppt",
+})
 
 # Only hybrid models get a separate Grid Meter device.
 # String/micro inverters show grid caps directly on the main inverter tile.
@@ -208,9 +223,14 @@ def _score_model_values(model_id: str, values: dict) -> int:
     # Energy meter registers (198-210) — present in deye_string but NOT deye_micro.
     # Rewards models that read the extra energy-meter block, giving string a clear
     # edge over micro even when both inverters share the core register layout.
+    # Lower bounds exclude exact 0: a microinverter probed with the string profile
+    # often reads back zero-filled memory for registers it doesn't implement, which
+    # would otherwise look identical to "a real energy meter reporting no load yet"
+    # and wrongly tip detection toward deye_string (seen on real Deye 2-MPPT G3
+    # microinverters, which share deye_micro's core PV/production/grid registers).
     today_load = values.get("Today Load Consumption")
     total_load = values.get("Total Load Consumption")
-    if between(today_load, 0, 250):       score += 2
+    if between(today_load, 0.1, 250):     score += 2
     if between(total_load, 0.1, 1e7):     score += 2
 
     # Battery registers — only meaningful on hybrid models
@@ -709,11 +729,11 @@ class DeyeDriver(Driver):
             # device.py's _sync_detail_caps() removes them without re-pairing.
 
             # ── Inject derived PV1/PV2 power for string/micro ────────────────
-            # deye_string and deye_micro have no direct PV-power registers.
+            # deye_string and both micro variants have no direct PV-power registers.
             # Power is computed at runtime as V×I (see device.py _on_values).
             # We add the capability explicitly here so the Energy Dashboard picks
             # it up and so the pv_caps check below includes them.
-            if model_id in ("deye_string", "deye_micro"):
+            if model_id in _DERIVED_PV_POWER_MODELS:
                 for cap_id, title in (
                     ("measure_power.pv1", "PV1 Power"),
                     ("measure_power.pv2", "PV2 Power"),
