@@ -83,17 +83,19 @@ def _parse_v5_response(frame: bytes, expected_seq: int) -> bytes:
 
     payload_len = struct.unpack("<H", frame[1:3])[0]
     if frame_len != 13 + payload_len:
-        _LOGGER.debug("V5 frame_len / payload_len mismatch — proceeding anyway")
+        raise ValueError(f"V5 length mismatch: frame_len={frame_len}, expected={13 + payload_len}")
 
     if frame[3:5] != _V5_CTRL_RESP:
         _LOGGER.debug("V5 unexpected ctrl code: %s", frame[3:5].hex())
 
-    if frame[5] != (expected_seq & 0xFF):
-        _LOGGER.debug("V5 sequence mismatch: got %d expected %d", frame[5], expected_seq)
+    expected_seq_byte = expected_seq & 0xFF
+    if frame[5] != expected_seq_byte:
+        raise ValueError(f"V5 sequence mismatch: got {frame[5]} expected {expected_seq_byte}")
 
+    # --- ZMIANA: Twarde sprawdzanie sumy kontrolnej V5 ---
     expected_cs = _v5_checksum(frame)
     if frame[-2] != expected_cs:
-        _LOGGER.debug("V5 checksum mismatch: got %02x expected %02x", frame[-2], expected_cs)
+        raise ValueError(f"V5 checksum mismatch: got {frame[-2]:02x} expected {expected_cs:02x}")
 
     if frame[11] != 0x02:
         _LOGGER.debug("V5 unexpected frametype: %02x", frame[11])
@@ -122,8 +124,16 @@ def _parse_modbus_registers(data: bytes, count: int) -> list[int]:
     """
     if len(data) < 5:
         raise ValueError(f"Modbus response too short ({len(data)} bytes)")
+    
+    received_crc = struct.unpack("<H", data[-2:])[0]
+    calculated_crc = _crc16_modbus(data[:-2])
+    if received_crc != calculated_crc:
+        raise ValueError(f"Modbus CRC mismatch: got {received_crc:#06x} expected {calculated_crc:#06x}")
+    # -----------------------------------
+
     if data[1] & 0x80:
         raise ValueError(f"Modbus exception, code {data[2]:#04x}")
+    
     byte_count = data[2]
     n = min(count, byte_count // 2)
     if n < count:
