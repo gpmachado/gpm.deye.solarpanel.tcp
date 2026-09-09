@@ -1,4 +1,7 @@
 {
+  "1.4.11": {
+    "en": "Fixed rare huge/incorrect power spikes in Homey Insights (e.g. sudden megawatt readings), most often seen on LSW-5 loggers with unstable Wi-Fi. A stale or corrupted response packet was previously logged and used anyway; it's now rejected (via strict sequence, length, and checksum validation, plus a new Modbus CRC check) so the existing retry logic fetches a clean reading instead. Contributed and tested on real hardware by a user (thank you!)."
+  },
   "1.4.10": {
     "en": "The \"Advanced sensors\" checkbox at pairing is now checked by default for hybrid/SG04LP3/micro models — temperature, load power, and grid energy counters are useful on nearly every install of these, so it's opt-out now instead of opt-in (still opt-in for string models). Added a dedicated \"Deye Microinverter (2 MPPT)\" model for the SUN600G3/SUN800G3/SUN1000G3 family (EXPERIMENTAL, untested — please report back if you try it). Fixed auto-detection wrongly recommending \"String Inverter\" for these and other microinverters: a probe reading zero-filled, unimplemented registers was mistaken for a real energy-meter reading and tipped the score toward the wrong model."
   },
