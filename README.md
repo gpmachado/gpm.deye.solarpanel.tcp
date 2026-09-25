@@ -20,8 +20,9 @@ The existing Deye app for Homey ([com.heszi.deye](https://github.com/heszegi/com
 | `deye_micro_2mppt` | SUN600G3 / SUN800G3 / SUN1000G3 microinverter (2 MPPT) | Microinverter | ⚠️ Untested |
 | `deye_hybrid` | SUN-xK-SG0xLP1 / SG0xHP (single-phase hybrid) | Hybrid + Battery | ✅ Tested (Sun-5k-SG01HP3-EU-AM2) |
 | `deye_sg04lp3` | SUN-8/10/12K-SG04LP3-EU (3-phase hybrid) | 3-phase Hybrid | ⚠️ Untested |
+| `sofar_g3_hybrid` | SOFAR ESI-T1 / HYD 5-20KTL-3PH (G3 protocol, LSW3 logger) | 3-phase Hybrid | 🧪 Beta, manual selection only (register map verified against ESI-12K-T1 dumps) |
 
-Register definitions are adapted from [ha-solarman](https://github.com/StephanJoubert/home_assistant_solarman) (MIT).
+Register definitions are adapted from [ha-solarman](https://github.com/StephanJoubert/home_assistant_solarman) (MIT). The SOFAR G3 map also follows SOFARSOLAR's Modbus-G3 protocol V1.42.
 
 > **Note on MW4C loggers:** Some newer Deye logger sticks ship with MW4C firmware instead of the standard LSW3. The SolarmanV5 protocol does not work reliably with MW4C firmware. If your logger does not respond after pairing, check the firmware version on the logger's status page (`http://<logger-ip>/status.html`).
 
@@ -66,11 +67,14 @@ inverter_definitions/
   deye_micro.json               Register map for microinverter
   deye_hybrid.json              Register map for single-phase hybrid
   deye_sg04lp3.json             Register map for 3-phase hybrid SG04LP3
+  sofar_g3_hybrid.json          Register map for SOFAR G3 3-phase hybrid (ESI-T1 / HYD-3PH)
 ```
 
 ## Model auto-detection
 
 The driver reads register sets from all 4 models and scores each one based on non-zero values returned. The model with the highest score is selected. The user can override the detected model in the confirmation step before adding the device.
+
+SOFAR models are never auto-detected: SOFAR uses a different register map, and probing it with Deye maps returns plausible-looking but wrong values. SOFAR owners pick **SOFAR G3 Hybrid 3-phase** from the model dropdown during pairing.
 
 ## Night behaviour
 

@@ -345,7 +345,7 @@ class DeyeDevice(Device):
         if not model:
             return
 
-        if model in ("deye_hybrid", "deye_sg04lp3") or model in _DERIVED_PV_POWER_MODELS:
+        if model in ("deye_hybrid", "deye_sg04lp3", "sofar_g3_hybrid") or model in _DERIVED_PV_POWER_MODELS:
             # measure_power.solar is the Energy Dashboard production source.
             # Without it, the pairing-time measurePowerProducedCapability falls back to measure_power (AC output).
             required = ("measure_power.pv1", "measure_power.pv2", "measure_power.solar")

@@ -3,7 +3,7 @@
 ## Locations
 
 - Local: `/Users/gabriel/HomeyApp/gpm.python.deye`
-- GitHub: https://github.com/gpmachado/gpm.python.deye (branch: `main`)
+- GitHub: https://github.com/gpmachado/gpm.deye.solarpanel.tcp (branch: `main`) — local folder name differs from repo name
 
 ## Architecture
 

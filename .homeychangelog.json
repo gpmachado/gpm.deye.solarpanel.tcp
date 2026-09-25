@@ -1,4 +1,7 @@
 {
+  "1.4.12": {
+    "en": "BETA: added SOFAR G3 3-phase hybrid support (ESI-T1 / HYD 5-20KTL-3PH with an LSW3 logger). Choose \"SOFAR G3 Hybrid 3-phase\" in the model list during pairing; it is not auto-detected. Creates Inverter, Battery and Grid Meter devices. Register map verified on an ESI-12K-T1 (thanks Antom!). Also fixed: choosing a model other than the auto-detected one could hide PV3/PV4 inputs that are actually connected."
+  },
   "1.4.11": {
     "en": "Fixed rare huge/incorrect power spikes in Homey Insights (e.g. sudden megawatt readings), most often seen on LSW-5 loggers with unstable Wi-Fi. A stale or corrupted response packet was previously logged and used anyway; it's now rejected (via strict sequence, length, and checksum validation, plus a new Modbus CRC check) so the existing retry logic fetches a clean reading instead. Contributed and tested on real hardware by a user (thank you!)."
   },

@@ -30,7 +30,17 @@ DEYE_MODELS: dict[str, str] = {
     "deye_string":      "Deye String Inverter (2/4 MPPT)",
     "deye_hybrid":      "Deye Hybrid (Battery + 2 MPPT)",
     "deye_sg04lp3":     "Deye SG04LP3 Hybrid 3-phase — SUN-8/10/12K",
+    "sofar_g3_hybrid":  "SOFAR G3 Hybrid 3-phase — ESI-T1 / HYD-3PH",
 }
+
+# Models the user must pick manually — never probed by _detect_model().
+# SOFAR G3 uses a completely different register map (0x0404+); Deye probes on a
+# SOFAR return plausible-looking garbage, and SOFAR probes on a Deye have not
+# been validated, so auto-detection could pick the wrong vendor either way.
+_MANUAL_ONLY_MODELS: frozenset[str] = frozenset({"sofar_g3_hybrid"})
+
+# Models whose "Alert" block is decoded by lib/fault_codes.py (Deye bit tables).
+_FAULT_DECODE_MODELS: frozenset[str] = frozenset({"deye_hybrid", "deye_sg04lp3", "deye_string"})
 
 # Models that share deye_string/deye_micro's register layout but derive PV
 # power from V×I instead of reading a direct power register.
@@ -40,7 +50,7 @@ _DERIVED_PV_POWER_MODELS: frozenset[str] = frozenset({
 
 # Only hybrid models get a separate Grid Meter device.
 # String/micro inverters show grid caps directly on the main inverter tile.
-HYBRID_MODELS: frozenset[str] = frozenset({"deye_hybrid", "deye_sg04lp3"})
+HYBRID_MODELS: frozenset[str] = frozenset({"deye_hybrid", "deye_sg04lp3", "sofar_g3_hybrid"})
 
 # ── Capability icon SVG paths (relative to driver assets) ─────────────────────
 # Applied to capabilitiesOptions at pairing time so each capability shows a
@@ -234,7 +244,7 @@ def _score_model_values(model_id: str, values: dict) -> int:
     if between(total_load, 0.1, 1e7):     score += 2
 
     # Battery registers — only meaningful on hybrid models
-    if model_id in ("deye_hybrid", "deye_sg04lp3"):
+    if model_id in HYBRID_MODELS:
         batt_v   = values.get("Battery Voltage")
         batt_soc = values.get("Battery SOC")
         batt_a   = values.get("Battery Current")
@@ -262,6 +272,42 @@ def _load_sensors(model_id: str) -> list:
     return sensors
 
 
+async def _probe_model(host: str, serial: int, port: int, model_id: str) -> tuple[dict, int]:
+    """Connect and read all register groups for one model. Returns (values, score)."""
+    from app.lib.parser import ParameterParser
+    from app.lib.v5_transport import V5Transport
+
+    with open(_def_path(model_id), encoding="utf-8") as f:
+        definition = json.load(f)
+    m = V5Transport(host, serial, port=port, slave=1, timeout=5.0)
+    await m.connect()
+    try:
+        params = ParameterParser(definition)
+        for req in definition["requests"]:
+            start, end, fc = req["start"], req["end"], req["mb_functioncode"]
+            length = end - start + 1
+            for _attempt in range(2):
+                try:
+                    if fc == 3:
+                        raw = await m.read_holding_registers(register_addr=start, quantity=length)
+                    else:
+                        raw = await m.read_input_registers(register_addr=start, quantity=length)
+                    params.parse(raw, start, length)
+                    break
+                except Exception as req_e:
+                    if _attempt == 0:
+                        await asyncio.sleep(0.5)  # brief recovery before retry
+                    else:
+                        _LOGGER.debug(
+                            f"Model probe {model_id} request [{start}-{end}] skipped: {req_e}"
+                        )
+    finally:
+        await m.disconnect()
+
+    values = params.get_result()
+    return values, _score_model_values(model_id, values)
+
+
 async def _detect_model(host: str, serial: int, port: int = 8899) -> tuple[str, dict, int]:
     """
     Auto-detect the inverter model by reading all register sets and scoring each.
@@ -273,54 +319,18 @@ async def _detect_model(host: str, serial: int, port: int = 8899) -> tuple[str, 
     register groups (e.g. deye_sg04lp3 has 7 requests × 5 s timeout each) cannot block
     the pairing wizard for minutes.
     """
-    from app.lib.parser import ParameterParser
-    from app.lib.v5_transport import V5Transport
-
     best_model  = "deye_string"
     # Start at 0: a model must have at least one non-zero sensor value to override
     # the default. Prevents night-time probes (all zeros) from picking the wrong model.
     best_score  = 0
     best_values: dict = {}
 
-    async def _probe(model_id: str, definition: dict) -> tuple[dict, int]:
-        """Connect and read all register groups for one model. Returns (values, score)."""
-        m = V5Transport(host, serial, port=port, slave=1, timeout=5.0)
-        await m.connect()
-        try:
-            params = ParameterParser(definition)
-            for req in definition["requests"]:
-                start, end, fc = req["start"], req["end"], req["mb_functioncode"]
-                length = end - start + 1
-                for _attempt in range(2):
-                    try:
-                        if fc == 3:
-                            raw = await m.read_holding_registers(register_addr=start, quantity=length)
-                        else:
-                            raw = await m.read_input_registers(register_addr=start, quantity=length)
-                        params.parse(raw, start, length)
-                        break
-                    except Exception as req_e:
-                        if _attempt == 0:
-                            await asyncio.sleep(0.5)  # brief recovery before retry
-                        else:
-                            _LOGGER.debug(
-                                f"Model probe {model_id} request [{start}-{end}] skipped: {req_e}"
-                            )
-        finally:
-            await m.disconnect()
-
-        values = params.get_result()
-        score  = _score_model_values(model_id, values)
-        return values, score
-
     for model_id in DEYE_MODELS:
-        path = _def_path(model_id)
-        with open(path, encoding="utf-8") as f:
-            definition = json.load(f)
-
+        if model_id in _MANUAL_ONLY_MODELS:
+            continue
         try:
             values, score = await asyncio.wait_for(
-                _probe(model_id, definition), timeout=10.0
+                _probe_model(host, serial, port, model_id), timeout=10.0
             )
             _LOGGER.info(f"Model probe {model_id}: score={score}")
             if score > best_score:
@@ -629,6 +639,19 @@ class DeyeDriver(Driver):
             model_id = data.get("model", "")
             if model_id not in DEYE_MODELS:
                 raise Exception(f"Unknown model: {model_id}")
+            if model_id != confirmed.get("model_id"):
+                # active_values came from probing a different register map; the PV3/PV4
+                # filter in list_devices would read the wrong names. Re-probe the chosen
+                # model, or drop the values (no filtering) if the logger doesn't answer.
+                try:
+                    values, _ = await asyncio.wait_for(
+                        _probe_model(found["host"], found["serial"], 8899, model_id),
+                        timeout=15.0,
+                    )
+                    confirmed["active_values"] = values
+                except Exception as e:
+                    self.log(f"Re-probe of {model_id} failed ({e}) — keeping all PV channels")
+                    confirmed["active_values"] = {}
             confirmed["model_id"] = model_id
             confirmed["advanced"] = bool(data.get("advanced", False))
             confirmed["string_optionals"] = {
@@ -747,7 +770,7 @@ class DeyeDriver(Driver):
             # present on deye_string too by Deye's official Modbus protocol
             # V118 doc (covers Single Phase, String & Microinverters), same
             # layout as the hybrid "Alert" block. See lib/fault_codes.py.
-            if (is_hybrid or model_id == "deye_string") and "fault_description" not in inverter_caps:
+            if model_id in _FAULT_DECODE_MODELS and "fault_description" not in inverter_caps:
                 inverter_caps.append("fault_description")
                 # Empty entry so _apply_cap_icons() (below) picks it up and
                 # injects the icon — the capability's own base title
