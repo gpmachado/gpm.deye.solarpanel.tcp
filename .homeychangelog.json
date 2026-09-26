@@ -1,6 +1,9 @@
 {
+  "1.4.14": {
+    "en": "Fixed: the \"Battery charging/discharging started\" and \"Grid export/import started\" Flow triggers never fired (Deye and SOFAR). SOFAR battery devices now report their charging state. The Energy Summary widget now includes SOFAR devices and shows the battery direction correctly."
+  },
   "1.4.13": {
-    "en": "SOFAR inverters now have their own \"SOFAR Inverter\" device (no auto-detection needed). Battery devices: new Charge Power and Discharge Power values that are never negative, for clearer device cards and Flows. The signed value used by Homey Energy is hidden from the card; the old signed battery power stays available (device settings → Advanced) so existing Flows keep working — no re-pairing needed. Fixed: the \"Battery charging/discharging started\" and \"Grid export/import started\" Flow triggers never fired, and the grid cards could not select the grid meter."
+    "en": "SOFAR inverters now have their own \"SOFAR Inverter\" device (no auto-detection needed). Battery devices: new Charge Power and Discharge Power values that are never negative, for clearer device cards and Flows. The signed value used by Homey Energy is hidden from the card; the old signed battery power stays available (device settings → Advanced) so existing Flows keep working — no re-pairing needed. Fixed: \"grid export/import started\" Flow cards could not select the grid meter."
   },
   "1.4.12": {
     "en": "BETA: added SOFAR G3 3-phase hybrid support (ESI-T1 / HYD 5-20KTL-3PH with an LSW3 logger). Choose \"SOFAR G3 Hybrid 3-phase\" in the model list during pairing; it is not auto-detected. Creates Inverter, Battery and Grid Meter devices. Register map verified on an ESI-12K-T1 (thanks Antom!). Also fixed: choosing a model other than the auto-detected one could hide PV3/PV4 inputs that are actually connected."

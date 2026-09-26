@@ -13,7 +13,7 @@
 
 ## Depois
 
-- [ ] **Widget "Power Flow" (1.4.14)** — fluxo de energia como o display SOFAR: Solar →
+- [ ] **Widget "Power Flow" (1.4.15)** — fluxo de energia como o display SOFAR: Solar →
   INV → Bateria / Rede / Casa, setas animadas no sentido do fluxo, SOC da bateria.
   Reusar `get_solar_summary()` (app.py) — já traz solar, grid, load, battery (+ = carga)
   e battery_soc de Deye e SOFAR. Sem bateria/rede (string/micro): esconder esses ramos.
