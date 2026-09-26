@@ -1,6 +1,6 @@
 {
   "id": "gpm.deye.solarpanel.tcp",
-  "version": "1.4.12",
+  "version": "1.4.13",
   "compatibility": ">=13.0.0",
   "sdk": 3,
   "runtime": "python",
@@ -72,7 +72,7 @@
           {
             "type": "device",
             "name": "device",
-            "filter": "driver_id=deye&capabilities=meter_power.today"
+            "filter": "driver_id=deye|sofar&capabilities=meter_power.today"
           }
         ],
         "tokens": [
@@ -127,7 +127,7 @@
           {
             "type": "device",
             "name": "device",
-            "filter": "driver_id=deye&capabilities=measure_power.solar"
+            "filter": "driver_id=deye|sofar&capabilities=measure_power.solar"
           }
         ]
       },
@@ -152,7 +152,7 @@
           {
             "type": "device",
             "name": "device",
-            "filter": "driver_id=deye&capabilities=measure_power.solar"
+            "filter": "driver_id=deye|sofar&capabilities=measure_power.solar"
           }
         ]
       },
@@ -177,7 +177,7 @@
           {
             "type": "device",
             "name": "device",
-            "filter": "driver_id=deye&capabilities=meter_power.today"
+            "filter": "driver_id=deye|sofar&capabilities=meter_power.today"
           }
         ],
         "tokens": [
@@ -211,7 +211,7 @@
           {
             "type": "device",
             "name": "device",
-            "filter": "driver_id=deye&capabilities=meter_power.today"
+            "filter": "driver_id=deye|sofar&capabilities=meter_power.today"
           }
         ]
       },
@@ -236,7 +236,7 @@
           {
             "type": "device",
             "name": "device",
-            "filter": "driver_id=deye&capabilities=measure_power.battery"
+            "filter": "driver_id=deye|sofar&capabilities=measure_battery"
           }
         ],
         "tokens": [
@@ -270,7 +270,7 @@
           {
             "type": "device",
             "name": "device",
-            "filter": "driver_id=deye&capabilities=measure_power.battery"
+            "filter": "driver_id=deye|sofar&capabilities=measure_battery"
           }
         ],
         "tokens": [
@@ -304,7 +304,7 @@
           {
             "type": "device",
             "name": "device",
-            "filter": "driver_id=deye&capabilities=meter_power.exported"
+            "filter": "driver_id=deye|sofar&capabilities=meter_power.exported"
           }
         ],
         "tokens": [
@@ -338,7 +338,7 @@
           {
             "type": "device",
             "name": "device",
-            "filter": "driver_id=deye&capabilities=meter_power.exported"
+            "filter": "driver_id=deye|sofar&capabilities=meter_power.exported"
           }
         ],
         "tokens": [
@@ -371,7 +371,7 @@
           {
             "type": "device",
             "name": "device",
-            "filter": "driver_id=deye&capabilities=measure_power.battery"
+            "filter": "driver_id=deye|sofar&capabilities=measure_battery"
           }
         ]
       },
@@ -393,7 +393,7 @@
           {
             "type": "device",
             "name": "device",
-            "filter": "driver_id=deye&capabilities=measure_power.grid"
+            "filter": "driver_id=deye|sofar&capabilities=measure_power.grid"
           }
         ]
       },
@@ -415,7 +415,7 @@
           {
             "type": "device",
             "name": "device",
-            "filter": "driver_id=deye&capabilities=meter_power.today"
+            "filter": "driver_id=deye|sofar&capabilities=meter_power.today"
           }
         ]
       },
@@ -437,7 +437,7 @@
           {
             "type": "device",
             "name": "device",
-            "filter": "driver_id=deye&capabilities=measure_battery"
+            "filter": "driver_id=deye|sofar&capabilities=measure_battery"
           },
           {
             "type": "number",

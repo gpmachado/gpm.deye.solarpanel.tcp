@@ -11,7 +11,10 @@ import os
 
 from homey.driver import Driver
 from app.lib.solarman_client import SolarmanClient
-from app.lib.capability_map import build_capabilities, capability_title, BATTERY_CAPS, GRID_METER_CAPS, GRID_CAP_REMAP
+from app.lib.capability_map import (
+    build_capabilities, capability_title, BATTERY_CAPS, GRID_METER_CAPS, GRID_CAP_REMAP,
+    BATTERY_SPLIT_CAP_TITLES, BATTERY_LEGACY_CAP, BATTERY_ENERGY_TITLE,
+)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -30,14 +33,14 @@ DEYE_MODELS: dict[str, str] = {
     "deye_string":      "Deye String Inverter (2/4 MPPT)",
     "deye_hybrid":      "Deye Hybrid (Battery + 2 MPPT)",
     "deye_sg04lp3":     "Deye SG04LP3 Hybrid 3-phase — SUN-8/10/12K",
-    "sofar_g3_hybrid":  "SOFAR G3 Hybrid 3-phase — ESI-T1 / HYD-3PH",
 }
 
-# Models the user must pick manually — never probed by _detect_model().
-# SOFAR G3 uses a completely different register map (0x0404+); Deye probes on a
-# SOFAR return plausible-looking garbage, and SOFAR probes on a Deye have not
-# been validated, so auto-detection could pick the wrong vendor either way.
-_MANUAL_ONLY_MODELS: frozenset[str] = frozenset({"sofar_g3_hybrid"})
+# SOFAR models live in their own driver (drivers/sofar/) and are never probed by
+# _detect_model(): SOFAR G3 uses a completely different register map (0x0404+),
+# and Deye probes on a SOFAR return plausible-looking garbage.
+SOFAR_MODELS: dict[str, str] = {
+    "sofar_g3_hybrid":  "SOFAR G3 Hybrid 3-phase — ESI-T1 / HYD-3PH",
+}
 
 # Models whose "Alert" block is decoded by lib/fault_codes.py (Deye bit tables).
 _FAULT_DECODE_MODELS: frozenset[str] = frozenset({"deye_hybrid", "deye_sg04lp3", "deye_string"})
@@ -67,6 +70,8 @@ _CAP_ICONS_COMMON: dict[str, str] = {
     "measure_power.load":            f"{_ASSETS}/house_power.svg",
     "measure_power.grid":            f"{_ASSETS}/grid_power.svg",
     "measure_power.battery":         f"{_ASSETS}/battery_power.svg",
+    "measure_power.battery_charging":    f"{_ASSETS}/battery_charging.svg",
+    "measure_power.battery_discharging": f"{_ASSETS}/battery_discharged.svg",
     "meter_power.today":             f"{_ASSETS}/daily_production.svg",
     "meter_power":                   f"{_ASSETS}/solar_production.svg",
     "meter_power.battery_charged":   f"{_ASSETS}/battery_charged.svg",
@@ -326,8 +331,6 @@ async def _detect_model(host: str, serial: int, port: int = 8899) -> tuple[str, 
     best_values: dict = {}
 
     for model_id in DEYE_MODELS:
-        if model_id in _MANUAL_ONLY_MODELS:
-            continue
         try:
             values, score = await asyncio.wait_for(
                 _probe_model(host, serial, port, model_id), timeout=10.0
@@ -526,6 +529,10 @@ async def _fetch_logger_serial_udp(host: str, timeout: float = 2.0) -> int | Non
 
 
 class DeyeDriver(Driver):
+    # Overridden by drivers/sofar/driver.py.
+    MODELS: dict[str, str] = DEYE_MODELS
+    AUTO_DETECT: bool = True       # False → skip register-map scoring, use the only model
+    DEVICE_ID_PREFIX: str = "deye"
 
     async def on_init(self) -> None:
         self.log("DeyeDriver init")
@@ -619,6 +626,22 @@ class DeyeDriver(Driver):
             """
             if not found:
                 raise Exception("No logger found — go back and try again.")
+            if not confirmed and not self.AUTO_DETECT:
+                # Single-vendor driver: the model is known. Still read it once so the
+                # PV3/PV4 filter in list_devices sees real values.
+                model_id = next(iter(self.MODELS))
+                self.log(f"Reading {model_id} registers from {found['host']}...")
+                try:
+                    active_values, _ = await asyncio.wait_for(
+                        _probe_model(found["host"], found["serial"], 8899, model_id),
+                        timeout=15.0,
+                    )
+                except Exception as e:
+                    self.log(f"Probe of {model_id} failed ({e}) — keeping all PV channels")
+                    active_values = {}
+                confirmed["model_id"] = model_id
+                confirmed["active_values"] = active_values
+                confirmed["score"] = 1
             if not confirmed:
                 self.log(f"Running model detection for {found['host']}...")
                 detected_id, active_values, det_score = await _detect_model(
@@ -630,14 +653,14 @@ class DeyeDriver(Driver):
                 confirmed["score"] = det_score
             return {
                 "detected":      confirmed["model_id"],
-                "models":        DEYE_MODELS,
+                "models":        self.MODELS,
                 "auto_confirmed": confirmed.get("score", 0) > 0,
             }
 
         async def on_confirm_model(data: dict) -> bool:
             """Called when user clicks Add Inverter in login.html."""
             model_id = data.get("model", "")
-            if model_id not in DEYE_MODELS:
+            if model_id not in self.MODELS:
                 raise Exception(f"Unknown model: {model_id}")
             if model_id != confirmed.get("model_id"):
                 # active_values came from probing a different register map; the PV3/PV4
@@ -807,9 +830,9 @@ class DeyeDriver(Driver):
                      f"grid_caps:{len(grid_caps_raw)}")
 
             devices = [{
-                "name": f"{DEYE_MODELS[model_id]} — Inverter",
+                "name": f"{self.MODELS[model_id]} — Inverter",
                 "icon": "/icon_inverter.svg",
-                "data": {"id": f"deye_{serial}_inverter"},
+                "data": {"id": f"{self.DEVICE_ID_PREFIX}_{serial}_inverter"},
                 "class": "solarpanel",
                 "capabilities": inverter_caps,
                 "capabilitiesOptions": _apply_cap_icons(inverter_opts, "inverter"),
@@ -823,15 +846,27 @@ class DeyeDriver(Driver):
             if battery_caps:
                 batt_caps_final = list(battery_caps)
                 batt_opts_final = dict(battery_opts)
-                # Energy Dashboard needs measure_power to track charge/discharge flow
-                if "measure_power.battery" in batt_caps_final and "measure_power" not in batt_caps_final:
+                if BATTERY_LEGACY_CAP in batt_caps_final:
+                    # Energy Dashboard needs measure_power (signed, + = charging) to
+                    # track charge/discharge flow — hidden from the device card, where
+                    # the never-negative Charge/Discharge Power pair is shown instead.
                     batt_caps_final.insert(0, "measure_power")
-                    batt_opts_final["measure_power"] = {"title": capability_title("Power Usage")}
+                    batt_opts_final["measure_power"] = {
+                        "title": capability_title(BATTERY_ENERGY_TITLE),
+                        "uiComponent": None,
+                    }
+                    for i, (cap_id, title) in enumerate(BATTERY_SPLIT_CAP_TITLES.items(), start=1):
+                        batt_caps_final.insert(i, cap_id)
+                        batt_opts_final[cap_id] = {"title": capability_title(title)}
+                    # New devices start without the legacy signed value (showBatterySigned
+                    # off); existing devices keep it — see device.py _sync_battery_legacy_cap.
+                    batt_caps_final.remove(BATTERY_LEGACY_CAP)
+                    batt_opts_final.pop(BATTERY_LEGACY_CAP, None)
 
                 devices.append({
-                    "name": f"{DEYE_MODELS[model_id]} — Battery",
+                    "name": f"{self.MODELS[model_id]} — Battery",
                     "icon": "/icon_battery.svg",
-                    "data": {"id": f"deye_{serial}_battery"},
+                    "data": {"id": f"{self.DEVICE_ID_PREFIX}_{serial}_battery"},
                     "class": "battery",
                     "capabilities": batt_caps_final,
                     "capabilitiesOptions": _apply_cap_icons(batt_opts_final, "battery"),
@@ -840,7 +875,7 @@ class DeyeDriver(Driver):
                         "meterPowerImportedCapability": "meter_power.battery_charged",
                         "meterPowerExportedCapability": "meter_power.battery_discharged",
                     },
-                    "settings": {**base_settings, "device_type": "battery"},
+                    "settings": {**base_settings, "device_type": "battery", "showBatterySigned": False},
                 })
                 self.log(f"Battery device — caps:{batt_caps_final}")
             else:
@@ -865,9 +900,9 @@ class DeyeDriver(Driver):
                     grid_opts_final["measure_power"] = {"title": capability_title("Grid Power (Live)")}
 
                 devices.append({
-                    "name": f"{DEYE_MODELS[model_id]} — Meter",
+                    "name": f"{self.MODELS[model_id]} — Meter",
                     "icon": "/icon_grid.svg",
-                    "data": {"id": f"deye_{serial}_grid"},
+                    "data": {"id": f"{self.DEVICE_ID_PREFIX}_{serial}_grid"},
                     "class": "sensor",
                     "capabilities": grid_caps_final,
                     "capabilitiesOptions": _apply_cap_icons(grid_opts_final, "grid_meter"),
@@ -928,7 +963,7 @@ class DeyeDriver(Driver):
 
             # Older devices store only data.id like "deye_1782317166_inverter".
             import re as _re
-            match = _re.search(r"deye_(\d+)_", str(_device_data().get("id", "")))
+            match = _re.search(r"[a-z]+_(\d+)_", str(_device_data().get("id", "")))
             return int(match.group(1)) if match else 0
 
         def _current_model() -> str:
@@ -942,11 +977,14 @@ class DeyeDriver(Driver):
                 f"Repair current — host:{host or '<empty>'} serial:{serial} "
                 f"model:{model} data:{_device_data()}"
             )
+            models = dict(self.MODELS)
+            if model not in models:
+                models[model] = {**DEYE_MODELS, **SOFAR_MODELS}.get(model, model)
             return {
                 "host":   host,
                 "serial": serial,
                 "model":  model,
-                "models": DEYE_MODELS,
+                "models": models,
             }
 
         async def on_run_detection(data=None) -> dict:
@@ -960,12 +998,14 @@ class DeyeDriver(Driver):
                 raise Exception(f"Invalid IP address: {host}")
             if serial <= 0:
                 raise Exception("No logger serial configured — re-pair the device.")
+            if not self.AUTO_DETECT:
+                return {"detected": _current_model(), "models": self.MODELS, "auto_confirmed": True}
             self.log(f"Repair: running detection on {host} serial={serial}")
             detected, _, score = await _detect_model(host, serial)
             self.log(f"Repair detection: {detected} (score={score})")
             return {
                 "detected":      detected,
-                "models":        DEYE_MODELS,
+                "models":        self.MODELS,
                 "auto_confirmed": score > 0,
             }
 
@@ -974,7 +1014,9 @@ class DeyeDriver(Driver):
             current_host  = _current_host()
             model = str(data.get("model") or current_model).strip()
             host  = str(data.get("host")  or current_host).strip()
-            if model and model not in DEYE_MODELS:
+            # current_model may be outside self.MODELS: SOFAR devices paired through the
+            # Deye driver in 1.4.12, before SOFAR got its own driver.
+            if model and model != current_model and model not in self.MODELS:
                 raise Exception(f"Unknown model: {model}")
             new_settings: dict = {}
             if model and model != current_model:

@@ -19,7 +19,7 @@
     {
       "type": "device",
       "name": "device",
-      "filter": "driver_id=deye&capabilities=fault_description"
+      "filter": "driver_id=deye|sofar&capabilities=fault_description"
     }
   ],
   "tokens": [

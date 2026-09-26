@@ -20,6 +20,7 @@ from homey.device import Device
 from app.lib.capability_map import (
     get_sensor_capability_map, BATTERY_CAPS, GRID_METER_CAPS, GRID_CAP_REMAP,
     PV_DETAIL_CAPS, AC_DETAIL_CAPS, DETAIL_CAP_TITLES, ADVANCED_CAP_TITLES, capability_title,
+    BATTERY_SPLIT_CAP_TITLES, BATTERY_LEGACY_CAP, BATTERY_LEGACY_TITLE, BATTERY_ENERGY_TITLE,
 )
 from app.drivers.deye.driver import _advanced_caps_for_model, _DERIVED_PV_POWER_MODELS
 from app.lib import shared_poller as _poller_mod
@@ -65,6 +66,7 @@ _INVERTER_NIGHT_ZERO = frozenset({
 # still be discharging, but if inverter is off these will all be 0 anyway)
 _BATTERY_NIGHT_ZERO = frozenset({
     "measure_power.battery",
+    "measure_power.battery_charging", "measure_power.battery_discharging",
     "measure_voltage.battery",
     "measure_current.battery",
 })
@@ -142,6 +144,8 @@ class DeyeDevice(Device):
                 _LOGGER.warning(f"Could not add fault_description to deye_string: {e}")
 
         await self._ensure_pv_structural_caps()
+        await self._ensure_battery_split_caps()
+        await self._sync_battery_legacy_cap()
         await self._sync_detail_caps("showPvDetail", PV_DETAIL_CAPS)
         await self._sync_detail_caps("showAcDetail", AC_DETAIL_CAPS)
 
@@ -180,6 +184,76 @@ class DeyeDevice(Device):
             await self._sync_detail_caps("showPvDetail", PV_DETAIL_CAPS, (new_settings or {}).get("showPvDetail"))
         if "showAcDetail" in keys:
             await self._sync_detail_caps("showAcDetail", AC_DETAIL_CAPS, (new_settings or {}).get("showAcDetail"))
+        if "showBatterySigned" in keys:
+            await self._sync_battery_legacy_cap((new_settings or {}).get("showBatterySigned"))
+
+    async def _ensure_battery_split_caps(self) -> None:
+        """Battery device: add the never-negative Charge/Discharge Power pair and
+        relabel the two signed values (community issue #3, 1.4.13). Nothing is
+        removed and no value changes meaning, so existing Flows keep working.
+
+        Runs once per device (store flag) — setCapabilityOptions is expensive.
+        Hiding measure_power (uiComponent None) is attempted but may not be
+        honoured at runtime on already-paired devices; it is then just shown
+        with its explicit "(Homey Energy)" title.
+        """
+        if not self._is_battery or not self.has_capability("measure_power"):
+            return
+        if (self.get_store() or {}).get("battery_split_v") == 1:
+            return
+        for cap_id, title in BATTERY_SPLIT_CAP_TITLES.items():
+            try:
+                if not self.has_capability(cap_id):
+                    await self.add_capability(cap_id)
+                    self.log(f"Added battery capability {cap_id}")
+                await self.set_capability_options(cap_id, {"title": capability_title(title)})
+            except Exception as e:
+                _LOGGER.warning(f"Add battery capability {cap_id} failed: {e}")
+        try:
+            await self.set_capability_options("measure_power", {
+                "title": capability_title(BATTERY_ENERGY_TITLE),
+                "uiComponent": None,
+            })
+        except Exception as e:
+            _LOGGER.warning(f"Hide measure_power failed ({e}) — retrying with title only")
+            try:
+                await self.set_capability_options(
+                    "measure_power", {"title": capability_title(BATTERY_ENERGY_TITLE)})
+            except Exception as e2:
+                _LOGGER.warning(f"Set measure_power title failed: {e2}")
+        if self.has_capability(BATTERY_LEGACY_CAP):
+            try:
+                await self.set_capability_options(
+                    BATTERY_LEGACY_CAP, {"title": capability_title(BATTERY_LEGACY_TITLE)})
+            except Exception as e:
+                _LOGGER.warning(f"Set {BATTERY_LEGACY_CAP} title failed: {e}")
+        try:
+            await self.set_store_value("battery_split_v", 1)
+        except Exception as e:
+            _LOGGER.warning(f"Store battery_split_v failed: {e}")
+
+    async def _sync_battery_legacy_cap(self, value=_UNSET) -> None:
+        """Battery device: show/hide the legacy signed measure_power.battery
+        (+ = discharging) per the showBatterySigned setting. Same None → "show"
+        rule as _sync_detail_caps: devices paired before the setting existed
+        keep the capability their Flows may depend on. New pairings store False.
+        """
+        if not self._is_battery or not self.has_capability("measure_power"):
+            return
+        raw = self.get_setting("showBatterySigned") if value is _UNSET else value
+        show = True if raw is None else bool(raw)
+        has_it = self.has_capability(BATTERY_LEGACY_CAP)
+        try:
+            if show and not has_it:
+                await self.add_capability(BATTERY_LEGACY_CAP)
+                await self.set_capability_options(
+                    BATTERY_LEGACY_CAP, {"title": capability_title(BATTERY_LEGACY_TITLE)})
+                self.log(f"Added {BATTERY_LEGACY_CAP} (showBatterySigned)")
+            elif not show and has_it:
+                await self.remove_capability(BATTERY_LEGACY_CAP)
+                self.log(f"Removed {BATTERY_LEGACY_CAP} (showBatterySigned)")
+        except Exception as e:
+            _LOGGER.warning(f"Sync {BATTERY_LEGACY_CAP} failed: {e}")
 
     async def _sync_detail_caps(self, setting_id: str, cap_group: frozenset, value=_UNSET) -> None:
         """Add/remove a group of optional detail capabilities to match a device
@@ -518,8 +592,13 @@ class DeyeDevice(Device):
                 # Mirror battery power to measure_power for the Energy Dashboard.
                 # Deye: positive = discharging → negate for Homey convention (positive = charging).
                 if "Battery Power" in values and self.has_capability("measure_power"):
-                    raw = values.get("Battery Power") or 0
-                    await self._set("measure_power", -float(raw))
+                    raw = float(values.get("Battery Power") or 0)
+                    await self._set("measure_power", -raw)
+                    # Never-negative pair for the device card and Flows (issue #3).
+                    if self.has_capability("measure_power.battery_charging"):
+                        await self._set("measure_power.battery_charging", max(-raw, 0.0))
+                    if self.has_capability("measure_power.battery_discharging"):
+                        await self._set("measure_power.battery_discharging", max(raw, 0.0))
             except Exception as e:
                 _LOGGER.debug(f"Battery mirror update failed: {e}")
         elif self._is_grid_meter:

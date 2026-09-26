@@ -40,7 +40,7 @@
     {
       "type": "device",
       "name": "device",
-      "filter": "driver_id=deye&capabilities=measure_battery"
+      "filter": "driver_id=deye|sofar&capabilities=measure_battery"
     },
     {
       "type": "number",

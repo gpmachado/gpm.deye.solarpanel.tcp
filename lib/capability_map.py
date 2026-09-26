@@ -31,6 +31,18 @@ _CAPABILITY_TITLES: dict[str, dict[str, str]] = {
         'nl': 'Batterij Ontlaadenergie', 'no': 'Batteriutladet Energi', 'pl': 'Energia Rozładowana Baterii',
         'sv': 'Batteriurladdad Energi',
     },
+    'Battery Power (+ discharging)': {
+        'en': 'Battery Power (+ discharging)', 'da': 'Batterieffekt (+ afladning)', 'de': 'Batterieleistung (+ Entladen)',
+        'es': 'Potencia de Batería (+ descarga)', 'fr': 'Puissance batterie (+ décharge)', 'it': 'Potenza Batteria (+ scarica)',
+        'nl': 'Batterijvermogen (+ ontladen)', 'no': 'Batterieffekt (+ utlading)', 'pl': 'Moc Baterii (+ rozładowanie)',
+        'sv': 'Batterieffekt (+ urladdning)',
+    },
+    'Battery Power (Homey Energy)': {
+        'en': 'Battery Power (Homey Energy)', 'da': 'Batterieffekt (Homey Energy)', 'de': 'Batterieleistung (Homey Energy)',
+        'es': 'Potencia de Batería (Homey Energy)', 'fr': 'Puissance batterie (Homey Energy)', 'it': 'Potenza Batteria (Homey Energy)',
+        'nl': 'Batterijvermogen (Homey Energy)', 'no': 'Batterieffekt (Homey Energy)', 'pl': 'Moc Baterii (Homey Energy)',
+        'sv': 'Batterieffekt (Homey Energy)',
+    },
     'Battery SOC': {
         'en': 'Battery SOC', 'da': 'Batteri SOC', 'de': 'Batterie-Ladezustand',
         'es': 'Estado de Carga', 'fr': 'État de Charge', 'it': 'Stato di Carica',
@@ -55,11 +67,23 @@ _CAPABILITY_TITLES: dict[str, dict[str, str]] = {
         'nl': 'Batterijspanning', 'no': 'Batterispenning', 'pl': 'Napięcie Baterii',
         'sv': 'Batterispänning',
     },
+    'Charge Power': {
+        'en': 'Charge Power', 'da': 'Ladeeffekt', 'de': 'Ladeleistung',
+        'es': 'Potencia de Carga', 'fr': 'Puissance de charge', 'it': 'Potenza di Carica',
+        'nl': 'Laadvermogen', 'no': 'Ladeeffekt', 'pl': 'Moc Ładowania',
+        'sv': 'Laddeffekt',
+    },
     'Daily Production': {
         'en': 'Daily Production', 'da': 'Daglig Produktion', 'de': 'Tagesproduktion',
         'es': 'Producción Diaria', 'fr': 'Production Journalière', 'it': 'Produzione Giornaliera',
         'nl': 'Dagelijkse Productie', 'no': 'Daglig Produksjon', 'pl': 'Produkcja Dzienna',
         'sv': 'Daglig Produktion',
+    },
+    'Discharge Power': {
+        'en': 'Discharge Power', 'da': 'Afladningseffekt', 'de': 'Entladeleistung',
+        'es': 'Potencia de Descarga', 'fr': 'Puissance de décharge', 'it': 'Potenza di Scarica',
+        'nl': 'Ontlaadvermogen', 'no': 'Utladningseffekt', 'pl': 'Moc Rozładowania',
+        'sv': 'Urladdningseffekt',
     },
     'Fault / Alarm': {
         'en': 'Fault / Alarm', 'da': 'Fejl / Alarm', 'de': 'Fehler / Alarm',
@@ -168,18 +192,6 @@ _CAPABILITY_TITLES: dict[str, dict[str, str]] = {
         'es': 'Potencia Reactiva de Salida', 'fr': 'Puissance Réactive Sortie', 'it': 'Potenza Reattiva Uscita',
         'nl': 'Reactief Uitgangsvermogen', 'no': 'Utgangs Reaktiv Effekt', 'pl': 'Moc Bierna Wyjściowa',
         'sv': 'Reaktiv Utgångseffekt',
-    },
-    'Power Delivery': {
-        'en': 'Power Delivery', 'da': 'Effektafgivelse', 'de': 'Leistungsabgabe',
-        'es': 'Potencia de Descarga', 'fr': 'Puissance de Décharge', 'it': 'Potenza di Scarica',
-        'nl': 'Vermogensafgifte', 'no': 'Effektavgivelse', 'pl': 'Moc Rozładowania',
-        'sv': 'Effektleverans',
-    },
-    'Power Usage': {
-        'en': 'Power Usage', 'da': 'Effektforbrug', 'de': 'Leistungsaufnahme',
-        'es': 'Consumo de Potencia', 'fr': 'Consommation Électrique', 'it': 'Consumo di Potenza',
-        'nl': 'Vermogensverbruik', 'no': 'Effektforbruk', 'pl': 'Zużycie Mocy',
-        'sv': 'Effektförbrukning',
     },
     'PV1 Current': {
         'en': 'PV1 Current', 'da': 'PV1 Strøm', 'de': 'PV1 Strom',
@@ -323,7 +335,7 @@ _NAME_RULES: list[tuple[str, str, str]] = [
     (r'\bpv3\b.+power|power.+\bpv3\b',        'measure_power.pv3',     'PV3 Power'),
     (r'\bpv4\b.+power|power.+\bpv4\b',        'measure_power.pv4',     'PV4 Power'),
     # Other power variants
-    (r'battery.+power|power.+battery',         'measure_power.battery', 'Power Delivery'),
+    (r'battery.+power|power.+battery',         'measure_power.battery', 'Battery Power (+ discharging)'),
     (r'\bload\b.+power|power.+\bload\b',       'measure_power.load',    'Load Power'),
     (r'grid.+power|power.+grid',               'measure_power.grid',    'Grid Power'),
     (r'micro.+power|power.+micro',             'measure_power.micro',   'Micro-inverter Power'),
@@ -498,6 +510,20 @@ BATTERY_CAPS: frozenset[str] = frozenset({
     "meter_power.battery_charged",
     "meter_power.battery_discharged",
 })
+
+
+# Battery power split into two never-negative values (1.4.13, community issue #3).
+# Synthetic — no register behind them; derived from "Battery Power" in device.py.
+# measure_power.battery (signed, + = discharging) is kept for existing Flows and
+# shown/hidden by the showBatterySigned setting; measure_power (signed,
+# + = charging) is what Homey Energy reads and is hidden from the device card.
+BATTERY_SPLIT_CAP_TITLES: dict[str, str] = {
+    "measure_power.battery_charging":    "Charge Power",
+    "measure_power.battery_discharging": "Discharge Power",
+}
+BATTERY_LEGACY_CAP = "measure_power.battery"
+BATTERY_LEGACY_TITLE = "Battery Power (+ discharging)"
+BATTERY_ENERGY_TITLE = "Battery Power (Homey Energy)"
 
 
 # Capabilities that belong to the grid meter device.

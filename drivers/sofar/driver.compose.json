@@ -1,15 +1,15 @@
 {
   "name": {
-    "en": "Deye Inverter",
-    "nl": "Deye Omvormer",
-    "de": "Deye Wechselrichter",
-    "fr": "Onduleur Deye",
-    "it": "Inverter Deye",
-    "sv": "Deye Växelriktare",
-    "no": "Deye Vekselretter",
-    "es": "Inversor Deye",
-    "da": "Deye Inverter",
-    "pl": "Falownik Deye"
+    "en": "SOFAR Inverter",
+    "nl": "SOFAR Omvormer",
+    "de": "SOFAR Wechselrichter",
+    "fr": "Onduleur SOFAR",
+    "it": "Inverter SOFAR",
+    "sv": "SOFAR Växelriktare",
+    "no": "SOFAR Vekselretter",
+    "es": "Inversor SOFAR",
+    "da": "SOFAR Inverter",
+    "pl": "Falownik SOFAR"
   },
   "class": "solarpanel",
   "capabilities": [],

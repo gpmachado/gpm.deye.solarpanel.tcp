@@ -20,7 +20,7 @@ The existing Deye app for Homey ([com.heszi.deye](https://github.com/heszegi/com
 | `deye_micro_2mppt` | SUN600G3 / SUN800G3 / SUN1000G3 microinverter (2 MPPT) | Microinverter | ⚠️ Untested |
 | `deye_hybrid` | SUN-xK-SG0xLP1 / SG0xHP (single-phase hybrid) | Hybrid + Battery | ✅ Tested (Sun-5k-SG01HP3-EU-AM2) |
 | `deye_sg04lp3` | SUN-8/10/12K-SG04LP3-EU (3-phase hybrid) | 3-phase Hybrid | ⚠️ Untested |
-| `sofar_g3_hybrid` | SOFAR ESI-T1 / HYD 5-20KTL-3PH (G3 protocol, LSW3 logger) | 3-phase Hybrid | 🧪 Beta, manual selection only (register map verified against ESI-12K-T1 dumps) |
+| `sofar_g3_hybrid` | SOFAR ESI-T1 / HYD 5-20KTL-3PH (G3 protocol, LSW3 logger) | 3-phase Hybrid | 🧪 Beta — separate **SOFAR Inverter** driver, no auto-detection (verified on an ESI-12K-T1) |
 
 Register definitions are adapted from [ha-solarman](https://github.com/StephanJoubert/home_assistant_solarman) (MIT). The SOFAR G3 map also follows SOFARSOLAR's Modbus-G3 protocol V1.42.
 
@@ -74,7 +74,7 @@ inverter_definitions/
 
 The driver reads register sets from all 4 models and scores each one based on non-zero values returned. The model with the highest score is selected. The user can override the detected model in the confirmation step before adding the device.
 
-SOFAR models are never auto-detected: SOFAR uses a different register map, and probing it with Deye maps returns plausible-looking but wrong values. SOFAR owners pick **SOFAR G3 Hybrid 3-phase** from the model dropdown during pairing.
+SOFAR inverters have their own **SOFAR Inverter** driver (add device → SOFAR Inverter) and are never auto-detected: SOFAR uses a different register map, and probing it with Deye maps returns plausible-looking but wrong values. The Deye driver only auto-detects between Deye models.
 
 ## Night behaviour
 
