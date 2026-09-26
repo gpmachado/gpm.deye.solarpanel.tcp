@@ -45,12 +45,13 @@ class MyApp(App):
         battery_soc: Any = None
         has_battery = False
 
-        try:
-            driver = self.homey.drivers.get_driver("deye")
-            devices = driver.get_devices() if driver else []
-        except Exception as e:
-            self.log(f"get_solar_summary: driver lookup failed: {e}")
-            devices = []
+        devices = []
+        for driver_id in ("deye", "sofar"):
+            try:
+                driver = self.homey.drivers.get_driver(driver_id)
+                devices.extend(driver.get_devices() if driver else [])
+            except Exception as e:
+                self.log(f"get_solar_summary: driver {driver_id} lookup failed: {e}")
 
         for device in devices:
             try:
@@ -67,8 +68,11 @@ class MyApp(App):
                         grid = device.get_capability_value("measure_power.grid")
                 elif dtype == "battery":
                     has_battery = True
-                    if device.has_capability("measure_power.battery"):
-                        battery = device.get_capability_value("measure_power.battery")
+                    # measure_power: Homey convention, + = charging (what the widget
+                    # expects). Always present, unlike the legacy measure_power.battery
+                    # (+ = discharging), which new pairings no longer get.
+                    if device.has_capability("measure_power"):
+                        battery = device.get_capability_value("measure_power")
                     if device.has_capability("measure_battery"):
                         battery_soc = device.get_capability_value("measure_battery")
             except Exception as e:
