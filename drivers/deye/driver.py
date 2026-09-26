@@ -862,6 +862,11 @@ class DeyeDriver(Driver):
                     # off); existing devices keep it — see device.py _sync_battery_legacy_cap.
                     batt_caps_final.remove(BATTERY_LEGACY_CAP)
                     batt_opts_final.pop(BATTERY_LEGACY_CAP, None)
+                # Charge/discharge state is derived from Battery Power in device.py —
+                # add it even when the register map has no status register (SOFAR).
+                if "battery_charging_state" not in batt_caps_final:
+                    batt_caps_final.append("battery_charging_state")
+                    batt_opts_final["battery_charging_state"] = {"title": capability_title("Battery Status")}
 
                 devices.append({
                     "name": f"{self.MODELS[model_id]} — Battery",

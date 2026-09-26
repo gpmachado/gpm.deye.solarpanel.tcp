@@ -199,6 +199,16 @@ class DeyeDevice(Device):
         """
         if not self._is_battery or not self.has_capability("measure_power"):
             return
+        # Derived from Battery Power in _on_values; SOFAR maps have no status register,
+        # so SOFAR battery devices paired in 1.4.12 lack it (needed by the Flow triggers).
+        if not self.has_capability("battery_charging_state"):
+            try:
+                await self.add_capability("battery_charging_state")
+                await self.set_capability_options(
+                    "battery_charging_state", {"title": capability_title("Battery Status")})
+                self.log("Added battery_charging_state")
+            except Exception as e:
+                _LOGGER.warning(f"Add battery_charging_state failed: {e}")
         if (self.get_store() or {}).get("battery_split_v") == 1:
             return
         for cap_id, title in BATTERY_SPLIT_CAP_TITLES.items():
@@ -601,6 +611,12 @@ class DeyeDevice(Device):
                         await self._set("measure_power.battery_discharging", max(raw, 0.0))
             except Exception as e:
                 _LOGGER.debug(f"Battery mirror update failed: {e}")
+            # Battery charging/discharging started — must run here: the shared
+            # _fire_flow_triggers() below only runs for the inverter device.
+            try:
+                await self._fire_battery_triggers()
+            except Exception as e:
+                _LOGGER.debug(f"Battery flow trigger evaluation failed: {e}")
         elif self._is_grid_meter:
             try:
                 # Mirror live grid power to base measure_power for measurePowerConsumedCapability.
@@ -611,6 +627,11 @@ class DeyeDevice(Device):
                         await self._set("measure_power", float(grid_pwr))
             except Exception as e:
                 _LOGGER.debug(f"Grid meter mirror update failed: {e}")
+            # Grid export/import started — same reason as the battery triggers above.
+            try:
+                await self._fire_grid_meter_triggers()
+            except Exception as e:
+                _LOGGER.debug(f"Grid meter flow trigger evaluation failed: {e}")
         else:
             # Fault/alarm bit decoding — "Alert" exists on deye_hybrid,
             # deye_sg04lp3 and deye_string (see JSON definitions); absent on micro.
@@ -808,6 +829,10 @@ class DeyeDevice(Device):
             return
         state = self.get_capability_value("battery_charging_state")
         if not state or state == self._prev_charging_state:
+            return
+        if self._prev_charging_state is None:
+            # First poll after startup — record state silently, no transition to fire.
+            self._prev_charging_state = state
             return
         soc = float(self.get_capability_value("measure_battery") or 0)
         if state == "charge":

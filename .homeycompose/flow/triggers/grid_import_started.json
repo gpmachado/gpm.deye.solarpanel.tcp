@@ -19,7 +19,7 @@
     {
       "type": "device",
       "name": "device",
-      "filter": "driver_id=deye|sofar&capabilities=measure_power.grid"
+      "filter": "driver_id=deye|sofar&capabilities=meter_power.exported"
     }
   ],
   "tokens": [

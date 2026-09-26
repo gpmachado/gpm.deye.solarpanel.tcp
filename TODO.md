@@ -13,6 +13,11 @@
 
 ## Depois
 
+- [ ] **Widget "Power Flow" (1.4.14)** — fluxo de energia como o display SOFAR: Solar →
+  INV → Bateria / Rede / Casa, setas animadas no sentido do fluxo, SOC da bateria.
+  Reusar `get_solar_summary()` (app.py) — já traz solar, grid, load, battery (+ = carga)
+  e battery_soc de Deye e SOFAR. Sem bateria/rede (string/micro): esconder esses ramos.
+  Casas com 2+ inversores: adicionar definição no widget para escolher o dispositivo.
 - [ ] Avaliar trigger de alteração significativa de potência solar.
 - [ ] Avaliar trigger de mudança de status do inversor.
 - [ ] Avaliar trigger de mudança de SOC da bateria.
