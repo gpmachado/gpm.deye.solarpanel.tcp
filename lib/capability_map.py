@@ -170,10 +170,10 @@ _CAPABILITY_TITLES: dict[str, dict[str, str]] = {
         'sv': 'L3 Spänning',
     },
     'Load Power': {
-        'en': 'Load Power', 'da': 'Belastningseffekt', 'de': 'Lastleistung',
-        'es': 'Potencia de Carga', 'fr': 'Puissance Charge', 'it': 'Potenza di Carico',
-        'nl': 'Belastingsvermogen', 'no': 'Belastningseffekt', 'pl': 'Moc Obciążenia',
-        'sv': 'Lasteffekt',
+        'en': 'House Load', 'da': 'Husforbrug', 'de': 'Hausverbrauch',
+        'es': 'Consumo de la Casa', 'fr': 'Consommation maison', 'it': 'Consumo Casa',
+        'nl': 'Huisverbruik', 'no': 'Husforbruk', 'pl': 'Zużycie Domu',
+        'sv': 'Husförbrukning',
     },
     'Micro-inverter Power': {
         'en': 'Micro-inverter Power', 'da': 'Mikroinverter-effekt', 'de': 'Mikrowechselrichter-Leistung',
@@ -296,16 +296,16 @@ _CAPABILITY_TITLES: dict[str, dict[str, str]] = {
         'sv': 'Dagens Import',
     },
     'Today Load Consumption': {
-        'en': 'Today Load Consumption', 'da': 'Dagens Forbrug', 'de': 'Heutiger Lastverbrauch',
-        'es': 'Consumo de Carga Hoy', 'fr': 'Consommation Charge Aujourd\u2019hui', 'it': 'Consumo Carico Oggi',
-        'nl': 'Belastingsverbruik Vandaag', 'no': 'Dagens Belastningsforbruk', 'pl': 'Zużycie Obciążenia Dzisiaj',
-        'sv': 'Dagens Lastförbrukning',
+        'en': 'House Consumption Today', 'da': 'Husforbrug i Dag', 'de': 'Hausverbrauch Heute',
+        'es': 'Consumo de la Casa Hoy', 'fr': 'Consommation maison aujourd’hui', 'it': 'Consumo Casa Oggi',
+        'nl': 'Huisverbruik Vandaag', 'no': 'Husforbruk i Dag', 'pl': 'Zużycie Domu Dziś',
+        'sv': 'Husförbrukning Idag',
     },
     'Total Load Consumption': {
-        'en': 'Total Load Consumption', 'da': 'Samlet Forbrug', 'de': 'Gesamter Lastverbrauch',
-        'es': 'Consumo Total de Carga', 'fr': 'Consommation Totale Charge', 'it': 'Consumo Totale Carico',
-        'nl': 'Totaal Belastingsverbruik', 'no': 'Total Belastningsforbruk', 'pl': 'Całkowite Zużycie Obciążenia',
-        'sv': 'Total Lastförbrukning',
+        'en': 'House Consumption Total', 'da': 'Samlet Husforbrug', 'de': 'Gesamter Hausverbrauch',
+        'es': 'Consumo Total de la Casa', 'fr': 'Consommation maison totale', 'it': 'Consumo Totale Casa',
+        'nl': 'Totaal Huisverbruik', 'no': 'Totalt Husforbruk', 'pl': 'Całkowite Zużycie Domu',
+        'sv': 'Total Husförbrukning',
     },
     'Total Production': {
         'en': 'Total Production', 'da': 'Samlet Produktion', 'de': 'Gesamtproduktion',
@@ -510,6 +510,16 @@ BATTERY_CAPS: frozenset[str] = frozenset({
     "meter_power.battery_charged",
     "meter_power.battery_discharged",
 })
+
+
+# Titles renamed in 1.4.14 ("Load" read like battery charging next to Charge
+# Power — identical in Spanish, "Puissance Charge" in French). Re-applied once
+# to already-paired inverter devices by device.py _retitle_house_caps.
+HOUSE_CAP_TITLES: dict[str, str] = {
+    "measure_power.load":     "Load Power",
+    "meter_power.today_load": "Today Load Consumption",
+    "meter_power.load_total": "Total Load Consumption",
+}
 
 
 # Battery power split into two never-negative values (1.4.13, community issue #3).

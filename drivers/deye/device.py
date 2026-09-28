@@ -21,6 +21,7 @@ from app.lib.capability_map import (
     get_sensor_capability_map, BATTERY_CAPS, GRID_METER_CAPS, GRID_CAP_REMAP,
     PV_DETAIL_CAPS, AC_DETAIL_CAPS, DETAIL_CAP_TITLES, ADVANCED_CAP_TITLES, capability_title,
     BATTERY_SPLIT_CAP_TITLES, BATTERY_LEGACY_CAP, BATTERY_LEGACY_TITLE, BATTERY_ENERGY_TITLE,
+    HOUSE_CAP_TITLES,
 )
 from app.drivers.deye.driver import _advanced_caps_for_model, _DERIVED_PV_POWER_MODELS
 from app.lib import shared_poller as _poller_mod
@@ -145,6 +146,7 @@ class DeyeDevice(Device):
 
         await self._ensure_pv_structural_caps()
         await self._ensure_battery_split_caps()
+        await self._retitle_house_caps()
         await self._sync_battery_legacy_cap()
         await self._sync_detail_caps("showPvDetail", PV_DETAIL_CAPS)
         await self._sync_detail_caps("showAcDetail", AC_DETAIL_CAPS)
@@ -241,6 +243,26 @@ class DeyeDevice(Device):
             await self.set_store_value("battery_split_v", 1)
         except Exception as e:
             _LOGGER.warning(f"Store battery_split_v failed: {e}")
+
+    async def _retitle_house_caps(self) -> None:
+        """Inverter device: apply the 1.4.14 house-consumption titles to devices
+        paired earlier (capability titles are fixed at pairing). Labels only —
+        IDs and values are unchanged, so Flows are unaffected. Runs once."""
+        if self._is_battery or self._is_grid_meter:
+            return
+        if (self.get_store() or {}).get("house_titles_v") == 1:
+            return
+        for cap_id, title in HOUSE_CAP_TITLES.items():
+            if not self.has_capability(cap_id):
+                continue
+            try:
+                await self.set_capability_options(cap_id, {"title": capability_title(title)})
+            except Exception as e:
+                _LOGGER.warning(f"Retitle {cap_id} failed: {e}")
+        try:
+            await self.set_store_value("house_titles_v", 1)
+        except Exception as e:
+            _LOGGER.warning(f"Store house_titles_v failed: {e}")
 
     async def _sync_battery_legacy_cap(self, value=_UNSET) -> None:
         """Battery device: show/hide the legacy signed measure_power.battery
