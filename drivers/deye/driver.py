@@ -528,6 +528,185 @@ async def _fetch_logger_serial_udp(host: str, timeout: float = 2.0) -> int | Non
     return found_serial[0]
 
 
+def plan_device_capabilities(model_id: str, active_values: dict | None, advanced: bool,
+                             string_optionals=None) -> dict[str, dict]:
+    """Capabilities + options for each device a model creates, keyed by device
+    type ("inverter", "battery", "grid_meter"; battery/grid only for hybrids).
+
+    Single source of truth for pairing (on_list_devices) and for
+    device.py restore_capabilities(), which re-adds missing capabilities on an
+    existing device without re-pairing. `active_values` (parsed register
+    values) only drives the PV3/PV4 "is it wired?" filter; empty = no filter.
+    """
+    active_values = active_values or {}
+    sensors = _load_sensors(model_id)
+
+    # Filter sensors that returned non-zero data during detection.
+    # Purpose: exclude PV input channels that are not physically wired
+    # (e.g. PV3/PV4 inputs on a 2-MPPT inverter always read 0).
+    # Sensors that may legitimately read 0 at night (power, grid, temperature)
+    # are always kept — their capabilities are structurally required by Homey.
+    _ALWAYS_KEEP = {"Today Production", "Total Production", "Running Status"}
+    _METER_KEYWORDS = ("energy", "production", "charged", "discharged",
+                       "import", "export", "buy", "sell")
+    import re as _re
+    if active_values:
+        def _keep(s: dict) -> bool:
+            if s["name"] in _ALWAYS_KEEP:
+                return True
+            if "lookup" in s:
+                return True
+            name_lower = s["name"].lower()
+            # Cumulative energy counters are always meaningful even when 0
+            if any(kw in name_lower for kw in _METER_KEYWORDS):
+                return True
+            # Only filter PV-specific channel sensors (e.g. "PV1 Voltage",
+            # "PV3 Current", "PV4 Power") based on actual detection values.
+            # Unconnected PV inputs return 0 consistently; this excludes them
+            # so the device doesn't show dead channels as capabilities.
+            # Everything else (AC power, grid, temperature, frequency …) is
+            # always kept — it may read 0 at night but the capability is real.
+            if _re.search(r'\bpv\s*\d+\b', name_lower):
+                # PV1 and PV2 are structural on every Deye model — always keep.
+                # (deye_string/hybrid: 2-MPPT min; deye_sg04lp3: only has PV1/PV2;
+                #  deye_micro: requires at least PV1/PV2 to operate.)
+                # Filtering them out when detection runs near sunset leaves the
+                # device without PV sub-caps and no measure_power.solar, which
+                # causes the Energy Dashboard to fall back to AC Output Power.
+                if _re.search(r'\bpv\s*[12]\b', name_lower):
+                    return True
+                # PV3/PV4 may be unconnected optional inputs — filter by values.
+                return bool(active_values.get(s["name"]))
+            return True
+        sensors = [s for s in sensors if _keep(s)]
+
+    caps, caps_opts = build_capabilities(sensors)
+
+    # Hybrid models get a separate Grid Meter device — grid caps are split off.
+    # String/micro inverters keep grid caps on the main inverter tile (no grid device).
+    is_hybrid = model_id in HYBRID_MODELS
+
+    battery_caps  = [c for c in caps if c in BATTERY_CAPS]
+    grid_caps_raw = [c for c in caps if c in GRID_METER_CAPS] if is_hybrid else []
+    inverter_caps = [c for c in caps
+                     if c not in BATTERY_CAPS and (not is_hybrid or c not in GRID_METER_CAPS)]
+    battery_opts  = {k: v for k, v in caps_opts.items() if k in BATTERY_CAPS}
+    grid_opts_raw = ({k: v for k, v in caps_opts.items() if k in GRID_METER_CAPS}
+                     if is_hybrid else {})
+    inverter_opts = {k: v for k, v in caps_opts.items()
+                     if k not in BATTERY_CAPS and (not is_hybrid or k not in GRID_METER_CAPS)}
+
+    advanced_caps = set(_advanced_caps_for_model(model_id))
+    if model_id == "deye_string":
+        for selected in set(string_optionals or ()):
+            advanced_caps.difference_update(_STRING_OPTION_GROUPS.get(selected, frozenset()))
+
+    # ── Strip advanced capabilities unless user opted in ───────────────
+    # Battery caps and grid meter caps are already separated above and are
+    # never affected by this filter (they're structurally required for hybrids).
+    if not advanced:
+        inverter_caps = [c for c in inverter_caps if c not in advanced_caps]
+        inverter_opts = {k: v for k, v in inverter_opts.items() if k not in advanced_caps}
+
+    # NOTE: PV string / AC connection Voltage+Current (PV_DETAIL_CAPS,
+    # AC_DETAIL_CAPS) are paired normally like any other capability —
+    # they default to shown (showPvDetail/showAcDetail default to true
+    # in driver.compose.json) so existing users see no change. Anyone
+    # who wants a cleaner tile can uncheck those settings after pairing;
+    # device.py's _sync_detail_caps() removes them without re-pairing.
+
+    # ── Inject derived PV1/PV2 power for string/micro ────────────────
+    # deye_string and both micro variants have no direct PV-power registers.
+    # Power is computed at runtime as V×I (see device.py _on_values).
+    # We add the capability explicitly here so the Energy Dashboard picks
+    # it up and so the pv_caps check below includes them.
+    if model_id in _DERIVED_PV_POWER_MODELS:
+        for cap_id, title in (
+            ("measure_power.pv1", "PV1 Power"),
+            ("measure_power.pv2", "PV2 Power"),
+        ):
+            if cap_id not in inverter_caps:
+                inverter_caps.append(cap_id)
+                inverter_opts[cap_id] = {"title": capability_title(title)}
+
+    # Decoded fault/alarm detail — register block 101-106 ("Warning
+    # message word 1-2" + "Fault information word 1-4") is confirmed
+    # present on deye_string too by Deye's official Modbus protocol
+    # V118 doc (covers Single Phase, String & Microinverters), same
+    # layout as the hybrid "Alert" block. See lib/fault_codes.py.
+    if model_id in _FAULT_DECODE_MODELS and "fault_description" not in inverter_caps:
+        inverter_caps.append("fault_description")
+        # Empty entry so _apply_cap_icons() (below) picks it up and
+        # injects the icon — the capability's own base title
+        # ("Fault / Alarm Detail") is used as-is, no override needed.
+        inverter_opts["fault_description"] = {}
+
+    # Add measure_power.solar for inverters with PV sub-capabilities or Input Power.
+    # Points Energy Dashboard to solar-only production (not AC output).
+    # Note: Input Power (DC from PV array) also maps to measure_power.solar via
+    # capability_map — avoid inserting a duplicate if it's already present.
+    pv_caps = [c for c in inverter_caps if c.startswith("measure_power.pv")]
+    has_solar = "measure_power.solar" in inverter_caps
+    if pv_caps and not has_solar:
+        inverter_caps = ["measure_power.solar"] + inverter_caps
+        inverter_opts["measure_power.solar"] = {"title": capability_title("Solar Power (DC Input)")}
+    elif has_solar and "measure_power.solar" not in inverter_opts:
+        inverter_opts["measure_power.solar"] = {"title": capability_title("Solar Power (DC Input)")}
+    produced_cap = "measure_power.solar" if (pv_caps or has_solar) else "measure_power"
+
+    plan: dict[str, dict] = {"inverter": {
+        "caps": inverter_caps,
+        "opts": _apply_cap_icons(inverter_opts, "inverter"),
+        "produced_cap": produced_cap,
+    }}
+
+    if battery_caps:
+        batt_caps_final = list(battery_caps)
+        batt_opts_final = dict(battery_opts)
+        if BATTERY_LEGACY_CAP in batt_caps_final:
+            # Energy Dashboard needs measure_power (signed, + = charging) to
+            # track charge/discharge flow — hidden from the device card, where
+            # the never-negative Charge/Discharge Power pair is shown instead.
+            batt_caps_final.insert(0, "measure_power")
+            batt_opts_final["measure_power"] = {
+                "title": capability_title(BATTERY_ENERGY_TITLE),
+                "uiComponent": None,
+            }
+            for i, (cap_id, title) in enumerate(BATTERY_SPLIT_CAP_TITLES.items(), start=1):
+                batt_caps_final.insert(i, cap_id)
+                batt_opts_final[cap_id] = {"title": capability_title(title)}
+            # New devices start without the legacy signed value (showBatterySigned
+            # off); existing devices keep it — see device.py _sync_battery_legacy_cap.
+            batt_caps_final.remove(BATTERY_LEGACY_CAP)
+            batt_opts_final.pop(BATTERY_LEGACY_CAP, None)
+        # Charge/discharge state is derived from Battery Power in device.py —
+        # add it even when the register map has no status register (SOFAR).
+        if "battery_charging_state" not in batt_caps_final:
+            batt_caps_final.append("battery_charging_state")
+            batt_opts_final["battery_charging_state"] = {"title": capability_title("Battery Status")}
+        plan["battery"] = {"caps": batt_caps_final, "opts": _apply_cap_icons(batt_opts_final, "battery")}
+
+    if grid_caps_raw:
+        # Remap internal cap IDs to standard Homey Energy names for a cumulative sensor
+        grid_caps_final = [GRID_CAP_REMAP.get(c, c) for c in grid_caps_raw]
+        grid_opts_final = {GRID_CAP_REMAP.get(k, k): v for k, v in grid_opts_raw.items()}
+        # Fix titles for remapped caps
+        if "meter_power" in grid_opts_final:
+            grid_opts_final["meter_power"]["title"] = capability_title("Grid Import Energy")
+        if "meter_power.exported" in grid_opts_final:
+            grid_opts_final["meter_power.exported"] = {"title": capability_title("Grid Export Energy")}
+        if "measure_power.grid" in grid_opts_final:
+            grid_opts_final["measure_power.grid"]["title"] = capability_title("Grid Power")
+        # Add base measure_power cap so Homey Energy can track live grid consumption.
+        # measurePowerConsumedCapability requires a base measure_power (not a sub-cap).
+        if "measure_power.grid" in grid_caps_final and "measure_power" not in grid_caps_final:
+            grid_caps_final = ["measure_power"] + grid_caps_final
+            grid_opts_final["measure_power"] = {"title": capability_title("Grid Power (Live)")}
+        plan["grid_meter"] = {"caps": grid_caps_final, "opts": _apply_cap_icons(grid_opts_final, "grid_meter")}
+
+    return plan
+
+
 class DeyeDriver(Driver):
     # Overridden by drivers/sofar/driver.py.
     MODELS: dict[str, str] = DEYE_MODELS
@@ -698,120 +877,14 @@ class DeyeDriver(Driver):
             model_id     = confirmed["model_id"]
             active_values = confirmed.get("active_values", {})
 
-            sensors = _load_sensors(model_id)
-
-            # Filter sensors that returned non-zero data during detection.
-            # Purpose: exclude PV input channels that are not physically wired
-            # (e.g. PV3/PV4 inputs on a 2-MPPT inverter always read 0).
-            # Sensors that may legitimately read 0 at night (power, grid, temperature)
-            # are always kept — their capabilities are structurally required by Homey.
-            _ALWAYS_KEEP = {"Today Production", "Total Production", "Running Status"}
-            _METER_KEYWORDS = ("energy", "production", "charged", "discharged",
-                               "import", "export", "buy", "sell")
-            import re as _re
-            if active_values:
-                def _keep(s: dict) -> bool:
-                    if s["name"] in _ALWAYS_KEEP:
-                        return True
-                    if "lookup" in s:
-                        return True
-                    name_lower = s["name"].lower()
-                    # Cumulative energy counters are always meaningful even when 0
-                    if any(kw in name_lower for kw in _METER_KEYWORDS):
-                        return True
-                    # Only filter PV-specific channel sensors (e.g. "PV1 Voltage",
-                    # "PV3 Current", "PV4 Power") based on actual detection values.
-                    # Unconnected PV inputs return 0 consistently; this excludes them
-                    # so the device doesn't show dead channels as capabilities.
-                    # Everything else (AC power, grid, temperature, frequency …) is
-                    # always kept — it may read 0 at night but the capability is real.
-                    if _re.search(r'\bpv\s*\d+\b', name_lower):
-                        # PV1 and PV2 are structural on every Deye model — always keep.
-                        # (deye_string/hybrid: 2-MPPT min; deye_sg04lp3: only has PV1/PV2;
-                        #  deye_micro: requires at least PV1/PV2 to operate.)
-                        # Filtering them out when detection runs near sunset leaves the
-                        # device without PV sub-caps and no measure_power.solar, which
-                        # causes the Energy Dashboard to fall back to AC Output Power.
-                        if _re.search(r'\bpv\s*[12]\b', name_lower):
-                            return True
-                        # PV3/PV4 may be unconnected optional inputs — filter by values.
-                        return bool(active_values.get(s["name"]))
-                    return True
-                sensors = [s for s in sensors if _keep(s)]
-
-            caps, caps_opts = build_capabilities(sensors)
-
-            # Hybrid models get a separate Grid Meter device — grid caps are split off.
-            # String/micro inverters keep grid caps on the main inverter tile (no grid device).
-            is_hybrid = model_id in HYBRID_MODELS
-
-            battery_caps  = [c for c in caps if c in BATTERY_CAPS]
-            grid_caps_raw = [c for c in caps if c in GRID_METER_CAPS] if is_hybrid else []
-            inverter_caps = [c for c in caps
-                             if c not in BATTERY_CAPS and (not is_hybrid or c not in GRID_METER_CAPS)]
-            battery_opts  = {k: v for k, v in caps_opts.items() if k in BATTERY_CAPS}
-            grid_opts_raw = ({k: v for k, v in caps_opts.items() if k in GRID_METER_CAPS}
-                             if is_hybrid else {})
-            inverter_opts = {k: v for k, v in caps_opts.items()
-                             if k not in BATTERY_CAPS and (not is_hybrid or k not in GRID_METER_CAPS)}
-
-            advanced_caps = set(_advanced_caps_for_model(model_id))
-            if model_id == "deye_string":
-                for selected in confirmed.get("string_optionals", set()):
-                    advanced_caps.difference_update(_STRING_OPTION_GROUPS.get(selected, frozenset()))
-
-            # ── Strip advanced capabilities unless user opted in ───────────────
-            # Battery caps and grid meter caps are already separated above and are
-            # never affected by this filter (they're structurally required for hybrids).
-            if not confirmed.get("advanced", False):
-                inverter_caps = [c for c in inverter_caps if c not in advanced_caps]
-                inverter_opts = {k: v for k, v in inverter_opts.items() if k not in advanced_caps}
-
-            # NOTE: PV string / AC connection Voltage+Current (PV_DETAIL_CAPS,
-            # AC_DETAIL_CAPS) are paired normally like any other capability —
-            # they default to shown (showPvDetail/showAcDetail default to true
-            # in driver.compose.json) so existing users see no change. Anyone
-            # who wants a cleaner tile can uncheck those settings after pairing;
-            # device.py's _sync_detail_caps() removes them without re-pairing.
-
-            # ── Inject derived PV1/PV2 power for string/micro ────────────────
-            # deye_string and both micro variants have no direct PV-power registers.
-            # Power is computed at runtime as V×I (see device.py _on_values).
-            # We add the capability explicitly here so the Energy Dashboard picks
-            # it up and so the pv_caps check below includes them.
-            if model_id in _DERIVED_PV_POWER_MODELS:
-                for cap_id, title in (
-                    ("measure_power.pv1", "PV1 Power"),
-                    ("measure_power.pv2", "PV2 Power"),
-                ):
-                    if cap_id not in inverter_caps:
-                        inverter_caps.append(cap_id)
-                        inverter_opts[cap_id] = {"title": capability_title(title)}
-
-            # Decoded fault/alarm detail — register block 101-106 ("Warning
-            # message word 1-2" + "Fault information word 1-4") is confirmed
-            # present on deye_string too by Deye's official Modbus protocol
-            # V118 doc (covers Single Phase, String & Microinverters), same
-            # layout as the hybrid "Alert" block. See lib/fault_codes.py.
-            if model_id in _FAULT_DECODE_MODELS and "fault_description" not in inverter_caps:
-                inverter_caps.append("fault_description")
-                # Empty entry so _apply_cap_icons() (below) picks it up and
-                # injects the icon — the capability's own base title
-                # ("Fault / Alarm Detail") is used as-is, no override needed.
-                inverter_opts["fault_description"] = {}
-
-            # Add measure_power.solar for inverters with PV sub-capabilities or Input Power.
-            # Points Energy Dashboard to solar-only production (not AC output).
-            # Note: Input Power (DC from PV array) also maps to measure_power.solar via
-            # capability_map — avoid inserting a duplicate if it's already present.
-            pv_caps = [c for c in inverter_caps if c.startswith("measure_power.pv")]
-            has_solar = "measure_power.solar" in inverter_caps
-            if pv_caps and not has_solar:
-                inverter_caps = ["measure_power.solar"] + inverter_caps
-                inverter_opts["measure_power.solar"] = {"title": capability_title("Solar Power (DC Input)")}
-            elif has_solar and "measure_power.solar" not in inverter_opts:
-                inverter_opts["measure_power.solar"] = {"title": capability_title("Solar Power (DC Input)")}
-            produced_cap = "measure_power.solar" if (pv_caps or has_solar) else "measure_power"
+            plan = plan_device_capabilities(
+                model_id, active_values, bool(confirmed.get("advanced", False)),
+                confirmed.get("string_optionals", set()),
+            )
+            inverter_caps = plan["inverter"]["caps"]
+            produced_cap  = plan["inverter"]["produced_cap"]
+            battery_caps  = plan.get("battery", {}).get("caps", [])
+            grid_caps_raw = plan.get("grid_meter", {}).get("caps", [])
 
             base_settings = {
                 "host":            host,
@@ -835,7 +908,7 @@ class DeyeDriver(Driver):
                 "data": {"id": f"{self.DEVICE_ID_PREFIX}_{serial}_inverter"},
                 "class": "solarpanel",
                 "capabilities": inverter_caps,
-                "capabilitiesOptions": _apply_cap_icons(inverter_opts, "inverter"),
+                "capabilitiesOptions": plan["inverter"]["opts"],
                 "energy": {
                     "measurePowerProducedCapability": produced_cap,
                     "meterPowerExportedCapability":   "meter_power",
@@ -844,37 +917,13 @@ class DeyeDriver(Driver):
             }]
 
             if battery_caps:
-                batt_caps_final = list(battery_caps)
-                batt_opts_final = dict(battery_opts)
-                if BATTERY_LEGACY_CAP in batt_caps_final:
-                    # Energy Dashboard needs measure_power (signed, + = charging) to
-                    # track charge/discharge flow — hidden from the device card, where
-                    # the never-negative Charge/Discharge Power pair is shown instead.
-                    batt_caps_final.insert(0, "measure_power")
-                    batt_opts_final["measure_power"] = {
-                        "title": capability_title(BATTERY_ENERGY_TITLE),
-                        "uiComponent": None,
-                    }
-                    for i, (cap_id, title) in enumerate(BATTERY_SPLIT_CAP_TITLES.items(), start=1):
-                        batt_caps_final.insert(i, cap_id)
-                        batt_opts_final[cap_id] = {"title": capability_title(title)}
-                    # New devices start without the legacy signed value (showBatterySigned
-                    # off); existing devices keep it — see device.py _sync_battery_legacy_cap.
-                    batt_caps_final.remove(BATTERY_LEGACY_CAP)
-                    batt_opts_final.pop(BATTERY_LEGACY_CAP, None)
-                # Charge/discharge state is derived from Battery Power in device.py —
-                # add it even when the register map has no status register (SOFAR).
-                if "battery_charging_state" not in batt_caps_final:
-                    batt_caps_final.append("battery_charging_state")
-                    batt_opts_final["battery_charging_state"] = {"title": capability_title("Battery Status")}
-
                 devices.append({
                     "name": f"{self.MODELS[model_id]} — Battery",
                     "icon": "/icon_battery.svg",
                     "data": {"id": f"{self.DEVICE_ID_PREFIX}_{serial}_battery"},
                     "class": "battery",
-                    "capabilities": batt_caps_final,
-                    "capabilitiesOptions": _apply_cap_icons(batt_opts_final, "battery"),
+                    "capabilities": battery_caps,
+                    "capabilitiesOptions": plan["battery"]["opts"],
                     "energy": {
                         "homeBattery": True,
                         "meterPowerImportedCapability": "meter_power.battery_charged",
@@ -882,35 +931,18 @@ class DeyeDriver(Driver):
                     },
                     "settings": {**base_settings, "device_type": "battery", "showBatterySigned": False},
                 })
-                self.log(f"Battery device — caps:{batt_caps_final}")
+                self.log(f"Battery device — caps:{battery_caps}")
             else:
                 self.log("No battery caps detected — battery device skipped")
 
             if grid_caps_raw:
-                # Remap internal cap IDs to standard Homey Energy names for a cumulative sensor
-                grid_caps_final = [GRID_CAP_REMAP.get(c, c) for c in grid_caps_raw]
-                grid_opts_final = {GRID_CAP_REMAP.get(k, k): v for k, v in grid_opts_raw.items()}
-                # Fix titles for remapped caps
-                if "meter_power" in grid_opts_final:
-                    grid_opts_final["meter_power"]["title"] = capability_title("Grid Import Energy")
-                if "meter_power.exported" in grid_opts_final:
-                    grid_opts_final["meter_power.exported"] = {"title": capability_title("Grid Export Energy")}
-                if "measure_power.grid" in grid_opts_final:
-                    grid_opts_final["measure_power.grid"]["title"] = capability_title("Grid Power")
-
-                # Add base measure_power cap so Homey Energy can track live grid consumption.
-                # measurePowerConsumedCapability requires a base measure_power (not a sub-cap).
-                if "measure_power.grid" in grid_caps_final and "measure_power" not in grid_caps_final:
-                    grid_caps_final = ["measure_power"] + grid_caps_final
-                    grid_opts_final["measure_power"] = {"title": capability_title("Grid Power (Live)")}
-
                 devices.append({
                     "name": f"{self.MODELS[model_id]} — Meter",
                     "icon": "/icon_grid.svg",
                     "data": {"id": f"{self.DEVICE_ID_PREFIX}_{serial}_grid"},
                     "class": "sensor",
-                    "capabilities": grid_caps_final,
-                    "capabilitiesOptions": _apply_cap_icons(grid_opts_final, "grid_meter"),
+                    "capabilities": grid_caps_raw,
+                    "capabilitiesOptions": plan["grid_meter"]["opts"],
                     "energy": {
                         "cumulative": True,
                         "cumulativeImportedCapability": "meter_power",
@@ -919,7 +951,7 @@ class DeyeDriver(Driver):
                     },
                     "settings": {**base_settings, "device_type": "grid_meter"},
                 })
-                self.log(f"Grid meter device — caps:{grid_caps_final}")
+                self.log(f"Grid meter device — caps:{grid_caps_raw}")
             else:
                 self.log("No grid caps detected — grid meter device skipped")
 
@@ -935,7 +967,7 @@ class DeyeDriver(Driver):
         Repair flow — lets the user re-detect the model or fix the logger IP
         without removing and re-adding the device. Also offers an "Advanced"
         checkbox to add the sensors normally only available by checking
-        Advanced at pairing time (see DeyeDevice._add_advanced_caps) —
+        Advanced at pairing time (see DeyeDevice.restore_capabilities) —
         add-only, never removes. Changing between string and hybrid, or
         adding the Grid Meter's advanced sensors, still requires re-pairing.
         """
@@ -1037,7 +1069,7 @@ class DeyeDriver(Driver):
 
             if bool(data.get("advanced")):
                 try:
-                    await device._add_advanced_caps()
+                    await device.restore_capabilities()
                 except Exception as e:
                     self.log(f"Repair: adding advanced capabilities failed: {e}")
 

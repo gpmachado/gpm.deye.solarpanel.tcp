@@ -19,11 +19,11 @@ from astral.sun import sun
 from homey.device import Device
 from app.lib.capability_map import (
     get_sensor_capability_map, BATTERY_CAPS, GRID_METER_CAPS, GRID_CAP_REMAP,
-    PV_DETAIL_CAPS, AC_DETAIL_CAPS, DETAIL_CAP_TITLES, ADVANCED_CAP_TITLES, capability_title,
+    PV_DETAIL_CAPS, AC_DETAIL_CAPS, DETAIL_CAP_TITLES, capability_title,
     BATTERY_SPLIT_CAP_TITLES, BATTERY_LEGACY_CAP, BATTERY_LEGACY_TITLE, BATTERY_ENERGY_TITLE,
     HOUSE_CAP_TITLES,
 )
-from app.drivers.deye.driver import _advanced_caps_for_model, _DERIVED_PV_POWER_MODELS
+from app.drivers.deye.driver import _DERIVED_PV_POWER_MODELS
 from app.lib import shared_poller as _poller_mod
 from app.lib.fault_codes import decode_alert as _decode_alert
 from app.app import DEBUG_LOG as _DEBUG_LOG
@@ -31,6 +31,8 @@ from app.app import DEBUG_LOG as _DEBUG_LOG
 _LOGGER = logging.getLogger(__name__)
 
 _UNSET = object()  # sentinel distinguishing "no value passed" from an explicit None
+
+RESTORE_BUTTON_CAP = "button.restore_capabilities"
 
 _BACKOFF_NIGHT   = 30 * 60   # 30 min — inverter expected offline at night
 _WARN_THRESHOLD  = 3          # consecutive failures before set_warning (~3 min at 60 s polling)
@@ -90,6 +92,7 @@ class DeyeDevice(Device):
     _sun_cache: tuple | None = None   # (cache_date, sunrise_utc, sunset_utc)
     _was_night: bool = False          # last poll's night/day state, for transition logging
     _last_heartbeat_at: float = 0.0   # monotonic time of the last routine "poll ok" log line
+    _last_values: dict | None = None  # last successful poll — used by restore_capabilities
 
     def _heartbeat_due(self) -> bool:
         """Throttle routine (non-transition) log lines to _HEARTBEAT_INTERVAL_S apart."""
@@ -147,6 +150,7 @@ class DeyeDevice(Device):
         await self._ensure_pv_structural_caps()
         await self._ensure_battery_split_caps()
         await self._retitle_house_caps()
+        await self._ensure_restore_button()
         await self._sync_battery_legacy_cap()
         await self._sync_detail_caps("showPvDetail", PV_DETAIL_CAPS)
         await self._sync_detail_caps("showAcDetail", AC_DETAIL_CAPS)
@@ -244,6 +248,17 @@ class DeyeDevice(Device):
         except Exception as e:
             _LOGGER.warning(f"Store battery_split_v failed: {e}")
 
+    async def _ensure_restore_button(self) -> None:
+        """Maintenance action (device settings → Maintenance) that re-adds missing
+        capabilities without re-pairing. Its options (maintenanceAction, title)
+        come from driver.compose.json capabilitiesOptions."""
+        try:
+            if not self.has_capability(RESTORE_BUTTON_CAP):
+                await self.add_capability(RESTORE_BUTTON_CAP)
+            self.register_capability_listener(RESTORE_BUTTON_CAP, self._on_restore_button)
+        except Exception as e:
+            _LOGGER.warning(f"Restore button setup failed: {e}")
+
     async def _retitle_house_caps(self) -> None:
         """Inverter device: apply the 1.4.14 house-consumption titles to devices
         paired earlier (capability titles are fixed at pairing). Labels only —
@@ -334,37 +349,64 @@ class DeyeDevice(Device):
             except Exception as e:
                 _LOGGER.warning(f"Sync detail capability {cap} ({setting_id}) failed: {e}")
 
-    async def _add_advanced_caps(self) -> None:
-        """Add the inverter-device subset of "Advanced" capabilities that
-        weren't selected at pairing — called from the repair flow so an
-        existing device doesn't have to be removed and re-paired to get
-        them. One-directional (add only, never removes) — unlike
-        _sync_detail_caps, this isn't a persistent setting to toggle back off.
+    async def restore_capabilities(self) -> list[str]:
+        """Re-add every capability pairing would create for this device (with
+        all advanced sensors), on the same device — same ID, Flows and Insights
+        intact. Add only, never removes. Triggered by the "Restore capabilities"
+        maintenance button and by the repair screen.
 
-        Grid-meter-bound caps (measure_power.grid, meter_power.grid_import/
-        export) are deliberately excluded — those belong to the separate
-        Grid Meter device with remapped IDs (GRID_CAP_REMAP), which repair
-        doesn't touch (it only ever acts on the device it was opened from).
+        Uses the poller's last values for the PV3/PV4 "is it wired?" filter
+        (no extra connection to the logger, which handles concurrent clients
+        poorly); without values, PV3/PV4 are only kept if already present.
+        Respects the showPvDetail / showAcDetail / showBatterySigned settings.
+        Returns the IDs of the capabilities that were added.
         """
-        if self._is_battery or self._is_grid_meter:
-            return
-        model = self.get_setting("model") or ""
-        advanced = set(_advanced_caps_for_model(model)) - GRID_METER_CAPS - BATTERY_CAPS
-        relevant = advanced & set(self._sensor_cap_map.values())
-        for cap in relevant:
-            if self.has_capability(cap):
+        from app.drivers.deye.driver import plan_device_capabilities
+
+        model = self.get_setting("model") or "deye_string"
+        dtype = "battery" if self._is_battery else "grid_meter" if self._is_grid_meter else "inverter"
+        values = dict(self._last_values or {})
+        plan = plan_device_capabilities(model, values, advanced=True).get(dtype)
+        if not plan:
+            self.log(f"Restore capabilities: nothing planned for {dtype} ({model})")
+            return []
+
+        hidden: set[str] = set()
+        if self.get_setting("showPvDetail") is False:
+            hidden |= PV_DETAIL_CAPS
+        if self.get_setting("showAcDetail") is False:
+            hidden |= AC_DETAIL_CAPS
+
+        added: list[str] = []
+        for cap in plan["caps"]:
+            if self.has_capability(cap) or cap in hidden:
                 continue
+            if not values and (".pv3" in cap or ".pv4" in cap):
+                continue
+            opts = {k: v for k, v in plan["opts"].get(cap, {}).items() if k in ("title", "uiComponent")}
             try:
                 await self.add_capability(cap)
-                title_key = ADVANCED_CAP_TITLES.get(cap)
-                if title_key:
-                    try:
-                        await self.set_capability_options(cap, {"title": capability_title(title_key)})
-                    except Exception as e:
-                        _LOGGER.warning(f"Set title for {cap} failed: {e}")
-                self.log(f"Added advanced capability {cap} (repair)")
+                added.append(cap)
             except Exception as e:
-                _LOGGER.warning(f"Add advanced capability {cap} failed: {e}")
+                _LOGGER.warning(f"Restore: add {cap} failed: {e}")
+                continue
+            if opts:
+                try:
+                    await self.set_capability_options(cap, opts)
+                except Exception as e:
+                    _LOGGER.warning(f"Restore: set options for {cap} failed ({e}) — title only")
+                    if "title" in opts:
+                        try:
+                            await self.set_capability_options(cap, {"title": opts["title"]})
+                        except Exception as e2:
+                            _LOGGER.warning(f"Restore: set title for {cap} failed: {e2}")
+
+        await self._sync_battery_legacy_cap()
+        self.log(f"Restore capabilities ({dtype}, {model}): added {added or 'nothing'}")
+        return added
+
+    async def _on_restore_button(self, value, **kwargs) -> None:
+        await self.restore_capabilities()
 
     async def on_deleted(self) -> None:
         self._detach_poller()
@@ -563,6 +605,8 @@ class DeyeDevice(Device):
         if self._is_unavailable:
             self._is_unavailable = False
             await self.set_available()
+
+        self._last_values = values
 
         for sensor_name, cap_id in self._sensor_cap_map.items():
             # sensor_cap_map is pre-filtered per device type in _build_sensor_map
