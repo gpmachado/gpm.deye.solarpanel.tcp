@@ -77,7 +77,7 @@ class ParameterParser:
             if 'offset' in definition:
                 value = value - definition['offset']
             if value > maxint / 2:
-                value = (value - maxint) * scale
+                value = (value - (maxint + 1)) * scale  # two's complement: 0xFFFF → -1
             else:
                 value = value * scale
             if ('scale_division' in definition) and (definition['scale_division'] > 0):
