@@ -11,3 +11,4 @@ pyrightconfig.json
 ha/
 analise/
 *.log
+.ruff_cache/

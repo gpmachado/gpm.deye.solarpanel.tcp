@@ -11,7 +11,7 @@ import asyncio
 import logging
 import os
 import time
-from datetime import datetime, timezone
+from datetime import datetime, UTC
 
 from astral import LocationInfo
 from astral.sun import sun
@@ -26,7 +26,6 @@ from app.lib.capability_map import (
 from app.drivers.deye.driver import _DERIVED_PV_POWER_MODELS, HYBRID_MODELS
 from app.lib import shared_poller as _poller_mod
 from app.lib.fault_codes import decode_alert as _decode_alert
-from app.app import DEBUG_LOG as _DEBUG_LOG
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -1073,7 +1072,7 @@ class DeyeDevice(Device):
         Everything is in UTC — no timezone conversion needed.
         Priority: manual solar_latitude/longitude → Homey geolocation."""
         try:
-            today = datetime.now(timezone.utc).date()
+            today = datetime.now(UTC).date()
             if self._sun_cache and self._sun_cache[0] == today:
                 return (self._sun_cache[1], self._sun_cache[2])
 
@@ -1110,7 +1109,7 @@ class DeyeDevice(Device):
                     asyncio.create_task(_save_location(lat, lng))
 
             loc = LocationInfo(latitude=lat, longitude=lng)
-            s   = sun(loc.observer, date=today, tzinfo=timezone.utc)
+            s   = sun(loc.observer, date=today, tzinfo=UTC)
             sr  = s["sunrise"].hour + s["sunrise"].minute / 60
             ss  = s["sunset"].hour  + s["sunset"].minute  / 60
             self._sun_cache = (today, sr, ss)
@@ -1134,7 +1133,7 @@ class DeyeDevice(Device):
             return False
         sunrise, sunset = sun_times
         try:
-            now      = datetime.now(timezone.utc)
+            now      = datetime.now(UTC)
             utc_hour = now.hour + now.minute / 60
             start = sunrise - 0.5
             end   = sunset  + 0.5
@@ -1184,7 +1183,7 @@ class DeyeDevice(Device):
                     if not chunk:
                         break
                     data += chunk
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 pass
             writer.close()
             await writer.wait_closed()

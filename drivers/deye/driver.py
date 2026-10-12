@@ -341,7 +341,7 @@ async def _detect_model(host: str, serial: int, port: int = 8899) -> tuple[str, 
                 best_score = score
                 best_model = model_id
                 best_values = values
-        except asyncio.TimeoutError:
+        except TimeoutError:
             _LOGGER.warning(f"Model probe {model_id} timed out after 10 s — skipped")
         except Exception as e:
             _LOGGER.debug(f"Model probe {model_id} failed: {e}")
@@ -444,7 +444,7 @@ async def _fetch_logger_info(host: str) -> dict:
                 if not chunk:
                     break
                 data += chunk
-        except asyncio.TimeoutError:
+        except TimeoutError:
             pass
         writer.close()
         await writer.wait_closed()
@@ -774,7 +774,7 @@ class DeyeDriver(Driver):
                 if serial:
                     self.log(f"Serial from UDP unicast: {serial}")
                 else:
-                    self.log(f"UDP unicast returned nothing — falling back to HTTP")
+                    self.log("UDP unicast returned nothing — falling back to HTTP")
                     serial = await _fetch_logger_serial(host)
                     if serial:
                         self.log(f"Serial from HTTP: {serial}")

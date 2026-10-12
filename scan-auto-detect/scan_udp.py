@@ -81,7 +81,7 @@ def scan() -> None:
                 continue
             if ip not in found:
                 found[ip] = raw
-        except socket.timeout:
+        except TimeoutError:
             pass
         except Exception:
             pass
@@ -114,8 +114,8 @@ def scan() -> None:
                 serial = http_serial
                 print(f"  [info] Serial found via HTTP: {serial}")
             else:
-                print(f"  [warn] Could not retrieve serial via HTTP.")
-                print(f"         Check the sticker on the Wi-Fi logger stick for a 10-digit number.")
+                print("  [warn] Could not retrieve serial via HTTP.")
+                print("         Check the sticker on the Wi-Fi logger stick for a 10-digit number.")
 
         print(f"  IP     : {ip}")
         print(f"  MAC    : {mac}")

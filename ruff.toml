@@ -1,0 +1,12 @@
+# Lint with `ruff check .` (brew install ruff).
+target-version = "py313"
+extend-exclude = ["python_packages", ".homeybuild"]
+
+[lint]
+select = ["E", "F", "B", "UP"]
+# Style only: long lines and the compact `if x: score += n` scoring tables in driver.py.
+ignore = ["E501", "E701"]
+
+[lint.per-file-ignores]
+# Dev scripts set sys.path before importing the app's own modules.
+"scan-auto-detect/*" = ["E402"]

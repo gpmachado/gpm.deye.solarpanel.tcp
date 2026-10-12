@@ -5,7 +5,6 @@ Logic adapted from home_assistant_solarman (Apache License 2.0, see THIRD_PARTY_
 """
 
 import asyncio
-import json
 import logging
 
 from app.lib.v5_transport import V5Transport

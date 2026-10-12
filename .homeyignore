@@ -17,3 +17,5 @@ tests/
 !THIRD_PARTY_NOTICES.txt
 !LICENSES/
 !LICENSES/*.txt
+ruff.toml
+.ruff_cache/

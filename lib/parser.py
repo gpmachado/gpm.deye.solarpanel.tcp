@@ -4,7 +4,6 @@ Adapted from home_assistant_solarman (Apache License 2.0, see THIRD_PARTY_NOTICE
 Original: https://github.com/StephanJoubert/home_assistant_solarman
 """
 
-import struct
 
 
 class ParameterParser:
@@ -216,8 +215,8 @@ class ParameterParser:
             index = r - start
             if (index >= 0) and (index < length):
                 temp = rawData[index]
-                value = (str("{:02d}".format(int(temp / 100))) + ":"
-                         + str("{:02d}".format(int(temp % 100))))
+                value = (str(f"{int(temp / 100):02d}") + ":"
+                         + str(f"{int(temp % 100):02d}"))
             else:
                 found = False
         if found:

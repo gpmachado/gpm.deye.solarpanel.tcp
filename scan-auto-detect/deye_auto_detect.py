@@ -11,11 +11,9 @@ from __future__ import annotations
 import asyncio
 import datetime as dt
 import json
-import os
 import re
 import socket
 import struct
-import sys
 from pathlib import Path
 
 SCRIPT_DIR = Path(__file__).resolve().parent
@@ -355,7 +353,7 @@ async def fetch_logger_info(host: str) -> dict:
                 if not chunk:
                     break
                 data += chunk
-        except asyncio.TimeoutError:
+        except TimeoutError:
             pass
         writer.close()
         await writer.wait_closed()
@@ -638,7 +636,7 @@ async def prompt_logger() -> tuple[str, int]:
             logger = loggers[int(choice) - 1]
         except (IndexError, ValueError):
             print(" [ERROR] Invalid choice")
-            raise SystemExit(1)
+            raise SystemExit(1) from None
         return logger["ip"], logger["serial"]
 
     if not is_valid_ipv4(host):

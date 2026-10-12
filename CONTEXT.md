@@ -27,6 +27,7 @@ the "Restore capabilities" maintenance action share `plan_device_capabilities()`
 | `app.py` | App entry point, flow condition listeners, widget data |
 | `lib/shared_poller.py` | One poll loop per logger serial, shared by its devices; `exclusive()` holds it off during pairing/repair |
 | `tests/test_core.py` | Parser, capability mapping and pairing plan checks — `python3 tests/test_core.py` |
+| `ruff.toml` | Lint config — run `ruff check .` (brew install ruff) before committing |
 
 ### Supported models
 

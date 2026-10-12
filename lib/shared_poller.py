@@ -125,7 +125,7 @@ class SharedPoller:
                 # Guards against half-open TCP connections that block drain() or readexactly().
                 async with self.lock:
                     await asyncio.wait_for(self._poll(), timeout=120)
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 _LOGGER.warning(f"SharedPoller poll hard-timeout serial={self.serial} — resetting client")
                 self._client = None
                 # Reason travels with the callback so the device can put it in its own
