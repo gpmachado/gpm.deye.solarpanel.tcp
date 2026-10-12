@@ -7,6 +7,11 @@
   uma saída copiável. Não salvar uma segunda instância do dispositivo.
   Parcial: `scan-auto-detect/sofar_register_dump.py` (fora do app) e
   `scan-auto-detect/test_registers.py <ip> <serial> <modelo>` já fazem isso no terminal.
+- [ ] **Perfil Deye trifásico HV (série HP3)** — kellerza/sunsynk (`three_phase_hv.py`):
+  em HV o registro 590 (potência da bateria) é ×10 e 587 (tensão) ×0,1; no LV
+  (`deye_sg04lp3`) é ×1 e ×0,01. Hoje um HV usando `deye_sg04lp3` mostraria bateria 10×
+  menor. Precisa de dump de um HV antes de criar o perfil. Conferir também o README:
+  "Sun-5k-SG01HP3 (single-phase)" — HP3 normalmente é trifásico HV.
 - [ ] **Adicionar L2/L3 ao `deye_string.json`** — validar os registros 74, 75, 77 e 78
   em um inversor string trifásico antes de expor as capabilities.
 
