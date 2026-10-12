@@ -5,10 +5,10 @@ Run from the project root.
 Usage:
     python test_registers.py <host> <serial> [model]
 
-Models: deye_string (default), deye_micro, deye_hybrid, deye_sg04lp3
+Models: any file in inverter_definitions/ (default deye_string)
 
 Examples:
-    python test_registers.py 192.168.1.199 1782317166
+    python test_registers.py 192.168.1.50 2304123456
     python test_registers.py 192.168.1.50  2304123456 deye_hybrid
 """
 
@@ -19,16 +19,18 @@ import os
 
 _SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 _PROJECT_ROOT = os.path.dirname(_SCRIPT_DIR)
-sys.path.insert(0, _SCRIPT_DIR)
+sys.path.insert(0, os.path.join(_PROJECT_ROOT, "lib"))
 
 from pysolarmanv5 import PySolarmanV5Async
+from parser import ParameterParser  # the app's own decoder — same rules as on Homey
 
 
 async def main(host: str, serial: int, model: str):
     definition_path = os.path.join(_PROJECT_ROOT, "inverter_definitions", f"{model}.json")
     if not os.path.exists(definition_path):
         print(f"ERROR: model '{model}' not found at {definition_path}")
-        print("Available models: deye_string, deye_micro, deye_hybrid, deye_sg04lp3")
+        print("Available models:", ", ".join(sorted(
+            f[:-5] for f in os.listdir(os.path.dirname(definition_path)) if f.endswith(".json"))))
         sys.exit(1)
 
     with open(definition_path) as f:
@@ -66,39 +68,26 @@ async def main(host: str, serial: int, model: str):
     await m.disconnect()
 
     print("\n\n── Parsed results ──")
+    params = ParameterParser(definition)
+    for req in definition["requests"]:
+        start, end = req["start"], req["end"]
+        if all(r in all_raw for r in range(start, end + 1)):
+            params.parse([all_raw[r] for r in range(start, end + 1)], start, end - start + 1)
+    values = params.get_result()
     for group in definition["parameters"]:
         for item in group["items"]:
             name = item["name"]
-            regs = item["registers"]
-            scale = item.get("scale", 1)
-            offset = item.get("offset", 0)
-            rule = item.get("rule", 1)
-
-            if not all(r in all_raw for r in regs):
-                print(f"  {name:<44s} — registers not read")
+            if name not in values:
+                print(f"  {name:<44s} — not read / out of range")
                 continue
-
-            raw = all_raw[regs[0]]
-
-            if "lookup" in item:
-                match = next((l["value"] for l in item["lookup"] if l.get("key") == raw), raw)
-                print(f"  {name:<44s} raw={raw:6d}  → {match}")
-            elif rule == 3 and len(regs) >= 2:
-                # 32-bit little-endian: low word + high word * 65536
-                raw32 = all_raw[regs[0]] + all_raw.get(regs[1], 0) * 65536
-                value = (raw32 - offset) * scale
-                unit = item.get("uom", "")
-                print(f"  {name:<44s} raw={raw32:10d}  → {value:.2f} {unit}")
-            else:
-                value = (raw - offset) * scale
-                unit = item.get("uom", "")
-                print(f"  {name:<44s} raw={raw:6d}  → {value:.2f} {unit}")
+            raw = [all_raw.get(r) for r in item["registers"]]
+            print(f"  {name:<44s} raw={raw}  → {values[name]} {item.get('uom', '')}")
 
 
 if __name__ == "__main__":
     if len(sys.argv) < 3:
         print("Usage: python test_registers.py <host> <serial> [model]")
-        print("Example: python test_registers.py 192.168.1.199 1782317166")
+        print("Example: python test_registers.py 192.168.1.50 2304123456")
         print("Example: python test_registers.py 192.168.1.50  2304123456 deye_hybrid")
         sys.exit(1)
 

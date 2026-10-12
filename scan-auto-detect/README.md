@@ -13,7 +13,7 @@ Scripts de terminal para detectar `IP`, `serial` e modelo do logger/inversor Dey
 macOS / Linux:
 
 ```bash
-cd /Users/gabriel/HomeyApp/gpm.python.deye/scan-auto-detect
+cd /Users/gabriel/HomeyApp/gpm.deye.solarpanel.tcp/scan-auto-detect
 bash run_mac_linux.sh
 ```
 

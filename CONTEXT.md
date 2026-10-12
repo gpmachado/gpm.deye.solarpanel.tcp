@@ -2,13 +2,15 @@
 
 ## Locations
 
-- Local: `/Users/gabriel/HomeyApp/gpm.python.deye`
+- Local: `/Users/gabriel/HomeyApp/gpm.deye.solarpanel.tcp`
 - GitHub: https://github.com/gpmachado/gpm.deye.solarpanel.tcp (branch: `main`) — local folder name differs from repo name
 
 ## Architecture
 
-Single universal driver (`drivers/deye/`) supporting four inverter models selected
-at pairing (auto-detected or manually chosen).
+Two drivers: `drivers/deye/` (Deye models, auto-detected or chosen at pairing) and
+`drivers/sofar/` (SOFAR G3, no auto-detection). The SOFAR driver/device are thin
+subclasses of the Deye ones (`MODELS`, `AUTO_DETECT`, `DEVICE_ID_PREFIX`). Pairing and
+the "Restore capabilities" maintenance action share `plan_device_capabilities()`.
 
 ### Key files
 
@@ -22,7 +24,9 @@ at pairing (auto-detected or manually chosen).
 | `capability_map.py` | Maps inverter entity names → Homey capability IDs |
 | `inverter_definitions/` | JSON register maps for each model |
 | `v5_transport.py` | SolarmanV5 TCP protocol implementation |
-| `app.py` | App entry point |
+| `app.py` | App entry point, flow condition listeners, widget data |
+| `lib/shared_poller.py` | One poll loop per logger serial, shared by its devices; `exclusive()` holds it off during pairing/repair |
+| `tests/test_core.py` | Parser, capability mapping and pairing plan checks — `python3 tests/test_core.py` |
 
 ### Supported models
 
@@ -32,6 +36,8 @@ at pairing (auto-detected or manually chosen).
 | `deye_string` | String inverter (single/split-phase, up to 4 MPPT) |
 | `deye_hybrid` | Hybrid inverter with battery and grid meter (LP1 series) |
 | `deye_sg04lp3` | 3-phase hybrid with battery (SG04LP3 series) |
+| `deye_micro_2mppt` | Micro-inverter, 2 MPPT (SUN600G3/800G3/1000G3) |
+| `sofar_g3_hybrid` | SOFAR G3 3-phase hybrid (ESI-T1 / HYD-3PH), SOFAR driver only |
 
 Model is auto-detected at pairing based on register fingerprinting. Score > 0 means
 confident detection; score = 0 (e.g. night-time pairing with no PV data) falls back
@@ -44,7 +50,7 @@ Each `inverter_definitions/deye_*.json` is a list of sensor objects. Fields:
 | Field | Meaning |
 |-------|---------|
 | `name` | Entity name (matched by `capability_map.py`) |
-| `rule` | Decode rule: 1=signed×scale, 2=unsigned×scale, 3=32-bit LE, 4=status string |
+| `rule` | Decode rule: 1=unsigned, 2=signed (two's complement), 3=unsigned 32-bit, 4=signed 32-bit (low word first in `registers`), 5=ASCII, 6=raw hex list |
 | `registers` | Register address(es) |
 | `offset` | Subtracted before scale (e.g. `1000` for T×10+1000 encoding) |
 | `scale` | Multiplier after offset |
@@ -123,7 +129,11 @@ Features:
 - "Re-detect" button runs `_detect_model()` against live device
 - Model dropdown pre-selected with current model
 - IP input pre-filled with current host
-- Save calls `device.set_settings()` which triggers `on_settings` → poller rebuild
+- Save calls `device.set_settings()` then `device.apply_connection_settings()` — set_settings()
+  from code never triggers `on_settings`. `apply_connection_settings()` re-attaches the poller
+  with the new values and copies host/port/slaveId/model/pollingInterval/loggerSerial to the
+  other devices of the same logger (otherwise the device that initialises last after a
+  restart re-points the shared poller at stale values).
 
 Changing model via repair changes which registers are polled but does NOT add/remove
 devices (battery/grid meter devices require re-pairing for that).
@@ -334,6 +344,6 @@ Diagnostic-only (lower priority):
 
 Both apps share patterns (night backoff, `on_settings` signature, polling loop). Fixes
 that affect shared logic should be applied to both. Hoymiles app is at
-`/Users/gabriel/HomeyApp/gpm.python.hoymiles`.
+`/Users/gabriel/HomeyApp/gpm.hoymiles.solarpanel`.
 
 Hoymiles pending: repair flow not yet implemented (see Hoymiles CONTEXT.md).

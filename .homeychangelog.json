@@ -1,4 +1,7 @@
 {
+  "1.4.16": {
+    "en": "Fixed: negative values (battery and grid power, battery current) were 1 unit too small, e.g. 10 W on SOFAR. Fixed: changing the logger IP, model or polling interval (device settings or Repair) only took effect after an app restart, and only on that device — it now applies immediately to the inverter, battery and meter of the same logger. Pairing and Repair no longer collide with the app's own polling on the logger."
+  },
   "1.4.15": {
     "en": "New maintenance action \"Restore capabilities\" (device settings → Maintenance): re-adds missing values, such as advanced sensors skipped at pairing (e.g. house load power, L2/L3), with their correct names — on the same device, without re-pairing and without removing anything, so Flows and Insights are kept. The repair screen's \"Add advanced sensors\" option uses the same logic."
   },
