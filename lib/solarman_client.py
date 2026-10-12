@@ -1,7 +1,7 @@
 """
 Async Solarman inverter client for Homey Python runtime.
 Uses V5Transport (pure asyncio) — required by the Homey sandbox.
-Logic adapted from home_assistant_solarman (MIT License).
+Logic adapted from home_assistant_solarman (Apache License 2.0, see THIRD_PARTY_NOTICES.txt).
 """
 
 import asyncio

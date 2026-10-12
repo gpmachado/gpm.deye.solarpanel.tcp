@@ -14,3 +14,6 @@ __pycache__/
 pyrightconfig.json
 inverter_definitions/*.yaml
 tests/
+!THIRD_PARTY_NOTICES.txt
+!LICENSES/
+!LICENSES/*.txt

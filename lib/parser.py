@@ -1,6 +1,6 @@
 """
 Parameter parser for Solarman inverter register definitions.
-Adapted from home_assistant_solarman (MIT License).
+Adapted from home_assistant_solarman (Apache License 2.0, see THIRD_PARTY_NOTICES.txt).
 Original: https://github.com/StephanJoubert/home_assistant_solarman
 """
 

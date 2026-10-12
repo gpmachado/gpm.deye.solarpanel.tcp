@@ -22,7 +22,7 @@ The existing Deye app for Homey ([com.heszi.deye](https://github.com/heszegi/com
 | `deye_sg04lp3` | SUN-8/10/12K-SG04LP3-EU (3-phase hybrid) | 3-phase Hybrid | ⚠️ Untested |
 | `sofar_g3_hybrid` | SOFAR ESI-T1 / HYD 5-20KTL-3PH (G3 protocol, LSW3 logger) | 3-phase Hybrid | 🧪 Beta — separate **SOFAR Inverter** driver, no auto-detection (verified on an ESI-12K-T1) |
 
-Register definitions are adapted from [ha-solarman](https://github.com/StephanJoubert/home_assistant_solarman) (MIT). The SOFAR G3 map also follows SOFARSOLAR's Modbus-G3 protocol V1.42.
+Register definitions are adapted from [home_assistant_solarman](https://github.com/StephanJoubert/home_assistant_solarman) (Apache-2.0). The SOFAR G3 map also follows SOFARSOLAR's Modbus-G3 protocol V1.42.
 
 > **Note on MW4C loggers:** Some newer Deye logger sticks ship with MW4C firmware instead of the standard LSW3. The SolarmanV5 protocol does not work reliably with MW4C firmware. If your logger does not respond after pairing, check the firmware version on the logger's status page (`http://<logger-ip>/status.html`).
 
@@ -132,7 +132,7 @@ See [docs/sources.md](docs/sources.md) for where the fault/alarm bit meanings co
 
 ## Credits
 
-- Register definitions from [ha-solarman](https://github.com/StephanJoubert/home_assistant_solarman) by Stephan Joubert (MIT)
+- Register definitions from [home_assistant_solarman](https://github.com/StephanJoubert/home_assistant_solarman) by Stephan Joubert (Apache-2.0) — see `THIRD_PARTY_NOTICES.txt`
 - Inspired by [com.heszi.deye](https://github.com/heszegi/com.heszi.deye) by Andras Heszegi
 
 ## License

@@ -1,0 +1,73 @@
+# Third-Party Notices
+
+This project (MIT) incorporates material from the following third-party works.
+See `docs/sources.md` for the references that were only consulted.
+
+---
+
+## home_assistant_solarman
+
+**Repository:** https://github.com/StephanJoubert/home_assistant_solarman
+**Author:** Stephan Joubert and contributors
+**License:** Apache License 2.0 — full text in `LICENSES/Apache-2.0.txt`
+
+Used in:
+- `lib/parser.py`, `lib/solarman_client.py` — register parsing rules and request loop (rule numbering, offset/scale, signed
+  and multi-register decoding). Modified: ported to the Homey Python runtime and
+  fixed two's-complement decoding of signed values (2026).
+- `inverter_definitions/deye_*.json` — converted from the project's YAML
+  inverter definitions; sensor names, request ranges and validation adapted for
+  this app.
+- `inverter_definitions/sofar_g3_hybrid.json` — based on its `sofar_g3hyd.yaml`,
+  corrected and extended against SOFARSOLAR's Modbus-G3 protocol V1.42 and
+  register dumps from a SOFAR ESI-12K-T1.
+
+---
+
+## ha-solarman
+
+**Repository:** https://github.com/davidrapan/ha-solarman
+**License:** MIT
+
+Copyright © 2024 David Rapan <david@rapan.cz> and Contributors
+
+Used in:
+- `inverter_definitions/*.json` — hardware profiles (registers, scales, signs,
+  lookups) were checked and updated against this project's current YAML
+  profiles, the most up-to-date Solarman reference.
+- `lib/fault_codes.py` — Deye "Device Alarm" / "Device Fault" bit tables,
+  cross-checked against Deye's Modbus protocol V118.
+- `inverter_definitions/sofar_g3_hybrid.json` — SOFAR G3 status lookup and
+  register meanings, cross-checked with `sofar_g3hyd.yaml`.
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of
+this software and associated documentation files (the "Software"), to deal in the
+Software without restriction, including without limitation the rights to use,
+copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the
+Software, and to permit persons to whom the Software is furnished to do so,
+subject to the following conditions: The above copyright notice and this
+permission notice shall be included in all copies or substantial portions of the
+Software. THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND.
+
+---
+
+## pysolarmanv5
+
+**Repository:** https://github.com/jmccrohan/pysolarmanv5
+**License:** MIT
+
+Copyright (c) 2021 Jonathan McCrohan <jmccrohan@gmail.com>
+
+Used in: `lib/v5_transport.py` — SolarmanV5 frame structure (header layout,
+payload offsets, checksum, request/response framing), re-implemented with plain
+asyncio because pysolarmanv5 needs multiprocessing primitives that the Homey
+sandbox blocks.
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of
+this software and associated documentation files (the "Software"), to deal in the
+Software without restriction, including without limitation the rights to use,
+copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the
+Software, and to permit persons to whom the Software is furnished to do so,
+subject to the following conditions: The above copyright notice and this
+permission notice shall be included in all copies or substantial portions of the
+Software. THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND.
