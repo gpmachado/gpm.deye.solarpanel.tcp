@@ -4,6 +4,7 @@ Both the inverter device and battery device subscribe to the same poll loop.
 """
 
 import asyncio
+import contextlib
 import logging
 import os
 
@@ -44,6 +45,18 @@ def release_callback(callback) -> None:
             _registry.pop(serial, None)
 
 
+@contextlib.asynccontextmanager
+async def exclusive(serial: int):
+    """Hold off this logger's poller while pairing/repair talks to the logger
+    directly — LSW3 loggers drop one of two concurrent TCP clients."""
+    p = _registry.get(serial)
+    if p is None:
+        yield
+        return
+    async with p.lock:
+        yield
+
+
 class SharedPoller:
 
     def __init__(self, serial: int):
@@ -56,6 +69,7 @@ class SharedPoller:
         self._client = None
         self._subscribers: list = []
         self._task: asyncio.Task | None = None
+        self.lock = asyncio.Lock()  # held during each poll and by exclusive()
 
     def reconfigure(self, *, host: str, port: int, slave_id: int,
                     model: str, interval: int) -> None:
@@ -109,7 +123,8 @@ class SharedPoller:
             try:
                 # Hard cap: one poll must complete within 120 s regardless of internal timeouts.
                 # Guards against half-open TCP connections that block drain() or readexactly().
-                await asyncio.wait_for(self._poll(), timeout=120)
+                async with self.lock:
+                    await asyncio.wait_for(self._poll(), timeout=120)
             except asyncio.TimeoutError:
                 _LOGGER.warning(f"SharedPoller poll hard-timeout serial={self.serial} — resetting client")
                 self._client = None

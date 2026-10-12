@@ -23,7 +23,7 @@ from app.lib.capability_map import (
     BATTERY_SPLIT_CAP_TITLES, BATTERY_LEGACY_CAP, BATTERY_LEGACY_TITLE, BATTERY_ENERGY_TITLE,
     HOUSE_CAP_TITLES,
 )
-from app.drivers.deye.driver import _DERIVED_PV_POWER_MODELS
+from app.drivers.deye.driver import _DERIVED_PV_POWER_MODELS, HYBRID_MODELS
 from app.lib import shared_poller as _poller_mod
 from app.lib.fault_codes import decode_alert as _decode_alert
 from app.app import DEBUG_LOG as _DEBUG_LOG
@@ -33,6 +33,11 @@ _LOGGER = logging.getLogger(__name__)
 _UNSET = object()  # sentinel distinguishing "no value passed" from an explicit None
 
 RESTORE_BUTTON_CAP = "button.restore_capabilities"
+
+# Settings that change how the shared logger poller connects/parses. All devices of
+# one logger (inverter, battery, grid meter) must agree on them — see
+# apply_connection_settings.
+_CONNECTION_KEYS = ("host", "loggerSerial", "port", "slaveId", "model", "pollingInterval")
 
 _BACKOFF_NIGHT   = 30 * 60   # 30 min — inverter expected offline at night
 _WARN_THRESHOLD  = 3          # consecutive failures before set_warning (~3 min at 60 s polling)
@@ -73,6 +78,15 @@ _BATTERY_NIGHT_ZERO = frozenset({
     "measure_voltage.battery",
     "measure_current.battery",
 })
+
+
+def _to_int(val, default: int) -> int:
+    if not val:
+        return default
+    try:
+        return int(val)
+    except (ValueError, TypeError):
+        return default
 
 
 class DeyeDevice(Device):
@@ -173,18 +187,12 @@ class DeyeDevice(Device):
         # Homey Python SDK passes changed_keys as a keyword argument list.
         # Guard against None in case the SDK calls with no changedKeys.
         keys = changed_keys or []
-        if any(k in keys for k in (
-            "host", "loggerSerial", "port", "slaveId", "model", "pollingInterval",
-            "solar_latitude", "solar_longitude",
-        )):
-            self._detach_poller()
-            self._build_sensor_map()
-            self._attach_poller()
-
-            # Restart Wi-Fi info task if IP was changed (only for main/inverter device)
-            if "host" in keys and not self._is_battery:
-                host = self.get_setting("host") or ""
-                asyncio.create_task(self._refresh_wifi_info(host))
+        new = new_settings or {}
+        changed = {k: new.get(k) for k in _CONNECTION_KEYS if k in keys}
+        if changed:
+            await self.apply_connection_settings(changed)
+        elif any(k in keys for k in ("solar_latitude", "solar_longitude")):
+            self._sun_cache = None
 
         if "showPvDetail" in keys:
             await self._sync_detail_caps("showPvDetail", PV_DETAIL_CAPS, (new_settings or {}).get("showPvDetail"))
@@ -192,6 +200,37 @@ class DeyeDevice(Device):
             await self._sync_detail_caps("showAcDetail", AC_DETAIL_CAPS, (new_settings or {}).get("showAcDetail"))
         if "showBatterySigned" in keys:
             await self._sync_battery_legacy_cap((new_settings or {}).get("showBatterySigned"))
+
+    async def apply_connection_settings(self, changed: dict) -> None:
+        """Re-attach the poller with the new connection values and copy them to the
+        other devices of the same logger.
+
+        `changed` holds the new values explicitly: inside on_settings get_setting()
+        still returns the old ones, and set_settings() from code (repair, siblings)
+        never triggers on_settings. Without the sibling copy, the device that
+        initialises last after a restart would re-point the shared poller at its
+        stale host/model and take every device of the logger offline.
+        """
+        old_serial = self._safe_int("loggerSerial", 0)
+        self._detach_poller()
+        self._build_sensor_map(changed.get("model"))
+        self._attach_poller(changed)
+
+        if "host" in changed and not self._is_battery:
+            asyncio.create_task(self._refresh_wifi_info(changed["host"] or ""))
+
+        for dev in self.driver.get_devices():
+            if dev is self or dev._safe_int("loggerSerial", 0) != old_serial:
+                continue
+            try:
+                await dev.set_settings(changed)
+                if "model" in changed:
+                    dev._build_sensor_map(changed["model"])
+                if "loggerSerial" in changed:
+                    dev._detach_poller()
+                    dev._attach_poller(changed)
+            except Exception as e:
+                _LOGGER.warning(f"Sync connection settings to sibling device failed: {e}")
 
     async def _ensure_battery_split_caps(self) -> None:
         """Battery device: add the never-negative Charge/Discharge Power pair and
@@ -412,19 +451,13 @@ class DeyeDevice(Device):
         self._detach_poller()
 
     def _safe_int(self, key: str, default: int) -> int:
-        val = self.get_setting(key)
-        if not val:
-            return default
-        try:
-            return int(val)
-        except (ValueError, TypeError):
-            return default
+        return _to_int(self.get_setting(key), default)
 
     # ── Sensor map ────────────────────────────────────────────────────────────
 
-    def _build_sensor_map(self) -> None:
+    def _build_sensor_map(self, model: str | None = None) -> None:
         import json
-        model = self.get_setting("model") or "deye_string"
+        model = model or self.get_setting("model") or "deye_string"
         defs_dir = os.path.join(os.path.dirname(__file__), "..", "..", "inverter_definitions")
         json_path = os.path.join(defs_dir, f"{model}.json")
         try:
@@ -450,7 +483,7 @@ class DeyeDevice(Device):
             else:
                 # Hybrid models: exclude GRID_METER_CAPS (they live on the grid meter device).
                 # String/micro inverters: keep grid caps on the main inverter tile (no grid device).
-                is_hybrid = "hybrid" in model.lower() or model == "deye_sg04lp3"
+                is_hybrid = model in HYBRID_MODELS
                 self._sensor_cap_map = {
                     sensor: cap for sensor, cap in raw_map.items()
                     if cap not in BATTERY_CAPS and (not is_hybrid or cap not in GRID_METER_CAPS)
@@ -493,7 +526,7 @@ class DeyeDevice(Device):
         if not model:
             return
 
-        if model in ("deye_hybrid", "deye_sg04lp3", "sofar_g3_hybrid") or model in _DERIVED_PV_POWER_MODELS:
+        if model in HYBRID_MODELS or model in _DERIVED_PV_POWER_MODELS:
             # measure_power.solar is the Energy Dashboard production source.
             # Without it, the pairing-time measurePowerProducedCapability falls back to measure_power (AC output).
             required = ("measure_power.pv1", "measure_power.pv2", "measure_power.solar")
@@ -511,18 +544,22 @@ class DeyeDevice(Device):
 
     # ── SharedPoller ──────────────────────────────────────────────────────────
 
-    def _poller_cfg(self) -> dict:
+    def _poller_cfg(self, new: dict | None = None) -> dict:
+        new = new or {}
+        def num(key: str, default: int) -> int:
+            return _to_int(new[key], default) if key in new else self._safe_int(key, default)
         return {
-            "host":     self.get_setting("host") or "",
-            "port":     self._safe_int("port", 8899),
-            "slave_id": self._safe_int("slaveId", 1),
-            "model":    self.get_setting("model") or "deye_string",
-            "interval": max(35, self._safe_int("pollingInterval", 60)),
+            "host":     (new["host"] if "host" in new else self.get_setting("host")) or "",
+            "port":     num("port", 8899),
+            "slave_id": num("slaveId", 1),
+            "model":    (new["model"] if "model" in new else self.get_setting("model")) or "deye_string",
+            "interval": max(35, num("pollingInterval", 60)),
         }
 
-    def _attach_poller(self) -> None:
-        serial = self._safe_int("loggerSerial", 0)
-        poller = _poller_mod.get_or_create(serial, **self._poller_cfg())
+    def _attach_poller(self, new: dict | None = None) -> None:
+        new = new or {}
+        serial = _to_int(new["loggerSerial"], 0) if "loggerSerial" in new else self._safe_int("loggerSerial", 0)
+        poller = _poller_mod.get_or_create(serial, **self._poller_cfg(new))
         poller.subscribe(self._on_values)
         self.log(f"Subscribed to SharedPoller serial={serial}")
 
@@ -542,7 +579,7 @@ class DeyeDevice(Device):
         if self._is_battery or self._is_grid_meter:
             return False
         model = str(self.get_setting("model") or "")
-        is_hybrid = "hybrid" in model.lower() or model == "deye_sg04lp3"
+        is_hybrid = model in HYBRID_MODELS
         return not is_hybrid and self._is_night_time_from(sun_times)
 
     async def _on_values(self, values: dict | None, error: Exception | None = None) -> None:

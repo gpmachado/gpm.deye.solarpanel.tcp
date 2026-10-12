@@ -11,6 +11,7 @@ import os
 
 from homey.driver import Driver
 from app.lib.solarman_client import SolarmanClient
+from app.lib import shared_poller as _poller_mod
 from app.lib.capability_map import (
     build_capabilities, capability_title, BATTERY_CAPS, GRID_METER_CAPS, GRID_CAP_REMAP,
     BATTERY_SPLIT_CAP_TITLES, BATTERY_LEGACY_CAP, BATTERY_ENERGY_TITLE,
@@ -786,7 +787,8 @@ class DeyeDriver(Driver):
 
             # Quick connectivity test before returning to the UI
             client = SolarmanClient(host, serial)
-            ok = await client.test_connection()
+            async with _poller_mod.exclusive(serial):
+                ok = await client.test_connection()
             if not ok:
                 raise Exception(
                     f"Cannot connect to Solarman logger at {host}. "
@@ -811,10 +813,11 @@ class DeyeDriver(Driver):
                 model_id = next(iter(self.MODELS))
                 self.log(f"Reading {model_id} registers from {found['host']}...")
                 try:
-                    active_values, _ = await asyncio.wait_for(
-                        _probe_model(found["host"], found["serial"], 8899, model_id),
-                        timeout=15.0,
-                    )
+                    async with _poller_mod.exclusive(found["serial"]):
+                        active_values, _ = await asyncio.wait_for(
+                            _probe_model(found["host"], found["serial"], 8899, model_id),
+                            timeout=15.0,
+                        )
                 except Exception as e:
                     self.log(f"Probe of {model_id} failed ({e}) — keeping all PV channels")
                     active_values = {}
@@ -823,9 +826,10 @@ class DeyeDriver(Driver):
                 confirmed["score"] = 1
             if not confirmed:
                 self.log(f"Running model detection for {found['host']}...")
-                detected_id, active_values, det_score = await _detect_model(
-                    found["host"], found["serial"]
-                )
+                async with _poller_mod.exclusive(found["serial"]):
+                    detected_id, active_values, det_score = await _detect_model(
+                        found["host"], found["serial"]
+                    )
                 self.log(f"Detection result: {detected_id} (score={det_score})")
                 confirmed["model_id"] = detected_id
                 confirmed["active_values"] = active_values
@@ -846,10 +850,11 @@ class DeyeDriver(Driver):
                 # filter in list_devices would read the wrong names. Re-probe the chosen
                 # model, or drop the values (no filtering) if the logger doesn't answer.
                 try:
-                    values, _ = await asyncio.wait_for(
-                        _probe_model(found["host"], found["serial"], 8899, model_id),
-                        timeout=15.0,
-                    )
+                    async with _poller_mod.exclusive(found["serial"]):
+                        values, _ = await asyncio.wait_for(
+                            _probe_model(found["host"], found["serial"], 8899, model_id),
+                            timeout=15.0,
+                        )
                     confirmed["active_values"] = values
                 except Exception as e:
                     self.log(f"Re-probe of {model_id} failed ({e}) — keeping all PV channels")
@@ -1038,7 +1043,8 @@ class DeyeDriver(Driver):
             if not self.AUTO_DETECT:
                 return {"detected": _current_model(), "models": self.MODELS, "auto_confirmed": True}
             self.log(f"Repair: running detection on {host} serial={serial}")
-            detected, _, score = await _detect_model(host, serial)
+            async with _poller_mod.exclusive(serial):
+                detected, _, score = await _detect_model(host, serial)
             self.log(f"Repair detection: {detected} (score={score})")
             return {
                 "detected":      detected,
@@ -1066,6 +1072,8 @@ class DeyeDriver(Driver):
             if new_settings:
                 self.log(f"Repair: applying settings {new_settings}")
                 await device.set_settings(new_settings)
+                # set_settings() from code doesn't trigger on_settings — apply explicitly.
+                await device.apply_connection_settings(new_settings)
 
             if bool(data.get("advanced")):
                 try:
