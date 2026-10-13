@@ -59,6 +59,18 @@ def test_sofar_dumps_match_inverter_display():
             assert abs(values[key] - val) < 1e-6, (name, key, values[key], val)
 
 
+def test_deye_registers_match_official_doc():
+    # Deye Modbus protocol V118: 198/199 load power and 203/204 meter power are 1 W,
+    # meter power is signed with "buying negative, selling positive". The app shows
+    # grid power + = import, so buying 1500 W must read +1500.
+    regs = {198: 2500, 199: 0, 203: 0x10000 - 1500, 204: 0xFFFF}
+    values = parse(load_definition("deye_string"), regs)
+    assert values["Load Power"] == 2500, values["Load Power"]
+    assert values["Grid Power"] == 1500, values["Grid Power"]
+    # Hybrid load power is signed (sunsynk and davidrapan agree): 0xFF9C is -100 W.
+    assert parse(load_definition("deye_hybrid"), {178: 0xFF9C})["Total Load Power"] == -100
+
+
 def test_sofar_sensor_names_map_to_capabilities():
     caps = get_sensor_capability_map([i for g in load_definition("sofar_g3_hybrid")["parameters"]
                                       for i in g["items"]])

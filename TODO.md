@@ -7,6 +7,10 @@
   uma saída copiável. Não salvar uma segunda instância do dispositivo.
   Parcial: `scan-auto-detect/sofar_register_dump.py` (fora do app) e
   `scan-auto-detect/test_registers.py <ip> <serial> <modelo>` já fazem isso no terminal.
+- [ ] **Auto-detect Deye pelo registro 0x0000 ("Device")** — davidrapan `deye_p3.yaml`:
+  2 = string, 3 = híbrido monofásico, 4 = micro, 5 = híbrido trifásico LV, 6/7/8 = HV.
+  Ler um registro substitui a pontuação heurística (que falha à noite) e resolve LV × HV.
+  Confirmar com um dump de cada família antes de trocar.
 - [ ] **Perfil Deye trifásico HV (série HP3)** — kellerza/sunsynk (`three_phase_hv.py`):
   em HV o registro 590 (potência da bateria) é ×10 e 587 (tensão) ×0,1; no LV
   (`deye_sg04lp3`) é ×1 e ×0,01. Hoje um HV usando `deye_sg04lp3` mostraria bateria 10×
