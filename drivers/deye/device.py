@@ -23,7 +23,7 @@ from app.lib.capability_map import (
     BATTERY_SPLIT_CAP_TITLES, BATTERY_LEGACY_CAP, BATTERY_LEGACY_TITLE, BATTERY_ENERGY_TITLE,
     HOUSE_CAP_TITLES,
 )
-from app.drivers.deye.driver import _DERIVED_PV_POWER_MODELS, HYBRID_MODELS
+from app.drivers.deye.driver import _DERIVED_PV_POWER_MODELS, HYBRID_MODELS, STRING_CT_CAPS
 from app.lib import shared_poller as _poller_mod
 from app.lib.fault_codes import decode_alert as _decode_alert
 
@@ -32,6 +32,7 @@ _LOGGER = logging.getLogger(__name__)
 _UNSET = object()  # sentinel distinguishing "no value passed" from an explicit None
 
 RESTORE_BUTTON_CAP = "button.restore_capabilities"
+REMOVE_CT_BUTTON_CAP = "button.remove_ct_capabilities"
 
 # Settings that change how the shared logger poller connects/parses. All devices of
 # one logger (inverter, battery, grid meter) must agree on them — see
@@ -296,6 +297,27 @@ class DeyeDevice(Device):
             self.register_capability_listener(RESTORE_BUTTON_CAP, self._on_restore_button)
         except Exception as e:
             _LOGGER.warning(f"Restore button setup failed: {e}")
+        if self._is_battery or self._is_grid_meter or self.get_setting("model") != "deye_string":
+            return
+        try:
+            if not self.has_capability(REMOVE_CT_BUTTON_CAP):
+                await self.add_capability(REMOVE_CT_BUTTON_CAP)
+            self.register_capability_listener(REMOVE_CT_BUTTON_CAP, self._on_remove_ct_button)
+        except Exception as e:
+            _LOGGER.warning(f"Remove-CT button setup failed: {e}")
+
+    async def _on_remove_ct_button(self, value, **kwargs) -> None:
+        """String inverter without a CT: drop the meter values that can only read 0.
+        Explicit user action — Flows using these capabilities stop working."""
+        removed = []
+        for cap in sorted(STRING_CT_CAPS):
+            if self.has_capability(cap):
+                try:
+                    await self.remove_capability(cap)
+                    removed.append(cap)
+                except Exception as e:
+                    _LOGGER.warning(f"Remove {cap} failed: {e}")
+        self.log(f"Remove CT meter values: removed {removed or 'nothing'}")
 
     async def _retitle_house_caps(self) -> None:
         """Inverter device: apply the 1.4.14 house-consumption titles to devices

@@ -175,6 +175,13 @@ _STRING_OPTION_GROUPS: dict[str, frozenset[str]] = {
     }),
 }
 
+# String-inverter values that only exist with a CT / energy meter wired. Without
+# one they read 0 or "consumption" mirrors production — removable on demand via
+# the "Remove CT meter values" maintenance button (device.py).
+STRING_CT_CAPS: frozenset[str] = _STRING_OPTION_GROUPS["grid_import_export"] | {
+    "measure_power.load", "measure_power.grid",
+}
+
 
 def _def_path(model_id: str) -> str:
     return os.path.join(_INVERTER_DEFS_DIR, f"{model_id}.json")
