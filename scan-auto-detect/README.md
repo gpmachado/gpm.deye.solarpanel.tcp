@@ -29,7 +29,10 @@ run_windows.bat
 1. Descobre loggers por UDP quando o IP fica em branco.
 2. Quando voce informa so o IP, tenta obter o serial por UDP unicast e depois por HTTP.
 3. Testa a conexao antes da leitura completa.
-4. Faz auto-deteccao de modelo usando os JSONs atuais da pasta `inverter_definitions`.
+4. Le os registradores 0x0000-0x0012 (tipo de inversor, MPPTs, fases, potencia nominal)
+   e sugere o perfil pelo tipo. Depois faz a deteccao por pontuacao com os JSONs de
+   `inverter_definitions` e mostra se os dois metodos concordam (AGREE / DIFFER).
+   O numero de serie do inversor sai mascarado, porque o arquivo costuma ser postado no forum.
 5. Gera um arquivo `.txt` com o diagnostico no Desktop do usuario, ou na home se nao houver Desktop.
 
 ## Dependencias

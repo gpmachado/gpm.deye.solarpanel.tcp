@@ -29,10 +29,31 @@ MODELS = {
     "deye_string": "String Inverter (2/4 MPPT)",
     "deye_hybrid": "Hybrid (Battery + 2 MPPT)",
     "deye_micro": "Microinverter (4 MPPT) - SUN-M/SUN2000G3",
+    "deye_micro_2mppt": "Microinverter (2 MPPT) - SUN600G3/SUN800G3/SUN1000G3",
     "deye_sg04lp3": "Hybrid 3-phase - SG04LP3",
 }
 
 DISCOVERY_PAYLOADS = (b"WIFIKIT-214028-READ", b"HF-A11ASSISTHREAD")
+
+# Register 0x0000 "Device" type — davidrapan/ha-solarman deye_*.yaml lookup.
+# value → (description, app model or None when the app has no profile yet)
+DEVICE_TYPES: dict[int, tuple[str, str | None]] = {
+    0x0002: ("String inverter", "deye_string"),
+    0x0200: ("String inverter", "deye_string"),
+    0x0003: ("Single-phase hybrid", "deye_hybrid"),
+    0x0300: ("Single-phase hybrid", "deye_hybrid"),
+    0x0004: ("Microinverter", "deye_micro"),
+    0x0400: ("Microinverter", "deye_micro"),
+    0x0005: ("3-phase hybrid, LV battery", "deye_sg04lp3"),
+    0x0500: ("3-phase hybrid, LV battery", "deye_sg04lp3"),
+    0x0006: ("3-phase hybrid, HV battery", None),
+    0x0007: ("3-phase HV inverter 6-15 kW", None),
+    0x0600: ("3-phase HV inverter 6-15 kW", None),
+    0x0008: ("3-phase HV inverter 20-50 kW", None),
+    0x0601: ("3-phase HV inverter 20-50 kW", None),
+    0x0103: ("Off-grid inverter", None),
+    0x0104: ("Energy storage system", None),
+}
 
 V5_START = 0xA5
 V5_END = 0x15
@@ -580,8 +601,44 @@ async def probe_model(host: str, serial: int, model_id: str, log: Tee | None = N
     return definition, all_regs, results
 
 
+async def read_device_info(host: str, serial: int, log: Tee) -> dict:
+    """Registers 0x0000-0x0012: device type, protocol, rated power, MPPTs, phases.
+    Constant values — readable at night (if the logger is powered) and without sun."""
+    log.write(" Device info (registers 0x0000-0x0012)")
+    try:
+        r = await read_block(host, serial, 3, 0x0000, 0x0012, log)
+    except Exception as exc:
+        log.write(f"  not readable: {type(exc).__name__}: {exc}")
+        log.write("")
+        return {}
+    desc, model = DEVICE_TYPES.get(r[0], (f"unknown (0x{r[0]:04X})", None))
+    if model == "deye_micro" and (r[0x12] & 0x0F00) >> 8 == 2:
+        model = "deye_micro_2mppt"
+    sn = "".join(chr(b) for w in r[3:8] for b in (w >> 8, w & 0xFF) if 32 < b < 127)
+    info = {
+        "type": r[0], "type_desc": desc, "model": model,
+        "protocol": f"{r[2] >> 8}.{r[2] & 0xFF}",
+        "rated_w": ((r[0x11] << 16) | r[0x10]) / 10,
+        "mppts": (r[0x12] & 0x0F00) >> 8,
+        "phases": r[0x12] & 0x000F,
+    }
+    log.write(f"  0x0000 device type  : {r[0]} (0x{r[0]:04X}) = {desc}")
+    log.write(f"  suggested profile   : {model or 'none yet in the app'}")
+    log.write(f"  rated power         : {info['rated_w']:.0f} W")
+    log.write(f"  MPPTs / phases      : {info['mppts']} / {info['phases']}")
+    log.write(f"  protocol version    : {info['protocol']}")
+    # Masked: these files get posted on the forum.
+    log.write(f"  inverter serial     : {sn[:2] + '*' * max(0, len(sn) - 4) + sn[-2:] if sn else '-'}")
+    if r[0] in (0x0006, 0x0007, 0x0008, 0x0600, 0x0601):
+        log.write("  NOTE: HV battery models scale battery power x10 and voltage x0.1;")
+        log.write("        the app's deye_sg04lp3 profile is LV-only — please report this scan.")
+    log.write("")
+    return info
+
+
 async def detect_model(host: str, serial: int, log: Tee) -> str:
-    log.write(" Auto-detecting model - probing each type...")
+    info = await read_device_info(host, serial, log)
+    log.write(" Auto-detecting model - probing each type (score method, for comparison)...")
     log.write("")
     best_model = "deye_string"
     best_score = -999
@@ -600,10 +657,16 @@ async def detect_model(host: str, serial: int, log: Tee) -> str:
 
     log.write("")
     if best_score <= 0:
-        log.write(" Warning: weak or night-time data - defaulting to deye_string")
+        log.write(" Score method: weak or night-time data - would default to deye_string")
         best_model = "deye_string"
     else:
-        log.write(f" Detected: {best_model} (score={best_score})")
+        log.write(f" Score method:    {best_model} (score={best_score})")
+    reg_model = info.get("model")
+    if reg_model:
+        verdict = "AGREE" if reg_model == best_model else "DIFFER - please report this scan"
+        log.write(f" Register 0x0000: {reg_model}  -> {verdict}")
+        best_model = reg_model
+    log.write(f" Detected: {best_model}")
     log.write("")
     return best_model
 
@@ -722,6 +785,8 @@ async def run_scan() -> int:
 
     try:
         model_id = model
+        if model_id != "auto":
+            await read_device_info(host, serial, log)
         if model_id == "auto":
             log.write(f"Deye Universal Scan - {started}")
             log.write(f"Host: {host}  Serial: {serial}")
