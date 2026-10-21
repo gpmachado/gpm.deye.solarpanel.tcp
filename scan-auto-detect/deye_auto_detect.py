@@ -35,6 +35,10 @@ MODELS = {
 
 DISCOVERY_PAYLOADS = (b"WIFIKIT-214028-READ", b"HF-A11ASSISTHREAD")
 
+# Deye stores the inverter serial number as ASCII in registers 3-7. Scan files get
+# posted on the forum, so these are never printed in clear.
+SERIAL_REGS = frozenset(range(3, 8))
+
 # Register 0x0000 "Device" type — davidrapan/ha-solarman deye_*.yaml lookup.
 # value → (description, app model or None when the app has no profile yet)
 DEVICE_TYPES: dict[int, tuple[str, str | None]] = {
@@ -734,13 +738,14 @@ def prompt_model() -> str:
     print()
     print(" Select model:")
     for idx, (model_id, label) in enumerate(MODELS.items(), 1):
-        print(f"   [{idx}] {model_id:<14} - {label}")
-    print("   [5] auto-detect   - probe inverter to determine model")
+        print(f"   [{idx}] {model_id:<16} - {label}")
+    auto = str(len(MODELS) + 1)
+    print(f"   [{auto}] auto-detect      - probe inverter to determine model")
     print()
-    print(" Choice [1-5, default=5]: ", end="", flush=True)
-    choice = input().strip() or "5"
+    print(f" Choice [1-{auto}, default={auto}]: ", end="", flush=True)
+    choice = input().strip() or auto
     keys = list(MODELS.keys())
-    if choice == "5":
+    if choice == auto:
         return "auto"
     try:
         index = int(choice) - 1
@@ -822,13 +827,17 @@ async def run_scan() -> int:
         log.write("Raw registers (non-zero):")
         for reg in sorted(all_registers):
             value = all_registers[reg]
-            if value:
+            if reg in SERIAL_REGS:
+                log.write(f"  reg {reg:5d} (0x{reg:04X}) = (inverter serial, hidden)")
+            elif value:
                 log.write(f"  reg {reg:5d} (0x{reg:04X}) = {value:7d}  (0x{value:04X})")
 
         parsed_results = {}
         for group in definition["parameters"]:
             group_name = group.get("group", "")
             for sensor in group["items"]:
+                if SERIAL_REGS & set(sensor["registers"]):
+                    continue
                 raw, value = parse_sensor(sensor, all_registers)
                 if value is not None:
                     parsed_results[sensor["name"]] = {
@@ -840,7 +849,7 @@ async def run_scan() -> int:
                         "group": group_name,
                     }
 
-        if model_id in ("deye_string", "deye_micro"):
+        if model_id in ("deye_string", "deye_micro", "deye_micro_2mppt"):
             for idx in (1, 2, 3, 4):
                 pv_v = parsed_results.get(f"PV{idx} Voltage", {}).get("value")
                 pv_a = parsed_results.get(f"PV{idx} Current", {}).get("value")
