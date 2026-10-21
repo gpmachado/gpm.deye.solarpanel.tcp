@@ -717,28 +717,28 @@
         "button.remove_ct_capabilities": {
           "maintenanceAction": true,
           "title": {
-            "en": "Remove CT meter values",
-            "nl": "CT-meterwaarden verwijderen",
-            "de": "CT-Zählerwerte entfernen",
-            "fr": "Supprimer les valeurs du compteur (CT)",
-            "it": "Rimuovi valori del contatore (CT)",
-            "sv": "Ta bort CT-mätarvärden",
-            "no": "Fjern CT-målerverdier",
-            "es": "Quitar valores del medidor (CT)",
-            "da": "Fjern CT-målerværdier",
-            "pl": "Usuń wartości licznika (CT)"
+            "en": "Remove unused values",
+            "nl": "Ongebruikte waarden verwijderen",
+            "de": "Unbenutzte Werte entfernen",
+            "fr": "Supprimer les valeurs inutilisées",
+            "it": "Rimuovi valori non usati",
+            "sv": "Ta bort oanvända värden",
+            "no": "Fjern ubrukte verdier",
+            "es": "Quitar valores sin uso",
+            "da": "Fjern ubrugte værdier",
+            "pl": "Usuń nieużywane wartości"
           },
           "desc": {
-            "en": "String inverters without a CT / energy meter: removes House Load, Grid Power and the import/export/consumption energy values, which only read 0 or repeat production. Flows that use these values will stop working.",
-            "nl": "Stringomvormers zonder CT/energiemeter: verwijdert Huisverbruik, Netvermogen en de import-/export-/verbruikswaarden, die alleen 0 tonen of de productie herhalen. Flows die deze waarden gebruiken werken dan niet meer.",
-            "de": "String-Wechselrichter ohne CT/Energiezähler: entfernt Hausverbrauch, Netzleistung und die Bezugs-/Einspeise-/Verbrauchswerte, die nur 0 zeigen oder die Produktion wiederholen. Flows mit diesen Werten funktionieren danach nicht mehr.",
-            "fr": "Onduleurs string sans CT/compteur : supprime Consommation maison, Puissance réseau et les énergies importées/exportées/consommées, qui restent à 0 ou répètent la production. Les Flows qui utilisent ces valeurs cesseront de fonctionner.",
-            "it": "Inverter di stringa senza CT/contatore: rimuove Consumo Casa, Potenza di rete e i valori di energia importata/esportata/consumata, che restano a 0 o ripetono la produzione. I Flow che usano questi valori smetteranno di funzionare.",
-            "sv": "Strängväxelriktare utan CT/energimätare: tar bort Husförbrukning, Näteffekt och import-/export-/förbrukningsvärdena, som bara visar 0 eller upprepar produktionen. Flows som använder dessa värden slutar fungera.",
-            "no": "Strengvekselrettere uten CT/energimåler: fjerner Husforbruk, Netteffekt og import-/eksport-/forbruksverdiene, som bare viser 0 eller gjentar produksjonen. Flows som bruker disse verdiene slutter å virke.",
-            "es": "Inversores de cadena sin CT/medidor: quita Consumo de la Casa, Potencia de Red y los valores de energía importada/exportada/consumida, que solo marcan 0 o repiten la producción. Los Flows que usen estos valores dejarán de funcionar.",
-            "da": "Strenginvertere uden CT/energimåler: fjerner Husforbrug, Neteffekt og import-/eksport-/forbrugsværdierne, som kun viser 0 eller gentager produktionen. Flows, der bruger disse værdier, holder op med at virke.",
-            "pl": "Falowniki stringowe bez CT/licznika: usuwa Zużycie Domu, Moc Sieci oraz wartości energii importowanej/eksportowanej/zużytej, które pokazują 0 lub powtarzają produkcję. Flows używające tych wartości przestaną działać."
+            "en": "String inverters: removes the values that need a CT / energy meter (House Load, Grid Power, import/export/consumption energy) and PV3/PV4 inputs that read 0 V while PV1/PV2 produce. Use it in daylight. Flows that use these values will stop working.",
+            "nl": "Stringomvormers: verwijdert de waarden die een CT/energiemeter nodig hebben (Huisverbruik, Netvermogen, import-/export-/verbruiksenergie) en PV3/PV4-ingangen met 0 V terwijl PV1/PV2 produceren. Gebruik overdag. Flows met deze waarden werken dan niet meer.",
+            "de": "String-Wechselrichter: entfernt die Werte, die einen CT/Energiezähler brauchen (Hausverbrauch, Netzleistung, Bezugs-/Einspeise-/Verbrauchsenergie) und PV3/PV4-Eingänge mit 0 V, während PV1/PV2 produzieren. Bei Tageslicht ausführen. Flows mit diesen Werten funktionieren danach nicht mehr.",
+            "fr": "Onduleurs string : supprime les valeurs qui nécessitent un CT/compteur (Consommation maison, Puissance réseau, énergies importée/exportée/consommée) et les entrées PV3/PV4 à 0 V pendant que PV1/PV2 produisent. À faire de jour. Les Flows qui utilisent ces valeurs cesseront de fonctionner.",
+            "it": "Inverter di stringa: rimuove i valori che richiedono un CT/contatore (Consumo Casa, Potenza di rete, energia importata/esportata/consumata) e gli ingressi PV3/PV4 a 0 V mentre PV1/PV2 producono. Usare di giorno. I Flow che usano questi valori smetteranno di funzionare.",
+            "sv": "Strängväxelriktare: tar bort värden som kräver CT/energimätare (Husförbrukning, Näteffekt, import-/export-/förbrukningsenergi) och PV3/PV4-ingångar på 0 V medan PV1/PV2 producerar. Kör i dagsljus. Flows som använder dessa värden slutar fungera.",
+            "no": "Strengvekselrettere: fjerner verdier som krever CT/energimåler (Husforbruk, Netteffekt, import-/eksport-/forbruksenergi) og PV3/PV4-innganger på 0 V mens PV1/PV2 produserer. Kjør i dagslys. Flows som bruker disse verdiene slutter å virke.",
+            "es": "Inversores de cadena: quita los valores que necesitan un CT/medidor (Consumo de la Casa, Potencia de Red, energía importada/exportada/consumida) y las entradas PV3/PV4 a 0 V mientras PV1/PV2 producen. Úsalo de día. Los Flows que usen estos valores dejarán de funcionar.",
+            "da": "Strenginvertere: fjerner værdier, der kræver CT/energimåler (Husforbrug, Neteffekt, import-/eksport-/forbrugsenergi) og PV3/PV4-indgange på 0 V, mens PV1/PV2 producerer. Brug i dagslys. Flows, der bruger disse værdier, holder op med at virke.",
+            "pl": "Falowniki stringowe: usuwa wartości wymagające CT/licznika (Zużycie Domu, Moc Sieci, energia importowana/eksportowana/zużyta) oraz wejścia PV3/PV4 z 0 V, gdy PV1/PV2 produkują. Używaj w dzień. Flows używające tych wartości przestaną działać."
           }
         },
         "button.restore_capabilities": {

@@ -8,6 +8,7 @@ the battery device keeps polling through the night to track SOC and discharge.
 """
 
 import asyncio
+import re
 import logging
 import os
 import time
@@ -169,8 +170,11 @@ class DeyeDevice(Device):
         await self._retitle_house_caps()
         await self._ensure_restore_button()
         await self._sync_battery_legacy_cap()
-        await self._sync_detail_caps("showPvDetail", PV_DETAIL_CAPS)
-        await self._sync_detail_caps("showAcDetail", AC_DETAIL_CAPS)
+        # Init only enforces "hidden": re-adding on every start brought back unwired
+        # PV3/PV4 inputs that pairing had filtered out. Adding happens when the user
+        # turns a setting on (on_settings).
+        await self._sync_detail_caps("showPvDetail", PV_DETAIL_CAPS, allow_add=False)
+        await self._sync_detail_caps("showAcDetail", AC_DETAIL_CAPS, allow_add=False)
 
         # Initialise synthetic inverter caps to 0 so Energy Dashboard never shows null
         # before the first successful poll.
@@ -313,14 +317,16 @@ class DeyeDevice(Device):
         """String inverter without a CT: drop the meter values that can only read 0.
         Explicit user action — Flows using these capabilities stop working."""
         removed = []
-        for cap in sorted(STRING_CT_CAPS):
+        pv_caps = {f"measure_{q}.pv{n}" for q in ("voltage", "current", "power") for n in (3, 4)}
+        unused_pv = {c for c in pv_caps if self.has_capability(c) and self._pv_input_unused(c)}
+        for cap in sorted(STRING_CT_CAPS | unused_pv):
             if self.has_capability(cap):
                 try:
                     await self.remove_capability(cap)
                     removed.append(cap)
                 except Exception as e:
                     _LOGGER.warning(f"Remove {cap} failed: {e}")
-        self.log(f"Remove CT meter values: removed {removed or 'nothing'}")
+        self.log(f"Remove unused values: removed {removed or 'nothing'}")
 
     async def _retitle_house_caps(self) -> None:
         """Inverter device: apply the 1.4.14 house-consumption titles to devices
@@ -365,7 +371,8 @@ class DeyeDevice(Device):
         except Exception as e:
             _LOGGER.warning(f"Sync {BATTERY_LEGACY_CAP} failed: {e}")
 
-    async def _sync_detail_caps(self, setting_id: str, cap_group: frozenset, value=_UNSET) -> None:
+    async def _sync_detail_caps(self, setting_id: str, cap_group: frozenset, value=_UNSET,
+                                allow_add: bool = True) -> None:
         """Add/remove a group of optional detail capabilities to match a device
         setting — no re-pairing needed. Inverter device only: PV string and AC
         connection detail don't apply to the battery or grid-meter device.
@@ -394,6 +401,8 @@ class DeyeDevice(Device):
         for cap in relevant:
             try:
                 if show and not self.has_capability(cap):
+                    if not allow_add or self._pv_input_unused(cap):
+                        continue
                     await self.add_capability(cap)
                     # addCapability() falls back to the capability's generic
                     # built-in title (e.g. every measure_voltage.* tile just
@@ -411,6 +420,21 @@ class DeyeDevice(Device):
                     self.log(f"Removed detail capability {cap} ({setting_id})")
             except Exception as e:
                 _LOGGER.warning(f"Sync detail capability {cap} ({setting_id}) failed: {e}")
+
+    def _pv_input_unused(self, cap: str) -> bool:
+        """True for a PV3/PV4 capability whose input read 0 V in the last poll while
+        PV1 or PV2 had voltage (daytime, so the reading means "not wired").
+        Without such a poll nothing is considered unused."""
+        m = re.search(r"\.pv([34])$", cap)
+        if not m:
+            return False
+        values = self._last_values or {}
+
+        def volts(n: int) -> float:
+            name = next((s for s, c in self._sensor_cap_map.items() if c == f"measure_voltage.pv{n}"), None)
+            return float(values.get(name) or 0) if name else 0.0
+
+        return (volts(1) > 10 or volts(2) > 10) and volts(int(m.group(1))) <= 1
 
     async def restore_capabilities(self) -> list[str]:
         """Re-add every capability pairing would create for this device (with
@@ -1006,10 +1030,14 @@ class DeyeDevice(Device):
     async def _trigger(self, card_id: str, tokens: dict) -> None:
         """Fire a flow trigger card."""
         try:
-            card = self.homey.flow.get_trigger_card(card_id)
-            await card.trigger(self, tokens, {})
+            # Device trigger cards (they take a device argument): Python SDK API is
+            # get_device_trigger_card(id).trigger(device, tokens). The JS-style
+            # get_trigger_card(id).trigger(device, tokens, state) raised TypeError, so
+            # no trigger ever fired — and the error was only logged at debug level.
+            card = self.homey.flow.get_device_trigger_card(card_id)
+            await card.trigger(self, tokens)
         except Exception as e:
-            _LOGGER.debug(f"Flow trigger '{card_id}' failed: {e}")
+            _LOGGER.warning(f"Flow trigger '{card_id}' failed: {e}")
 
     _has_warning: bool = False
 
