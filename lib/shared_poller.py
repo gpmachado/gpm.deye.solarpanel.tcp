@@ -8,6 +8,8 @@ import contextlib
 import logging
 import os
 
+from app.lib import debug
+
 _LOGGER = logging.getLogger(__name__)
 
 _registry: dict[int, "SharedPoller"] = {}
@@ -118,6 +120,9 @@ class SharedPoller:
         return client
 
     async def _loop(self) -> None:
+        # Tag everything this task logs (transport, client) with the logger serial,
+        # so per-device "Debug logging" can show just this logger — see lib/debug.py.
+        debug.scope.set(str(self.serial))
         _LOGGER.info(f"SharedPoller start serial={self.serial} host={self._host}")
         while self._subscribers:
             try:

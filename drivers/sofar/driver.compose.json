@@ -287,6 +287,13 @@
           "label": { "en": "Show signed battery power (legacy)" },
           "hint": { "en": "Battery device only. Shows the old signed \"Battery Power (+ discharging)\" value (+ = discharging, − = charging). Charge Power and Discharge Power replace it and are never negative. Keep it checked if your Flows use the old value — unchecking removes it and breaks those Flows. Takes effect immediately, no re-pairing needed." },
           "value": true
+        },
+        {
+          "id": "debugLog",
+          "type": "checkbox",
+          "label": { "en": "Debug logging (for diagnostic reports)" },
+          "hint": { "en": "Only when asked for a diagnostic report. Logs every poll and each request to this device's logger. Turn it on, wait for the problem to happen, then send a diagnostic report (Homey app → Apps → this app → Send diagnostic report). Switches itself off after 60 minutes." },
+          "value": false
         }
       ]
     }

@@ -71,6 +71,37 @@ def test_deye_registers_match_official_doc():
     assert parse(load_definition("deye_hybrid"), {178: 0xFF9C})["Total Load Power"] == -100
 
 
+def test_debug_logging_is_scoped_per_logger():
+    # Per-device "Debug logging": only polls tagged with an enabled scope show
+    # DEBUG lines; warnings always pass. Two pollers run interleaved.
+    import asyncio
+    import io
+    import logging
+    from app.lib import debug
+    debug.install()
+    handler = next(h for h in logging.getLogger("app").handlers
+                   if any(isinstance(f, debug._ScopeFilter) for f in h.filters))
+    buf = io.StringIO()
+    handler.setStream(buf)
+    log = logging.getLogger("app.lib.v5_transport")
+
+    async def poll(serial):
+        debug.scope.set(serial)
+        await asyncio.sleep(0)
+        log.debug("read from %s", serial)
+        log.warning("timeout on %s", serial)
+
+    async def main():
+        await asyncio.gather(poll("111"), poll("222"))
+
+    debug.set_enabled("111", True)
+    asyncio.run(main())
+    debug.set_enabled("111", False)
+    out = buf.getvalue()
+    assert "read from 111" in out and "read from 222" not in out, out
+    assert "timeout on 111" in out and "timeout on 222" in out, out
+
+
 def test_sofar_sensor_names_map_to_capabilities():
     caps = get_sensor_capability_map([i for g in load_definition("sofar_g3_hybrid")["parameters"]
                                       for i in g["items"]])

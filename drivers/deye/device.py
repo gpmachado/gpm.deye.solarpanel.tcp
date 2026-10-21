@@ -27,7 +27,7 @@ from app.lib.capability_map import (
 from app.drivers.deye.driver import _DERIVED_PV_POWER_MODELS, HYBRID_MODELS, STRING_CT_CAPS
 from app.lib import shared_poller as _poller_mod
 from app.lib.fault_codes import decode_alert as _decode_alert
-from app.app import DEBUG_LOG
+from app.lib import debug
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -51,6 +51,7 @@ _ERROR_THRESHOLD = 120        # consecutive failures before set_unavailable (~2 
 # Routine heartbeat lines are throttled to this interval; state transitions
 # (error, recovery, night enter/exit) always log immediately regardless.
 _HEARTBEAT_INTERVAL_S = 15 * 60
+_DEBUG_SETTING_MAX_S = 60 * 60   # "Debug logging" setting switches itself off after this
 
 # Production started/stopped hysteresis: at dusk (and in heavy cloud) solar power
 # hovers around a few watts, and a single threshold fired stopped/started every poll.
@@ -114,10 +115,12 @@ class DeyeDevice(Device):
     _was_night: bool = False          # last poll's night/day state, for transition logging
     _last_heartbeat_at: float = 0.0   # monotonic time of the last routine "poll ok" log line
     _last_values: dict | None = None  # last successful poll — used by restore_capabilities
+    _debug_off_task: asyncio.Task | None = None
+
 
     def _heartbeat_due(self) -> bool:
         """Throttle routine (non-transition) log lines to _HEARTBEAT_INTERVAL_S apart."""
-        if DEBUG_LOG:
+        if debug.active(str(self._safe_int("loggerSerial", 0))):
             return True
         now = time.monotonic()
         if now - self._last_heartbeat_at >= _HEARTBEAT_INTERVAL_S:
@@ -194,6 +197,8 @@ class DeyeDevice(Device):
         self._attach_poller()
         if not self._is_battery:
             asyncio.create_task(self._refresh_wifi_info(host))
+        if self.get_setting("debugLog"):
+            await self._set_debug_logging(True)
 
     async def on_settings(self, old_settings=None, new_settings=None, changed_keys=None) -> None:
         # Homey Python SDK passes changed_keys as a keyword argument list.
@@ -210,6 +215,8 @@ class DeyeDevice(Device):
             await self._sync_detail_caps("showPvDetail", PV_DETAIL_CAPS, (new_settings or {}).get("showPvDetail"))
         if "showAcDetail" in keys:
             await self._sync_detail_caps("showAcDetail", AC_DETAIL_CAPS, (new_settings or {}).get("showAcDetail"))
+        if "debugLog" in keys:
+            await self._set_debug_logging(bool((new_settings or {}).get("debugLog")))
         if "showBatterySigned" in keys:
             await self._sync_battery_legacy_cap((new_settings or {}).get("showBatterySigned"))
 
@@ -515,6 +522,34 @@ class DeyeDevice(Device):
 
     async def on_deleted(self) -> None:
         self._detach_poller()
+        if self.get_setting("debugLog"):
+            await self._set_debug_logging(False)
+
+    async def _set_debug_logging(self, on: bool) -> None:
+        """'Debug logging' device setting: detailed lines for this device's logger in
+        a remote user's diagnostic report. Auto-off after _DEBUG_SETTING_MAX_S — the
+        report keeps only ~100 lines, and a forgotten debug flood would push the real
+        history out. Keyed by logger serial: the inverter, battery and meter of one
+        logger share its polls."""
+        if self._debug_off_task and not self._debug_off_task.done():
+            self._debug_off_task.cancel()
+        self._debug_off_task = None
+        debug.set_enabled(str(self._safe_int("loggerSerial", 0)), on)
+        if on:
+            self._debug_off_task = asyncio.create_task(self._debug_auto_off())
+        self.log(f"Debug logging {'on — switches off in ' + str(_DEBUG_SETTING_MAX_S // 60) + ' min' if on else 'off'}")
+
+    async def _debug_auto_off(self) -> None:
+        try:
+            await asyncio.sleep(_DEBUG_SETTING_MAX_S)
+        except asyncio.CancelledError:
+            return
+        self._debug_off_task = None  # don't cancel ourselves in _set_debug_logging
+        try:
+            await self.set_settings({"debugLog": False})
+        except Exception as e:
+            _LOGGER.warning(f"Debug logging auto-off: could not clear the setting: {e}")
+        await self._set_debug_logging(False)
 
     def _safe_int(self, key: str, default: int) -> int:
         return _to_int(self.get_setting(key), default)

@@ -1,13 +1,12 @@
 import json
-import logging
 import os
-import sys
 from collections.abc import Mapping
 from typing import Any
 
 from homey.app import App
 
 from app.drivers.deye.driver import HYBRID_MODELS
+from app.lib import debug
 from app.lib.fault_codes import known_fault_names
 
 # ── Debug verbosity ───────────────────────────────────────────────────────────
@@ -16,6 +15,8 @@ from app.lib.fault_codes import known_fault_names
 #         15 min — view with `homey app run --remote`.
 # False → production: only warnings/errors and throttled heartbeat lines.
 # Never publish with True: the Homey diagnostic report keeps only ~100 lines.
+# Remote users get the same output per device via the "Debug logging" device
+# setting (auto-off after an hour) — see lib/debug.py.
 DEBUG_LOG = False
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -33,15 +34,7 @@ class MyApp(App):
 
     async def on_init(self):
         await super().on_init()
-        if DEBUG_LOG:
-            # Module loggers are named app.lib.* / app.drivers.*; without a handler
-            # Python drops anything below WARNING.
-            logger = logging.getLogger("app")
-            logger.setLevel(logging.DEBUG)
-            handler = logging.StreamHandler(sys.stdout)
-            handler.setFormatter(logging.Formatter("[debug] %(name)s: %(message)s"))
-            logger.addHandler(handler)
-            logger.propagate = False
+        debug.install(force=DEBUG_LOG)
         self.log(f"Deye app v{_app_version()} initialized{' — DEBUG_LOG on' if DEBUG_LOG else ''}")
         self._register_flow_conditions()
 
