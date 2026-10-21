@@ -52,6 +52,11 @@ _ERROR_THRESHOLD = 120        # consecutive failures before set_unavailable (~2 
 # (error, recovery, night enter/exit) always log immediately regardless.
 _HEARTBEAT_INTERVAL_S = 15 * 60
 
+# Production started/stopped hysteresis: at dusk (and in heavy cloud) solar power
+# hovers around a few watts, and a single threshold fired stopped/started every poll.
+_PRODUCTION_STOP_W  = 5.0    # stopped when at or below
+_PRODUCTION_START_W = 25.0   # started again only above
+
 
 # Capabilities zeroed on the inverter device at night
 _INVERTER_NIGHT_ZERO = frozenset({
@@ -947,7 +952,8 @@ class DeyeDevice(Device):
 
     async def _fire_production_triggers(self, values: dict, power: float) -> None:
         """Solar production started / stopped, plus the end-of-day daily summary."""
-        is_producing = power > 5.0
+        threshold = _PRODUCTION_STOP_W if self._was_producing else _PRODUCTION_START_W
+        is_producing = power > threshold
         if self._was_producing is None:
             # First poll after startup — record state silently, no transition to fire.
             self._was_producing = is_producing
