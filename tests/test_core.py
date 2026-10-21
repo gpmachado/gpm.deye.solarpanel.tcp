@@ -97,6 +97,9 @@ def test_pairing_plan():
             assert "meter_power.exported" in plan["grid_meter"]["caps"], model
     assert "battery" in plan_device_capabilities("deye_sg04lp3", {}, True)
     assert "battery" not in plan_device_capabilities("deye_string", {}, True)
+    # Restore uses advanced=False for strings: no CT-dependent load/grid values.
+    string_default = plan_device_capabilities("deye_string", {}, False)["inverter"]["caps"]
+    assert "measure_power.load" not in string_default and "measure_power.grid" not in string_default
     # Unwired PV3 (reads 0) is left out; without values nothing is filtered.
     assert "measure_power.pv3" not in plan_device_capabilities(
         "sofar_g3_hybrid", {"PV3 Power": 0, "PV1 Power": 100}, True)["inverter"]["caps"]

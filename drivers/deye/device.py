@@ -404,7 +404,11 @@ class DeyeDevice(Device):
         model = self.get_setting("model") or "deye_string"
         dtype = "battery" if self._is_battery else "grid_meter" if self._is_grid_meter else "inverter"
         values = dict(self._last_values or {})
-        plan = plan_device_capabilities(model, values, advanced=True).get(dtype)
+        # deye_string: load/grid/energy and radiator sensors need a CT meter or don't
+        # exist on most units (0 W, or "consumption" mirroring production). Pairing
+        # only adds them via explicit opt-in boxes, and restore can't remove — so
+        # restore the default set there.
+        plan = plan_device_capabilities(model, values, advanced=(model != "deye_string")).get(dtype)
         if not plan:
             self.log(f"Restore capabilities: nothing planned for {dtype} ({model})")
             return []
