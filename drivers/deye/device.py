@@ -319,7 +319,16 @@ class DeyeDevice(Device):
         removed = []
         pv_caps = {f"measure_{q}.pv{n}" for q in ("voltage", "current", "power") for n in (3, 4)}
         unused_pv = {c for c in pv_caps if self.has_capability(c) and self._pv_input_unused(c)}
-        for cap in sorted(STRING_CT_CAPS | unused_pv):
+        # Radiator sensor absent on many units: register reads 0 → (0-1000)*0.1 = -100 °C,
+        # dropped by the definition's validation. Only judged when the same poll
+        # delivered the DC temperature, so a failed or partial poll removes nothing.
+        values = self._last_values or {}
+        sensor = {c: n for n, c in self._sensor_cap_map.items()}
+        rad = "measure_temperature.radiator"
+        rad_missing = (sensor.get("measure_temperature") in values
+                       and float(values.get(sensor.get(rad), -100) or -100) < -50)
+        extra = {rad} if self.has_capability(rad) and rad_missing else set()
+        for cap in sorted(STRING_CT_CAPS | unused_pv | extra):
             if self.has_capability(cap):
                 try:
                     await self.remove_capability(cap)
