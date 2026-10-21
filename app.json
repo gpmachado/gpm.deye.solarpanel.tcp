@@ -714,6 +714,33 @@
       "class": "solarpanel",
       "capabilities": [],
       "capabilitiesOptions": {
+        "button.remove_ct_capabilities": {
+          "maintenanceAction": true,
+          "title": {
+            "en": "Remove CT meter values",
+            "nl": "CT-meterwaarden verwijderen",
+            "de": "CT-Zählerwerte entfernen",
+            "fr": "Supprimer les valeurs du compteur (CT)",
+            "it": "Rimuovi valori del contatore (CT)",
+            "sv": "Ta bort CT-mätarvärden",
+            "no": "Fjern CT-målerverdier",
+            "es": "Quitar valores del medidor (CT)",
+            "da": "Fjern CT-målerværdier",
+            "pl": "Usuń wartości licznika (CT)"
+          },
+          "desc": {
+            "en": "String inverters without a CT / energy meter: removes House Load, Grid Power and the import/export/consumption energy values, which only read 0 or repeat production. Flows that use these values will stop working.",
+            "nl": "Stringomvormers zonder CT/energiemeter: verwijdert Huisverbruik, Netvermogen en de import-/export-/verbruikswaarden, die alleen 0 tonen of de productie herhalen. Flows die deze waarden gebruiken werken dan niet meer.",
+            "de": "String-Wechselrichter ohne CT/Energiezähler: entfernt Hausverbrauch, Netzleistung und die Bezugs-/Einspeise-/Verbrauchswerte, die nur 0 zeigen oder die Produktion wiederholen. Flows mit diesen Werten funktionieren danach nicht mehr.",
+            "fr": "Onduleurs string sans CT/compteur : supprime Consommation maison, Puissance réseau et les énergies importées/exportées/consommées, qui restent à 0 ou répètent la production. Les Flows qui utilisent ces valeurs cesseront de fonctionner.",
+            "it": "Inverter di stringa senza CT/contatore: rimuove Consumo Casa, Potenza di rete e i valori di energia importata/esportata/consumata, che restano a 0 o ripetono la produzione. I Flow che usano questi valori smetteranno di funzionare.",
+            "sv": "Strängväxelriktare utan CT/energimätare: tar bort Husförbrukning, Näteffekt och import-/export-/förbrukningsvärdena, som bara visar 0 eller upprepar produktionen. Flows som använder dessa värden slutar fungera.",
+            "no": "Strengvekselrettere uten CT/energimåler: fjerner Husforbruk, Netteffekt og import-/eksport-/forbruksverdiene, som bare viser 0 eller gjentar produksjonen. Flows som bruker disse verdiene slutter å virke.",
+            "es": "Inversores de cadena sin CT/medidor: quita Consumo de la Casa, Potencia de Red y los valores de energía importada/exportada/consumida, que solo marcan 0 o repiten la producción. Los Flows que usen estos valores dejarán de funcionar.",
+            "da": "Strenginvertere uden CT/energimåler: fjerner Husforbrug, Neteffekt og import-/eksport-/forbrugsværdierne, som kun viser 0 eller gentager produktionen. Flows, der bruger disse værdier, holder op med at virke.",
+            "pl": "Falowniki stringowe bez CT/licznika: usuwa Zużycie Domu, Moc Sieci oraz wartości energii importowanej/eksportowanej/zużytej, które pokazują 0 lub powtarzają produkcję. Flows używające tych wartości przestaną działać."
+          }
+        },
         "button.restore_capabilities": {
           "maintenanceAction": true,
           "title": {
