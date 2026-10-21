@@ -26,6 +26,7 @@ from app.lib.capability_map import (
 from app.drivers.deye.driver import _DERIVED_PV_POWER_MODELS, HYBRID_MODELS, STRING_CT_CAPS
 from app.lib import shared_poller as _poller_mod
 from app.lib.fault_codes import decode_alert as _decode_alert
+from app.app import DEBUG_LOG
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -110,6 +111,8 @@ class DeyeDevice(Device):
 
     def _heartbeat_due(self) -> bool:
         """Throttle routine (non-transition) log lines to _HEARTBEAT_INTERVAL_S apart."""
+        if DEBUG_LOG:
+            return True
         now = time.monotonic()
         if now - self._last_heartbeat_at >= _HEARTBEAT_INTERVAL_S:
             self._last_heartbeat_at = now
