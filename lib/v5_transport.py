@@ -217,7 +217,10 @@ class V5Transport:
         # Read full V5 response frame
         response = await self._read_v5_frame()
         modbus_resp = _parse_v5_response(response, seq)
-        return _parse_modbus_registers(modbus_resp, count)
+        regs = _parse_modbus_registers(modbus_resp, count)
+        _LOGGER.debug("read fc=%d [0x%04X-0x%04X] %d regs -> %d regs (seq %d)",
+                      fc, start, start + count - 1, count, len(regs), seq)
+        return regs
 
     async def _read_v5_frame(self) -> bytes:
         """Read one complete V5 frame from the stream.
