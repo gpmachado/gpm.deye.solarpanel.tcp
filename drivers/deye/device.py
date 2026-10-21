@@ -643,6 +643,37 @@ class DeyeDevice(Device):
         is_hybrid = model in HYBRID_MODELS
         return not is_hybrid and self._is_night_time_from(sun_times)
 
+    async def _enter_night(self, values: dict | None, sun_times) -> None:
+        """String/micro night: zero the tiles and back off. `values` is None when the
+        logger has already lost power (expected at night, not an error)."""
+        self._consecutive_errors = 0
+        await self._clear_warning()
+        if self._is_unavailable:
+            self._is_unavailable = False
+            await self.set_available()
+        await self._apply_zeros()
+        # Close the production day: the last daytime poll may still have been above
+        # the 5 W threshold, or the logger lost power first — then "Solar production
+        # stopped" and the daily summary would never fire that day. No-op if already
+        # stopped (or first poll after startup).
+        try:
+            await self._fire_production_triggers(values or self._last_values or {}, 0.0)
+        except Exception as e:
+            _LOGGER.warning(f"Production-stopped trigger at night entry failed: {e}")
+        # Log immediately on entering night (transition) or every _HEARTBEAT_INTERVAL_S
+        # while it persists — every single 30-min backoff cycle would burn through the
+        # ~100-line diagnostic report window in under 2 days of normal operation.
+        if not self._was_night or self._heartbeat_due():
+            if values is None:
+                self.log("night offline (expected) — logger without power")
+            elif sun_times:
+                sr, ss = sun_times
+                self.log(f"night offline (expected) — backing off 30 min "
+                         f"| sunrise≈{sr:.2f}h sunset≈{ss:.2f}h (UTC)")
+            else:
+                self.log("night offline (expected) — backing off 30 min")
+        self._was_night = True
+
     async def _on_values(self, values: dict | None, error: Exception | None = None) -> None:
         # Compute sun_times once — shared by both night checks below.
         sun_times = self._get_sunrise_sunset()
@@ -650,38 +681,14 @@ class DeyeDevice(Device):
         if values is None:
             # For string/micro inverters: logger loses power at night — expected, not an error
             if self._is_string_night_from(sun_times):
-                self._consecutive_errors = 0
-                await self._clear_warning()
-                if self._is_unavailable:
-                    self._is_unavailable = False
-                    await self.set_available()
-                await self._apply_zeros()
-                if not self._was_night or self._heartbeat_due():
-                    self.log("night offline (expected) — logger without power")
-                self._was_night = True
+                await self._enter_night(None, sun_times)
                 return
             await self._handle_error(error)
             return
 
         # Night backoff — inverter only, and only for non-hybrid (hybrid stays on 24/7 via battery)
         if self._is_string_night_from(sun_times):
-            self._consecutive_errors = 0
-            await self._clear_warning()
-            if self._is_unavailable:
-                self._is_unavailable = False
-                await self.set_available()
-            await self._apply_zeros()
-            # Log immediately on entering night (transition) or every _HEARTBEAT_INTERVAL_S
-            # while it persists — every single 30-min backoff cycle would burn through the
-            # ~100-line diagnostic report window in under 2 days of normal operation.
-            if not self._was_night or self._heartbeat_due():
-                if sun_times:
-                    sr, ss = sun_times
-                    self.log(f"night offline (expected) — backing off 30 min "
-                             f"| sunrise≈{sr:.2f}h sunset≈{ss:.2f}h (UTC)")
-                else:
-                    self.log("night offline (expected) — backing off 30 min")
-            self._was_night = True
+            await self._enter_night(values, sun_times)
             return
 
         # A transition (day resumed / recovered from failures) always forces the
