@@ -106,7 +106,8 @@ class SolarmanClient:
                         success = True
                         break
                     except Exception as e:
-                        log.warning(
+                        # debug: the final failure is reported once by the poller/device.
+                        log.debug(
                             f"Query [{start:#x}-{end:#x}] attempt {attempt + 1}/{QUERY_RETRY_ATTEMPTS} "
                             f"failed: {type(e).__name__}: {e}"
                         )

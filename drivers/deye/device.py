@@ -674,14 +674,15 @@ class DeyeDevice(Device):
         Convenience wrapper — computes sun_times internally."""
         return self._is_string_night_from(self._get_sunrise_sunset())
 
-    def _is_string_night_from(self, sun_times: tuple[float, float, str] | None) -> bool:
+    def _is_string_night_from(self, sun_times: tuple[float, float, str] | None,
+                              margin: float = 0.5) -> bool:
         """True when this is a string/micro inverter device during night hours.
         Accepts pre-computed sun_times to avoid a second SDK call."""
         if self._is_battery or self._is_grid_meter:
             return False
         model = str(self.get_setting("model") or "")
         is_hybrid = model in HYBRID_MODELS
-        return not is_hybrid and self._is_night_time_from(sun_times)
+        return not is_hybrid and self._is_night_time_from(sun_times, margin)
 
     async def _enter_night(self, values: dict | None, sun_times) -> None:
         """String/micro night: zero the tiles and back off. `values` is None when the
@@ -719,8 +720,11 @@ class DeyeDevice(Device):
         sun_times = self._get_sunrise_sunset()
 
         if values is None:
-            # For string/micro inverters: logger loses power at night — expected, not an error
-            if self._is_string_night_from(sun_times):
+            # For string/micro inverters: logger loses power at night — expected, not an
+            # error. It's PV-powered, so it can drop out before sunset+30 min (cloud,
+            # dusk) or come back after sunrise: within 1 h of either, an unreachable
+            # logger also counts as night, so no daily "Connection failed" warning.
+            if self._is_string_night_from(sun_times, margin=-1.0):
                 await self._enter_night(None, sun_times)
                 return
             await self._handle_error(error)
@@ -1233,9 +1237,11 @@ class DeyeDevice(Device):
             self.log(f"Night backoff disabled — sun calculation failed: {e}")
             return None
 
-    def _is_night_time_from(self, sun_times: tuple[float, float] | None) -> bool:
+    def _is_night_time_from(self, sun_times: tuple[float, float] | None,
+                            margin: float = 0.5) -> bool:
         """True when outside solar window.
-        30-minute buffer on both sides: before sunrise and after sunset.
+        `margin` hours on both sides (default 30 min before sunrise / after sunset);
+        a negative margin starts the night before sunset and ends it after sunrise.
         The post-sunset buffer covers the crepuscular period where the logger may
         still respond briefly after the official sunset time.
 
@@ -1249,8 +1255,8 @@ class DeyeDevice(Device):
         try:
             now      = datetime.now(UTC)
             utc_hour = now.hour + now.minute / 60
-            start = sunrise - 0.5
-            end   = sunset  + 0.5
+            start = sunrise - margin
+            end   = sunset  + margin
 
             if start < end:
                 # Solar window falls within the same UTC day.
