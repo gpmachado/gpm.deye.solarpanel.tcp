@@ -71,6 +71,24 @@ def test_deye_registers_match_official_doc():
     assert parse(load_definition("deye_hybrid"), {178: 0xFF9C})["Total Load Power"] == -100
 
 
+def test_hv_profile_differs_from_lv_only_in_hv_scales():
+    # davidrapan deye_p3.yaml scale lists [LV, HV]: PV power [1, 10], battery power
+    # [1, 10], battery voltage [0.01, 0.1]. Same raw registers, 10x apart.
+    regs = {672: 520, 590: 0x10000 - 300, 587: 4012, 588: 55, 586: 1250}  # 586: 25 °C
+    lv = parse(load_definition("deye_sg04lp3"), regs)
+    hv = parse(load_definition("deye_sg01hp3"), regs)
+    assert (lv["PV1 Power"], hv["PV1 Power"]) == (520, 5200)
+    assert (lv["Battery Power"], hv["Battery Power"]) == (-300, -3000)
+    assert (round(lv["Battery Voltage"], 2), round(hv["Battery Voltage"], 1)) == (40.12, 401.2)
+    assert lv["Battery SOC"] == hv["Battery SOC"] == 55
+    hv_scaled = {"PV1 Power", "PV2 Power", "Battery Power", "Battery Voltage"}
+    def items(model):
+        return {s["name"]: {k: v for k, v in s.items() if k != "scale" or s["name"] not in hv_scaled}
+                for g in load_definition(model)["parameters"] for s in g["items"]}
+    assert items("deye_sg04lp3") == items("deye_sg01hp3")
+    assert load_definition("deye_sg04lp3")["requests"] == load_definition("deye_sg01hp3")["requests"]
+
+
 def test_debug_logging_is_scoped_per_logger():
     # Per-device "Debug logging": only polls tagged with an enabled scope show
     # DEBUG lines; warnings always pass. Two pollers run interleaved.

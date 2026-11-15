@@ -31,6 +31,7 @@ MODELS = {
     "deye_micro": "Microinverter (4 MPPT) - SUN-M/SUN2000G3",
     "deye_micro_2mppt": "Microinverter (2 MPPT) - SUN600G3/SUN800G3/SUN1000G3",
     "deye_sg04lp3": "Hybrid 3-phase - SG04LP3",
+    "deye_sg01hp3": "Hybrid 3-phase HV (beta) - SG01HP3",
 }
 
 DISCOVERY_PAYLOADS = (b"WIFIKIT-214028-READ", b"HF-A11ASSISTHREAD")
@@ -50,11 +51,11 @@ DEVICE_TYPES: dict[int, tuple[str, str | None]] = {
     0x0400: ("Microinverter", "deye_micro"),
     0x0005: ("3-phase hybrid, LV battery", "deye_sg04lp3"),
     0x0500: ("3-phase hybrid, LV battery", "deye_sg04lp3"),
-    0x0006: ("3-phase hybrid, HV battery", None),
-    0x0007: ("3-phase HV inverter 6-15 kW", None),
-    0x0600: ("3-phase HV inverter 6-15 kW", None),
-    0x0008: ("3-phase HV inverter 20-50 kW", None),
-    0x0601: ("3-phase HV inverter 20-50 kW", None),
+    0x0006: ("3-phase hybrid, HV battery", "deye_sg01hp3"),
+    0x0007: ("3-phase HV inverter 6-15 kW", "deye_sg01hp3"),
+    0x0600: ("3-phase HV inverter 6-15 kW", "deye_sg01hp3"),
+    0x0008: ("3-phase HV inverter 20-50 kW", "deye_sg01hp3"),
+    0x0601: ("3-phase HV inverter 20-50 kW", "deye_sg01hp3"),
     0x0103: ("Off-grid inverter", None),
     0x0104: ("Energy storage system", None),
 }
@@ -634,8 +635,8 @@ async def read_device_info(host: str, serial: int, log: Tee) -> dict:
     # Masked: these files get posted on the forum.
     log.write(f"  inverter serial     : {sn[:2] + '*' * max(0, len(sn) - 4) + sn[-2:] if sn else '-'}")
     if r[0] in (0x0006, 0x0007, 0x0008, 0x0600, 0x0601):
-        log.write("  NOTE: HV battery models scale battery power x10 and voltage x0.1;")
-        log.write("        the app's deye_sg04lp3 profile is LV-only — please report this scan.")
+        log.write("  NOTE: HV battery models scale PV/battery power x10 and battery voltage x0.1.")
+        log.write("        The app's deye_sg01hp3 profile is still beta — please report this scan.")
     log.write("")
     return info
 

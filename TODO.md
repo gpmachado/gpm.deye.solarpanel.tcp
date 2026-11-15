@@ -11,11 +11,12 @@
   2 = string, 3 = híbrido monofásico, 4 = micro, 5 = híbrido trifásico LV, 6/7/8 = HV.
   Ler um registro substitui a pontuação heurística (que falha à noite) e resolve LV × HV.
   Confirmar com um dump de cada família antes de trocar.
-- [ ] **Perfil Deye trifásico HV (série HP3)** — kellerza/sunsynk (`three_phase_hv.py`):
-  em HV o registro 590 (potência da bateria) é ×10 e 587 (tensão) ×0,1; no LV
-  (`deye_sg04lp3`) é ×1 e ×0,01. Hoje um HV usando `deye_sg04lp3` mostraria bateria 10×
-  menor. Precisa de dump de um HV antes de criar o perfil. Conferir também o README:
-  "Sun-5k-SG01HP3 (single-phase)" — HP3 normalmente é trifásico HV.
+- [ ] **Validar o perfil beta `deye_sg01hp3` (HV)** — criado a partir da coluna HV do
+  davidrapan `deye_p3.yaml`: PV1/PV2 e bateria ×10, tensão da bateria ×0,1; o resto igual
+  ao `deye_sg04lp3`. Falta um dump de um HV real (Stemacone, fórum #31, SUN-20K-SG01HP3)
+  para conferir PV, totais e sinais. Validado → tirar o "(beta)" e auto-detectar pelo
+  registro 0x0000. Conferir também o README: "Sun-5k-SG01HP3 (single-phase)" — HP3
+  normalmente é trifásico HV.
 - [ ] **Adicionar L2/L3 ao `deye_string.json`** — validar os registros 74, 75, 77 e 78
   em um inversor string trifásico antes de expor as capabilities.
 

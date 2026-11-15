@@ -34,7 +34,14 @@ DEYE_MODELS: dict[str, str] = {
     "deye_string":      "Deye String Inverter (2/4 MPPT)",
     "deye_hybrid":      "Deye Hybrid (Battery + 2 MPPT)",
     "deye_sg04lp3":     "Deye SG04LP3 Hybrid 3-phase — SUN-8/10/12K",
+    "deye_sg01hp3":     "Deye SG01HP3 Hybrid 3-phase HV (beta) — SUN-5…25K-SG01HP3",
 }
+
+# Never probed by _detect_model(), only chosen by hand at pairing. deye_sg01hp3
+# (HV battery) reads the same registers as deye_sg04lp3 with a different scale on
+# PV/battery power and battery voltage, so a probe can't tell them apart — and it
+# isn't validated on hardware yet. Register 0x0000 (TODO.md) will auto-pick it later.
+_MANUAL_ONLY_MODELS: frozenset[str] = frozenset({"deye_sg01hp3"})
 
 # SOFAR models live in their own driver (drivers/sofar/) and are never probed by
 # _detect_model(): SOFAR G3 uses a completely different register map (0x0404+),
@@ -44,7 +51,9 @@ SOFAR_MODELS: dict[str, str] = {
 }
 
 # Models whose "Alert" block is decoded by lib/fault_codes.py (Deye bit tables).
-_FAULT_DECODE_MODELS: frozenset[str] = frozenset({"deye_hybrid", "deye_sg04lp3", "deye_string"})
+_FAULT_DECODE_MODELS: frozenset[str] = frozenset({
+    "deye_hybrid", "deye_sg04lp3", "deye_sg01hp3", "deye_string",
+})
 
 # Models that share deye_string/deye_micro's register layout but derive PV
 # power from V×I instead of reading a direct power register.
@@ -54,7 +63,9 @@ _DERIVED_PV_POWER_MODELS: frozenset[str] = frozenset({
 
 # Only hybrid models get a separate Grid Meter device.
 # String/micro inverters show grid caps directly on the main inverter tile.
-HYBRID_MODELS: frozenset[str] = frozenset({"deye_hybrid", "deye_sg04lp3", "sofar_g3_hybrid"})
+HYBRID_MODELS: frozenset[str] = frozenset({
+    "deye_hybrid", "deye_sg04lp3", "deye_sg01hp3", "sofar_g3_hybrid",
+})
 
 # ── Capability icon SVG paths (relative to driver assets) ─────────────────────
 # Applied to capabilitiesOptions at pairing time so each capability shows a
@@ -339,6 +350,8 @@ async def _detect_model(host: str, serial: int, port: int = 8899) -> tuple[str, 
     best_values: dict = {}
 
     for model_id in DEYE_MODELS:
+        if model_id in _MANUAL_ONLY_MODELS:
+            continue
         try:
             values, score = await asyncio.wait_for(
                 _probe_model(host, serial, port, model_id), timeout=10.0

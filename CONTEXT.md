@@ -37,6 +37,7 @@ the "Restore capabilities" maintenance action share `plan_device_capabilities()`
 | `deye_string` | String inverter (single/split-phase, up to 4 MPPT) |
 | `deye_hybrid` | Hybrid inverter with battery and grid meter (LP1 series) |
 | `deye_sg04lp3` | 3-phase hybrid with battery (SG04LP3 series) |
+| `deye_sg01hp3` | 3-phase hybrid, HV battery (SG01HP3 series) — beta, manual choice only (`_MANUAL_ONLY_MODELS`) |
 | `deye_micro_2mppt` | Micro-inverter, 2 MPPT (SUN600G3/800G3/1000G3) |
 | `sofar_g3_hybrid` | SOFAR G3 3-phase hybrid (ESI-T1 / HYD-3PH), SOFAR driver only |
 
