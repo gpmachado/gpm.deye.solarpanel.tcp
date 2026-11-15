@@ -118,5 +118,8 @@
   },
   "1.4.1": {
     "en": "Fixed: app crash when saving geolocation coordinates to device settings. Fixed: Solar production started trigger firing on every app restart. Fixed: Daily data updated trigger missing from flow card list. Fixed: night backoff activating at wrong hours when Homey location is not configured."
+  },
+  "1.4.17": {
+    "en": "New beta profile for Deye high-voltage 3-phase hybrids (SUN-5…25K-SG01HP3-EU-AM2): choose \"Deye SG01HP3 Hybrid 3-phase HV (beta)\" at pairing or in Repair. With the SG04LP3 profile these models showed battery power, PV power and battery voltage 10x too small. The HV profile is not auto-detected yet and not yet validated on real hardware, so please report any wrong values on the forum."
   }
 }
