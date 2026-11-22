@@ -93,6 +93,12 @@ def v5_checksum(frame: bytes) -> int:
     return sum(frame[i] & 0xFF for i in range(1, len(frame) - 2)) & 0xFF
 
 
+def mask_serial(sn: object) -> str:
+    """Scan files get posted on the forum — keep only the first and last 2 digits."""
+    sn = str(sn or "")
+    return sn[:2] + "*" * max(0, len(sn) - 4) + sn[-2:] if sn else "-"
+
+
 def build_modbus_request(slave: int, fc: int, start: int, count: int) -> bytes:
     msg = struct.pack(">BBHH", slave, fc, start, count)
     return msg + struct.pack("<H", crc16_modbus(msg))
@@ -113,12 +119,17 @@ def build_v5_frame(serial: int, seq: int, modbus_payload: bytes) -> bytearray:
     return frame
 
 
+class EmptyLoggerReply(ValueError):
+    """The logger answered with no Modbus data — what it does when the request
+    carries a serial number that isn't its own."""
+
+
 def parse_v5_response(frame: bytes) -> bytes:
     if len(frame) < 29 or frame[0] != V5_START or frame[-1] != V5_END:
         raise ValueError(f"Invalid V5 frame ({len(frame)} bytes)")
     modbus = frame[25:-2]
     if len(modbus) < 5:
-        raise ValueError(f"Modbus payload too short: {len(modbus)} bytes")
+        raise EmptyLoggerReply(f"Modbus payload too short: {len(modbus)} bytes")
     return bytes(modbus)
 
 
@@ -633,7 +644,7 @@ async def read_device_info(host: str, serial: int, log: Tee) -> dict:
     log.write(f"  MPPTs / phases      : {info['mppts']} / {info['phases']}")
     log.write(f"  protocol version    : {info['protocol']}")
     # Masked: these files get posted on the forum.
-    log.write(f"  inverter serial     : {sn[:2] + '*' * max(0, len(sn) - 4) + sn[-2:] if sn else '-'}")
+    log.write(f"  inverter serial     : {mask_serial(sn)}")
     if r[0] in (0x0006, 0x0007, 0x0008, 0x0600, 0x0601):
         log.write("  NOTE: HV battery models scale PV/battery power x10 and battery voltage x0.1.")
         log.write("        The app's deye_sg01hp3 profile is still beta — please report this scan.")
@@ -777,6 +788,11 @@ async def run_scan() -> int:
     try:
         await test_connection(host, serial)
         print(" Connection OK")
+    except EmptyLoggerReply:
+        print(" [ERROR] The logger rejected the request - the serial number is probably wrong.")
+        print("         Use the serial of the Wi-Fi logger stick (not the inverter's), or leave")
+        print("         it empty so the script reads it from the logger.")
+        return 1
     except Exception as exc:
         print(f" [ERROR] Connection test failed: {type(exc).__name__}: {exc}")
         return 1
@@ -795,7 +811,7 @@ async def run_scan() -> int:
             await read_device_info(host, serial, log)
         if model_id == "auto":
             log.write(f"Deye Universal Scan - {started}")
-            log.write(f"Host: {host}  Serial: {serial}")
+            log.write(f"Host: {host}  Serial: {mask_serial(serial)}")
             log.write("Transport: embedded Solarman V5 TCP, no pysolarmanv5")
             log.write("=" * 72)
             log.write("")
@@ -805,7 +821,7 @@ async def run_scan() -> int:
         model_name = MODELS.get(model_id, model_id)
 
         log.write(f"Deye Universal Scan - {started}")
-        log.write(f"Host: {host}  Serial: {serial}  Model: {model_id}")
+        log.write(f"Host: {host}  Serial: {mask_serial(serial)}  Model: {model_id}")
         log.write(f"Description: {model_name}")
         log.write("Transport: embedded Solarman V5 TCP, no pysolarmanv5")
         log.write("=" * 72)
