@@ -121,5 +121,8 @@
   },
   "1.4.17": {
     "en": "New beta profile for Deye high-voltage 3-phase hybrids (SUN-5…25K-SG01HP3-EU-AM2): choose \"Deye SG01HP3 Hybrid 3-phase HV (beta)\" at pairing or in Repair. With the SG04LP3 profile these models showed battery power, PV power and battery voltage 10x too small. The HV profile is not auto-detected yet and not yet validated on real hardware, so please report any wrong values on the forum."
+  },
+  "1.4.18": {
+    "en": "Deye SG01HP3 high-voltage 3-phase hybrids are now detected automatically at pairing and the profile is no longer beta, confirmed on a SUN-20K-SG01HP3 against the inverter display. Fixed Polish text in the export limit status of 3-phase hybrids."
   }
 }
