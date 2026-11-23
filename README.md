@@ -74,13 +74,15 @@ inverter_definitions/
 
 ## Model auto-detection
 
-The driver reads register sets from all 4 models and scores each one based on non-zero values returned. The model with the highest score is selected. The user can override the detected model in the confirmation step before adding the device.
+The driver first reads register 0x0000 (device type): the high-voltage 3-phase types (6/7/8) select `deye_sg01hp3` directly. Otherwise it reads the register sets of each Deye model and scores each one based on plausible values returned. The model with the highest score is selected. The user can override the detected model in the confirmation step before adding the device.
 
 SOFAR inverters have their own **SOFAR Inverter** driver (add device → SOFAR Inverter) and are never auto-detected: SOFAR uses a different register map, and probing it with Deye maps returns plausible-looking but wrong values. The Deye driver only auto-detects between Deye models.
 
 ## Night behaviour
 
-The device uses the [astral](https://astral.readthedocs.io/) library with the Homey geolocation to calculate local sunrise and sunset. Outside the solar window (plus a 30-minute buffer), polling stops and instantaneous capabilities are zeroed. Energy counters (lifetime production) are preserved.
+The device uses the [astral](https://astral.readthedocs.io/) library with the Homey geolocation to calculate local sunrise and sunset. Outside the solar window (plus a 30-minute buffer), a logger that doesn't answer is expected (not an error) and instantaneous capabilities are zeroed. Energy counters (lifetime production) are preserved.
+
+String/micro inverters only reset their daily counters when they wake up, so overnight they would show yesterday's totals. With the **Reset daily energy at midnight** setting (on by default), the daily values go to 0 at midnight in Homey's time zone and stay 0 until production exceeds 5 W, ignoring the inverter's stale values meanwhile. Hybrid inverters stay on all night and reset on their own clock.
 
 String and micro inverters: the Solarman logger loses power when the inverter shuts down at night. This is expected behaviour — no warning triangle is shown, the tile stays clean with 0 W.
 

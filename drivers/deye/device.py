@@ -13,6 +13,7 @@ import logging
 import os
 import time
 from datetime import datetime, UTC
+from zoneinfo import ZoneInfo
 
 from astral import LocationInfo
 from astral.sun import sun
@@ -40,6 +41,15 @@ REMOVE_CT_BUTTON_CAP = "button.remove_ct_capabilities"
 # one logger (inverter, battery, grid meter) must agree on them — see
 # apply_connection_settings.
 _CONNECTION_KEYS = ("host", "loggerSerial", "port", "slaveId", "model", "pollingInterval")
+
+# Daily counters of string/micro inverters. Their PV-powered logger is off all night
+# and the inverter only zeroes these when it wakes up, so until then they show
+# yesterday's totals — see _maybe_reset_daily.
+_DAILY_CAPS = (
+    "meter_power.today", "meter_power.today_load",
+    "meter_power.today_import", "meter_power.today_export",
+)
+_DAILY_HOLD_W = 5  # stale daily values are held at 0 until production exceeds this
 
 _BACKOFF_NIGHT   = 30 * 60   # 30 min — inverter expected offline at night
 _WARN_THRESHOLD  = 3          # consecutive failures before set_warning (~3 min at 60 s polling)
@@ -113,6 +123,8 @@ class DeyeDevice(Device):
     _had_fault: bool | None = None            # None = first poll, state not yet known
     _sun_cache: tuple | None = None   # (cache_date, sunrise_utc, sunset_utc)
     _was_night: bool = False          # last poll's night/day state, for transition logging
+    _daily_local_date = None          # Homey-local date the daily counters belong to
+    _daily_stale: bool = False        # after a midnight reset: inverter still reports yesterday's
     _last_heartbeat_at: float = 0.0   # monotonic time of the last routine "poll ok" log line
     _last_values: dict | None = None  # last successful poll — used by restore_capabilities
     _debug_off_task: asyncio.Task | None = None
@@ -715,7 +727,65 @@ class DeyeDevice(Device):
                 self.log("night offline (expected) — backing off 30 min")
         self._was_night = True
 
+    def _local_date(self):
+        """Homey's local calendar date, or None when its time zone is unavailable."""
+        try:
+            tz_name = self.homey.clock.get_timezone()
+            return datetime.now(ZoneInfo(tz_name)).date() if tz_name else None
+        except Exception:
+            return None
+
+    async def _maybe_reset_daily(self) -> None:
+        """"Reset daily energy at midnight" setting (string/micro inverters): zero the
+        daily counters at Homey-local midnight — not UTC — and hold them at 0 until
+        production starts, ignoring the inverter's (yesterday's) values meanwhile.
+        Runs on every poll, also while the logger is offline at night."""
+        if (self._is_battery or self._is_grid_meter
+                or self.get_setting("model") in HYBRID_MODELS):
+            return  # hybrids stay on all night and reset on their own clock
+        raw = self.get_setting("resetDailyMidnight")
+        # Devices paired before this setting existed return None: default on.
+        if raw is not None and not raw:
+            self._daily_stale = False
+            return
+        today = self._local_date()
+        if today is None or today == self._daily_local_date:
+            return
+        if self._daily_local_date is None:
+            # App start: the stored date covers a restart between midnight and dawn,
+            # which would otherwise let yesterday's values back in at wake-up.
+            stored = (self.get_store() or {}).get("dailyLocalDate")
+            self._daily_local_date = today
+            if stored in (None, today.isoformat()):
+                if stored is None:
+                    await self._store_daily_date(today)
+                return
+        self._daily_local_date = today
+        await self._store_daily_date(today)
+        self._daily_stale = True
+        for cap in _DAILY_CAPS:
+            if self.has_capability(cap):
+                await self._set(cap, 0)
+        self.log("daily energy reset at local midnight — waiting for production")
+
+    async def _store_daily_date(self, today) -> None:
+        try:
+            await self.set_store_value("dailyLocalDate", today.isoformat())
+        except Exception as e:
+            _LOGGER.warning(f"Store dailyLocalDate failed: {e}")
+
+    async def _write_daily_caps(self, values: dict) -> None:
+        for sensor_name, cap_id in self._sensor_cap_map.items():
+            if cap_id in _DAILY_CAPS and self.has_capability(cap_id):
+                value = values.get(sensor_name)
+                if value is not None:
+                    await self._set(cap_id, value)
+
     async def _on_values(self, values: dict | None, error: Exception | None = None) -> None:
+        try:
+            await self._maybe_reset_daily()
+        except Exception as e:
+            _LOGGER.debug(f"Daily reset check failed: {e}")
         # Compute sun_times once — shared by both night checks below.
         sun_times = self._get_sunrise_sunset()
 
@@ -765,6 +835,8 @@ class DeyeDevice(Device):
                 continue
             if not self.has_capability(cap_id):
                 continue
+            if self._daily_stale and cap_id in _DAILY_CAPS:
+                continue  # yesterday's value — written once production starts below
 
             if cap_id == "alarm_generic":
                 coerced = str(value).lower() in ("fault", "alarm", "warning")
@@ -934,6 +1006,16 @@ class DeyeDevice(Device):
             except Exception as e:
                 _LOGGER.debug(f"Derived PV power update failed: {e}")
 
+            # After a midnight reset the inverter keeps reporting yesterday's daily
+            # totals until it zeroes them itself, shortly after it wakes up (seen:
+            # 0 W with 45.5 kWh at 07:57, 0.0 kWh at 08:03 with 84 W).
+            if self._daily_stale and self._last_power_w > _DAILY_HOLD_W:
+                self._daily_stale = False
+                try:
+                    await self._write_daily_caps(values)
+                except Exception as e:
+                    _LOGGER.debug(f"Daily caps update failed: {e}")
+
             # ── Flow triggers ──────────────────────────────────────────────
             try:
                 await self._fire_flow_triggers(values)
@@ -959,7 +1041,8 @@ class DeyeDevice(Device):
                     self.log(f"poll ok | grid={float(grid):+.0f}W")
                 else:
                     solar = self._last_power_w or 0
-                    daily = values.get("Today Production") or values.get("Daily Production") or 0
+                    daily = 0 if self._daily_stale else (
+                        values.get("Today Production") or values.get("Daily Production") or 0)
                     self.log(f"poll ok | solar={solar:.0f}W daily={float(daily):.1f}kWh")
             except Exception as e:
                 _LOGGER.debug(f"Poll heartbeat log failed: {e}")

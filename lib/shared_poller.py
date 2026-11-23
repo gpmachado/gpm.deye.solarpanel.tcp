@@ -161,7 +161,10 @@ class SharedPoller:
                 self._client = self._build_client()
             values = await self._client.read_all()
         except Exception as e:
-            _LOGGER.warning(f"SharedPoller poll error serial={self.serial}: {e}")
+            # Debug, not warning: a PV-powered logger fails every poll all night, and
+            # lib/debug.py sends every warning to the ~100-line diagnostic report. The
+            # device logs the outcome itself ("night offline", "Connection failed").
+            _LOGGER.debug(f"SharedPoller poll error serial={self.serial}: {e}")
             self._client = None
             values = None
             error = e

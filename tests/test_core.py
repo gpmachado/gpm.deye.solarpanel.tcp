@@ -3,6 +3,8 @@ Core checks that run without a Homey: register parsing, capability mapping and
 the pairing capability plan. Run: python3 tests/test_core.py
 """
 
+import asyncio
+import datetime
 import json
 import os
 import sys
@@ -16,6 +18,9 @@ _app.__path__ = [REPO]
 sys.modules["app"] = _app
 for name, attrs in (("homey", {}), ("homey.driver", {"Driver": object}), ("homey.device", {"Device": object})):
     sys.modules[name] = types.SimpleNamespace(**attrs)
+# astral ships in python_packages/ only after a Homey build; the tests don't need it.
+for name, attrs in (("astral", {"LocationInfo": object}), ("astral.sun", {"sun": None})):
+    sys.modules.setdefault(name, types.SimpleNamespace(**attrs))
 
 from app.lib.parser import ParameterParser  # noqa: E402
 from app.lib.capability_map import get_sensor_capability_map  # noqa: E402
@@ -163,6 +168,56 @@ def test_pairing_plan():
     # Unwired PV3 (reads 0) is left out; without values nothing is filtered.
     assert "measure_power.pv3" not in plan_device_capabilities(
         "sofar_g3_hybrid", {"PV3 Power": 0, "PV1 Power": 100}, True)["inverter"]["caps"]
+
+
+def test_daily_counters_reset_at_local_midnight():
+    from app.drivers.deye.device import DeyeDevice
+
+    class FakeDevice(DeyeDevice):
+        def __init__(self, model, setting=None):
+            self.settings = {"model": model, "resetDailyMidnight": setting}
+            self.caps = {"meter_power.today": 45.5, "meter_power.today_load": 3.0,
+                         "meter_power": 72835.3}
+            self.date = datetime.date(2026, 11, 22)
+            self.store = {}
+        def get_store(self):
+            return self.store
+        async def set_store_value(self, key, value):
+            self.store[key] = value
+        def get_setting(self, key):
+            return self.settings.get(key)
+        def has_capability(self, cap):
+            return cap in self.caps
+        async def _set(self, cap, value):
+            self.caps[cap] = value
+        def log(self, *args):
+            pass
+        def _local_date(self):
+            return self.date
+
+    async def run(dev):
+        await dev._maybe_reset_daily()           # app start: only remembers the date
+        assert dev.caps["meter_power.today"] == 45.5 and not dev._daily_stale
+        await dev._maybe_reset_daily()           # same day: nothing
+        assert dev.caps["meter_power.today"] == 45.5
+        dev.date = datetime.date(2026, 11, 23)   # local midnight passed
+        await dev._maybe_reset_daily()
+
+    dev = FakeDevice("deye_string")
+    asyncio.run(run(dev))
+    assert dev.caps == {"meter_power.today": 0, "meter_power.today_load": 0, "meter_power": 72835.3}
+    assert dev._daily_stale
+    # Setting off, or a hybrid (resets on its own clock): untouched.
+    for dev in (FakeDevice("deye_string", setting=False), FakeDevice("deye_sg01hp3")):
+        asyncio.run(run(dev))
+        assert dev.caps["meter_power.today"] == 45.5 and not dev._daily_stale
+
+    # App restarted between midnight and dawn: the stored date still triggers the reset.
+    dev = FakeDevice("deye_string")
+    dev.store = {"dailyLocalDate": "2026-11-21"}
+    asyncio.run(dev._maybe_reset_daily())
+    assert dev.caps["meter_power.today"] == 0 and dev._daily_stale
+    assert dev.store["dailyLocalDate"] == "2026-11-22"
 
 
 if __name__ == "__main__":

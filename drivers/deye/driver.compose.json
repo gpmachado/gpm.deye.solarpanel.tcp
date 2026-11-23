@@ -295,6 +295,13 @@
           "max": 180
         },
         {
+          "id": "resetDailyMidnight",
+          "type": "checkbox",
+          "label": { "en": "Reset daily energy at midnight" },
+          "hint": { "en": "String/micro inverters only. The logger is off at night and the inverter only resets its daily counters when it wakes up, so until then they keep showing yesterday's totals. When checked, the daily values go to 0 at midnight (Homey's time zone) and stay 0 until the panels produce. Uncheck to always show the inverter's own values. Lifetime totals and Homey Energy are not affected. Hybrid inverters reset on their own and ignore this setting." },
+          "value": true
+        },
+        {
           "id": "showPvDetail",
           "type": "checkbox",
           "label": { "en": "Show PV string voltage/current detail" },
