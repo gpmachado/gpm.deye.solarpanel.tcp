@@ -17,7 +17,7 @@ the "Restore capabilities" maintenance action share `plan_device_capabilities()`
 | File | Role |
 |------|------|
 | `drivers/deye/driver.py` | Pairing wizard, UDP discovery, model auto-detection, repair flow |
-| `drivers/deye/device.py` | Device lifecycle, polling loop, night backoff, capability updates |
+| `drivers/deye/device.py` | Device lifecycle, polling loop, night mode, daily midnight reset, capability updates |
 | `drivers/deye/pair/login.html` | Pairing UI: auto-scan → tile preview → error/manual fallback |
 | `drivers/deye/repair/repair_device.html` | Repair UI: re-detect, change model, change IP |
 | `drivers/deye/driver.compose.json` | Driver manifest, settings, pair/repair arrays |
@@ -73,7 +73,7 @@ with explicit comment `// (raw - 1000) * 0.1`. Do NOT remove these offsets.
 ### Polling
 
 - Default: every 60 seconds (configurable 35–3600 s)
-- Night backoff: reduced polling rate during solar night
+- Night mode: string/micro loggers are expected offline (no warnings, tiles zeroed once); the poller keeps its normal interval
 - Night detection: `astral` library using Homey geolocation + timezone
 
 ### Settings (driver.compose.json)

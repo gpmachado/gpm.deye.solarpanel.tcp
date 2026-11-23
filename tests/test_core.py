@@ -170,16 +170,19 @@ def test_pairing_plan():
         "sofar_g3_hybrid", {"PV3 Power": 0, "PV1 Power": 100}, True)["inverter"]["caps"]
 
 
-def test_daily_counters_reset_at_local_midnight():
-    from app.drivers.deye.device import DeyeDevice
+def _fake_deye_device(model="deye_string", setting=None, store=None):
+    from app.drivers.deye import device as device_mod
 
-    class FakeDevice(DeyeDevice):
-        def __init__(self, model, setting=None):
+    class FakeDevice(device_mod.DeyeDevice):
+        def __init__(self):
             self.settings = {"model": model, "resetDailyMidnight": setting}
             self.caps = {"meter_power.today": 45.5, "meter_power.today_load": 3.0,
                          "meter_power": 72835.3}
-            self.date = datetime.date(2026, 11, 22)
-            self.store = {}
+            self.store = dict(store or {})
+            self.homey = types.SimpleNamespace(
+                clock=types.SimpleNamespace(get_timezone=lambda: "America/Sao_Paulo"))
+            self._sensor_cap_map = {"Today Production": "meter_power.today",
+                                    "Today Load Consumption": "meter_power.today_load"}
         def get_store(self):
             return self.store
         async def set_store_value(self, key, value):
@@ -192,32 +195,67 @@ def test_daily_counters_reset_at_local_midnight():
             self.caps[cap] = value
         def log(self, *args):
             pass
-        def _local_date(self):
-            return self.date
+    return FakeDevice()
 
-    async def run(dev):
-        await dev._maybe_reset_daily()           # app start: only remembers the date
+
+def _at(utc: str):
+    """Freeze the device module's clock at a UTC instant (São Paulo is UTC-3)."""
+    from app.drivers.deye import device as device_mod
+    instant = datetime.datetime.fromisoformat(utc).replace(tzinfo=datetime.UTC)
+
+    class Frozen(datetime.datetime):
+        @classmethod
+        def now(cls, tz=None):
+            return instant.astimezone(tz) if tz else instant
+    device_mod.datetime = Frozen
+
+
+def test_daily_counters_reset_at_local_midnight():
+    from app.drivers.deye import device as device_mod
+    real_datetime = device_mod.datetime
+    try:
+        dev = _fake_deye_device()
+        _at("2026-11-23T02:30")                  # 23:30 local on the 22nd
+        asyncio.run(dev._maybe_reset_daily())   # first run: only remembers the date
+        assert dev.caps["meter_power.today"] == 45.5 and dev.store["dailyLocalDate"] == "2026-11-22"
+        _at("2026-11-23T02:59")                  # 00:00 UTC passed, still the 22nd locally
+        asyncio.run(dev._maybe_reset_daily())
         assert dev.caps["meter_power.today"] == 45.5 and not dev._daily_stale
-        await dev._maybe_reset_daily()           # same day: nothing
-        assert dev.caps["meter_power.today"] == 45.5
-        dev.date = datetime.date(2026, 11, 23)   # local midnight passed
-        await dev._maybe_reset_daily()
+        _at("2026-11-23T03:01")                  # 00:01 local: reset
+        asyncio.run(dev._maybe_reset_daily())
+        assert dev.caps == {"meter_power.today": 0, "meter_power.today_load": 0,
+                            "meter_power": 72835.3}
+        assert dev.store == {"dailyLocalDate": "2026-11-23", "dailyStale": True}
 
-    dev = FakeDevice("deye_string")
-    asyncio.run(run(dev))
-    assert dev.caps == {"meter_power.today": 0, "meter_power.today_load": 0, "meter_power": 72835.3}
-    assert dev._daily_stale
-    # Setting off, or a hybrid (resets on its own clock): untouched.
-    for dev in (FakeDevice("deye_string", setting=False), FakeDevice("deye_sg01hp3")):
-        asyncio.run(run(dev))
-        assert dev.caps["meter_power.today"] == 45.5 and not dev._daily_stale
+        # App restart at 03:00, after the reset: the hold survives.
+        dev = _fake_deye_device(store=dev.store)
+        dev.caps["meter_power.today"] = 0
+        _at("2026-11-23T06:00")
+        asyncio.run(dev._maybe_reset_daily())
+        assert dev._daily_stale
+        # 07:57 wake-up with yesterday's 45.5 kWh at 0 W: still held.
+        values = {"Today Production": 45.5, "Today Load Consumption": 3.0}
+        dev._last_power_w = 0.0
+        asyncio.run(dev._release_daily_hold(values))
+        assert dev._daily_stale and dev.caps["meter_power.today"] == 0
+        # 08:03 producing 84 W, inverter zeroed its counter: released and written.
+        dev._last_power_w = 84.0
+        asyncio.run(dev._release_daily_hold({"Today Production": 0.0, "Today Load Consumption": 0.0}))
+        assert not dev._daily_stale and dev.store["dailyStale"] is False
+        assert dev.caps["meter_power.today"] == 0.0
 
-    # App restarted between midnight and dawn: the stored date still triggers the reset.
-    dev = FakeDevice("deye_string")
-    dev.store = {"dailyLocalDate": "2026-11-21"}
-    asyncio.run(dev._maybe_reset_daily())
-    assert dev.caps["meter_power.today"] == 0 and dev._daily_stale
-    assert dev.store["dailyLocalDate"] == "2026-11-22"
+        # App restart before dawn with yesterday's date stored: the reset still happens.
+        dev = _fake_deye_device(store={"dailyLocalDate": "2026-11-22", "dailyStale": False})
+        asyncio.run(dev._maybe_reset_daily())
+        assert dev.caps["meter_power.today"] == 0 and dev._daily_stale
+
+        # Setting off, or a hybrid (resets on its own clock): untouched.
+        for dev in (_fake_deye_device(setting=False, store={"dailyLocalDate": "2026-11-22"}),
+                    _fake_deye_device("deye_sg01hp3", store={"dailyLocalDate": "2026-11-22"})):
+            asyncio.run(dev._maybe_reset_daily())
+            assert dev.caps["meter_power.today"] == 45.5 and not dev._daily_stale
+    finally:
+        device_mod.datetime = real_datetime
 
 
 if __name__ == "__main__":

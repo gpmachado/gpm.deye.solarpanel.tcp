@@ -62,7 +62,7 @@ lib/
 drivers/
   deye/
     driver.py                   Pairing flow: UDP discovery, model auto-detection
-    device.py                   Polling loop, night backoff (astral), capability updates
+    device.py                   Polling loop, night mode (astral), daily reset, capability updates
 inverter_definitions/
   deye_string.json              Register map for string inverter (2/4 MPPT)
   deye_micro.json               Register map for microinverter
