@@ -20,7 +20,7 @@ The existing Deye app for Homey ([com.heszi.deye](https://github.com/heszegi/com
 | `deye_micro_2mppt` | SUN600G3 / SUN800G3 / SUN1000G3 microinverter (2 MPPT) | Microinverter | ⚠️ Untested |
 | `deye_hybrid` | SUN-xK-SG0xLP1 / SG0xHP (single-phase hybrid) | Hybrid + Battery | ✅ Tested (Sun-5k-SG01HP3-EU-AM2) |
 | `deye_sg04lp3` | SUN-8/10/12K-SG04LP3-EU (3-phase hybrid) | 3-phase Hybrid | ⚠️ Untested |
-| `deye_sg01hp3` | SUN-5…25K-SG01HP3-EU-AM2 (3-phase hybrid, high-voltage battery) | 3-phase Hybrid HV | 🧪 Beta — chosen by hand at pairing, not auto-detected. Same registers as SG04LP3; PV/battery power ×10 and battery voltage ×0.1 (davidrapan/ha-solarman `deye_p3.yaml`). Not yet validated on hardware |
+| `deye_sg01hp3` | SUN-5…25K-SG01HP3-EU-AM2 (3-phase hybrid, high-voltage battery) | 3-phase Hybrid HV | ✅ Tested (SUN-20K-SG01HP3-EU-AM2) — auto-detected from register 0x0000 (device type 6/7/8). Same registers as SG04LP3; PV/battery power ×10 and battery voltage ×0.1 (davidrapan/ha-solarman `deye_p3.yaml`) |
 | `sofar_g3_hybrid` | SOFAR ESI-T1 / HYD 5-20KTL-3PH (G3 protocol, LSW3 logger) | 3-phase Hybrid | 🧪 Beta — separate **SOFAR Inverter** driver, no auto-detection (verified on an ESI-12K-T1) |
 
 Register definitions are adapted from [home_assistant_solarman](https://github.com/StephanJoubert/home_assistant_solarman) (Apache-2.0). The SOFAR G3 map also follows SOFARSOLAR's Modbus-G3 protocol V1.42.
@@ -68,7 +68,7 @@ inverter_definitions/
   deye_micro.json               Register map for microinverter
   deye_hybrid.json              Register map for single-phase hybrid
   deye_sg04lp3.json             Register map for 3-phase hybrid SG04LP3
-  deye_sg01hp3.json             Register map for 3-phase HV hybrid SG01HP3 (beta)
+  deye_sg01hp3.json             Register map for 3-phase HV hybrid SG01HP3
   sofar_g3_hybrid.json          Register map for SOFAR G3 3-phase hybrid (ESI-T1 / HYD-3PH)
 ```
 

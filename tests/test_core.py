@@ -19,7 +19,9 @@ for name, attrs in (("homey", {}), ("homey.driver", {"Driver": object}), ("homey
 
 from app.lib.parser import ParameterParser  # noqa: E402
 from app.lib.capability_map import get_sensor_capability_map  # noqa: E402
-from app.drivers.deye.driver import DEYE_MODELS, SOFAR_MODELS, plan_device_capabilities  # noqa: E402
+from app.drivers.deye.driver import (  # noqa: E402
+    DEYE_MODELS, SOFAR_MODELS, _model_from_device_type, plan_device_capabilities,
+)
 
 
 def load_definition(model: str) -> dict:
@@ -87,6 +89,15 @@ def test_hv_profile_differs_from_lv_only_in_hv_scales():
                 for g in load_definition(model)["parameters"] for s in g["items"]}
     assert items("deye_sg04lp3") == items("deye_sg01hp3")
     assert load_definition("deye_sg04lp3")["requests"] == load_definition("deye_sg01hp3")["requests"]
+
+
+def test_device_type_register_picks_hv():
+    # 0x0000 = 6 on a SUN-20K-SG01HP3 (forum #36); 2 on a string inverter.
+    for hv in (0x0006, 0x0007, 0x0008, 0x0600, 0x0601):
+        assert _model_from_device_type(hv) == "deye_sg01hp3", hv
+    # Every other family (and an unreadable register) keeps the score method.
+    for other in (None, 0, 0x0002, 0x0003, 0x0004, 0x0005, 0x0500):
+        assert _model_from_device_type(other) is None, other
 
 
 def test_debug_logging_is_scoped_per_logger():

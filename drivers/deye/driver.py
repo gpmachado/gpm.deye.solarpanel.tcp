@@ -34,14 +34,23 @@ DEYE_MODELS: dict[str, str] = {
     "deye_string":      "Deye String Inverter (2/4 MPPT)",
     "deye_hybrid":      "Deye Hybrid (Battery + 2 MPPT)",
     "deye_sg04lp3":     "Deye SG04LP3 Hybrid 3-phase — SUN-8/10/12K",
-    "deye_sg01hp3":     "Deye SG01HP3 Hybrid 3-phase HV (beta) — SUN-5…25K-SG01HP3",
+    "deye_sg01hp3":     "Deye SG01HP3 Hybrid 3-phase HV — SUN-5…25K-SG01HP3",
 }
 
-# Never probed by _detect_model(), only chosen by hand at pairing. deye_sg01hp3
-# (HV battery) reads the same registers as deye_sg04lp3 with a different scale on
-# PV/battery power and battery voltage, so a probe can't tell them apart — and it
-# isn't validated on hardware yet. Register 0x0000 (TODO.md) will auto-pick it later.
-_MANUAL_ONLY_MODELS: frozenset[str] = frozenset({"deye_sg01hp3"})
+# Never scored by _detect_model(): deye_sg01hp3 (HV battery) reads the same registers
+# as deye_sg04lp3 with a different scale on PV/battery power and battery voltage, so
+# the scores can't tell them apart. It is picked from register 0x0000 instead.
+_UNSCORED_MODELS: frozenset[str] = frozenset({"deye_sg01hp3"})
+
+# Register 0x0000 "Device" type codes (davidrapan/ha-solarman deye_p3.yaml) of the
+# HV 3-phase family. 6 confirmed on a SUN-20K-SG01HP3 (forum #36). Only these codes
+# decide the model so far — the other families keep the score method.
+_HV_DEVICE_TYPES: frozenset[int] = frozenset({0x0006, 0x0007, 0x0008, 0x0600, 0x0601})
+
+
+def _model_from_device_type(device_type: int | None) -> str | None:
+    """Model that register 0x0000 settles on its own, or None to fall back to scoring."""
+    return "deye_sg01hp3" if device_type in _HV_DEVICE_TYPES else None
 
 # SOFAR models live in their own driver (drivers/sofar/) and are never probed by
 # _detect_model(): SOFAR G3 uses a completely different register map (0x0404+),
@@ -332,10 +341,23 @@ async def _probe_model(host: str, serial: int, port: int, model_id: str) -> tupl
     return values, _score_model_values(model_id, values)
 
 
+async def _read_device_type(host: str, serial: int, port: int) -> int:
+    """Register 0x0000 — inverter family (string, hybrid, LV/HV 3-phase…)."""
+    from app.lib.v5_transport import V5Transport
+
+    m = V5Transport(host, serial, port=port, slave=1, timeout=5.0)
+    await m.connect()
+    try:
+        return (await m.read_holding_registers(register_addr=0, quantity=1))[0]
+    finally:
+        await m.disconnect()
+
+
 async def _detect_model(host: str, serial: int, port: int = 8899) -> tuple[str, dict, int]:
     """
-    Auto-detect the inverter model by reading all register sets and scoring each.
-    Uses domain-specific scoring via _score_model_values() — see its docstring.
+    Auto-detect the inverter model. Register 0x0000 (device type) settles the HV 3-phase
+    family on its own; otherwise every register set is read and scored via
+    _score_model_values() — see its docstring.
     Returns (model_id, parsed_values, best_score) for the winner (falls back to 'deye_string').
     A score of 0 means no live data was found (night-time / logger offline).
 
@@ -343,6 +365,27 @@ async def _detect_model(host: str, serial: int, port: int = 8899) -> tuple[str, 
     register groups (e.g. deye_sg04lp3 has 7 requests × 5 s timeout each) cannot block
     the pairing wizard for minutes.
     """
+    try:
+        device_type = await asyncio.wait_for(_read_device_type(host, serial, port), timeout=10.0)
+    except Exception as e:
+        device_type = None
+        _LOGGER.debug(f"Device type read failed: {e}")
+    _LOGGER.info(f"Device type (0x0000): {device_type}")
+    await asyncio.sleep(1.5)  # let logger fully close the TCP slot before the next read
+    typed_model = _model_from_device_type(device_type)
+    if typed_model:
+        # The type register is authoritative; the probe only gathers values (for the
+        # PV3/PV4 filter) and may score 0 at night — still a confident detection.
+        try:
+            values, score = await asyncio.wait_for(
+                _probe_model(host, serial, port, typed_model), timeout=15.0
+            )
+        except Exception as e:
+            _LOGGER.debug(f"Model probe {typed_model} failed: {e}")
+            values, score = {}, 0
+        _LOGGER.info(f"Detected model: {typed_model} from device type {device_type} (score={score})")
+        return typed_model, values, max(score, 1)
+
     best_model  = "deye_string"
     # Start at 0: a model must have at least one non-zero sensor value to override
     # the default. Prevents night-time probes (all zeros) from picking the wrong model.
@@ -350,7 +393,7 @@ async def _detect_model(host: str, serial: int, port: int = 8899) -> tuple[str, 
     best_values: dict = {}
 
     for model_id in DEYE_MODELS:
-        if model_id in _MANUAL_ONLY_MODELS:
+        if model_id in _UNSCORED_MODELS:
             continue
         try:
             values, score = await asyncio.wait_for(

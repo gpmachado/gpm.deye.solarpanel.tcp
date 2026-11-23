@@ -750,11 +750,11 @@
           "lookup": [
             {
               "key": 0,
-              "value": "Ograniczenie wy\u0142\u0105czone"
+              "value": "Limit disabled"
             },
             {
               "key": 1,
-              "value": "Ograniczenie aktywne"
+              "value": "Limit active"
             }
           ]
         },

@@ -31,7 +31,7 @@ MODELS = {
     "deye_micro": "Microinverter (4 MPPT) - SUN-M/SUN2000G3",
     "deye_micro_2mppt": "Microinverter (2 MPPT) - SUN600G3/SUN800G3/SUN1000G3",
     "deye_sg04lp3": "Hybrid 3-phase - SG04LP3",
-    "deye_sg01hp3": "Hybrid 3-phase HV (beta) - SG01HP3",
+    "deye_sg01hp3": "Hybrid 3-phase HV - SG01HP3",
 }
 
 DISCOVERY_PAYLOADS = (b"WIFIKIT-214028-READ", b"HF-A11ASSISTHREAD")
@@ -617,12 +617,17 @@ async def probe_model(host: str, serial: int, model_id: str, log: Tee | None = N
     return definition, all_regs, results
 
 
+# 3-phase hybrids (deye_p3.yaml) keep rated power / MPPTs+phases 4 registers later
+# than string/single-phase/micro (0x0010-0x0012).
+P3_DEVICE_TYPES = frozenset({0x0005, 0x0500, 0x0006, 0x0007, 0x0008, 0x0600, 0x0601})
+
+
 async def read_device_info(host: str, serial: int, log: Tee) -> dict:
-    """Registers 0x0000-0x0012: device type, protocol, rated power, MPPTs, phases.
+    """Registers 0x0000-0x0016: device type, protocol, rated power, MPPTs, phases.
     Constant values — readable at night (if the logger is powered) and without sun."""
-    log.write(" Device info (registers 0x0000-0x0012)")
+    log.write(" Device info (registers 0x0000-0x0016)")
     try:
-        r = await read_block(host, serial, 3, 0x0000, 0x0012, log)
+        r = await read_block(host, serial, 3, 0x0000, 0x0016, log)
     except Exception as exc:
         log.write(f"  not readable: {type(exc).__name__}: {exc}")
         log.write("")
@@ -631,12 +636,13 @@ async def read_device_info(host: str, serial: int, log: Tee) -> dict:
     if model == "deye_micro" and (r[0x12] & 0x0F00) >> 8 == 2:
         model = "deye_micro_2mppt"
     sn = "".join(chr(b) for w in r[3:8] for b in (w >> 8, w & 0xFF) if 32 < b < 127)
+    base = 0x0014 if r[0] in P3_DEVICE_TYPES else 0x0010
     info = {
         "type": r[0], "type_desc": desc, "model": model,
         "protocol": f"{r[2] >> 8}.{r[2] & 0xFF}",
-        "rated_w": ((r[0x11] << 16) | r[0x10]) / 10,
-        "mppts": (r[0x12] & 0x0F00) >> 8,
-        "phases": r[0x12] & 0x000F,
+        "rated_w": ((r[base + 1] << 16) | r[base]) / 10,
+        "mppts": (r[base + 2] & 0x0F00) >> 8,
+        "phases": r[base + 2] & 0x000F,
     }
     log.write(f"  0x0000 device type  : {r[0]} (0x{r[0]:04X}) = {desc}")
     log.write(f"  suggested profile   : {model or 'none yet in the app'}")
@@ -647,7 +653,6 @@ async def read_device_info(host: str, serial: int, log: Tee) -> dict:
     log.write(f"  inverter serial     : {mask_serial(sn)}")
     if r[0] in (0x0006, 0x0007, 0x0008, 0x0600, 0x0601):
         log.write("  NOTE: HV battery models scale PV/battery power x10 and battery voltage x0.1.")
-        log.write("        The app's deye_sg01hp3 profile is still beta — please report this scan.")
     log.write("")
     return info
 
