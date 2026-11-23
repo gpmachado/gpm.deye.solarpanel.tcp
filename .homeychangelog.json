@@ -124,5 +124,8 @@
   },
   "1.4.18": {
     "en": "Deye SG01HP3 high-voltage 3-phase hybrids are now detected automatically at pairing and the profile is no longer beta, confirmed on a SUN-20K-SG01HP3 against the inverter display. Fixed Polish text in the export limit status of 3-phase hybrids."
+  },
+  "1.4.19": {
+    "en": "String and micro inverters: daily energy values now go to 0 at midnight in Homey's time zone instead of showing yesterday's totals until the inverter wakes up, and stay 0 until production starts. Works across app restarts. New setting Reset daily energy at midnight (Advanced, on by default). Diagnostic reports are no longer filled with repeated connection warnings while the logger is off at night."
   }
 }
