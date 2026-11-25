@@ -170,7 +170,7 @@ def test_pairing_plan():
         "sofar_g3_hybrid", {"PV3 Power": 0, "PV1 Power": 100}, True)["inverter"]["caps"]
 
 
-def _fake_deye_device(model="deye_string", setting=None, store=None):
+def _fake_deye_device(model="deye_string", setting=None, store=None, homey_tz="UTC"):
     from app.drivers.deye import device as device_mod
 
     class FakeDevice(device_mod.DeyeDevice):
@@ -179,8 +179,10 @@ def _fake_deye_device(model="deye_string", setting=None, store=None):
             self.caps = {"meter_power.today": 45.5, "meter_power.today_load": 3.0,
                          "meter_power": 72835.3}
             self.store = dict(store or {})
+            # homey 0.0.11 reports "UTC" whatever the Homey is set to (lib/local_time.py)
             self.homey = types.SimpleNamespace(
-                clock=types.SimpleNamespace(get_timezone=lambda: "America/Sao_Paulo"))
+                clock=types.SimpleNamespace(get_timezone=lambda: homey_tz),
+                geolocation=types.SimpleNamespace(get_longitude=lambda: -42.6984))
             self._sensor_cap_map = {"Today Production": "meter_power.today",
                                     "Today Load Consumption": "meter_power.today_load"}
         def get_store(self):
@@ -194,25 +196,54 @@ def _fake_deye_device(model="deye_string", setting=None, store=None):
         async def _set(self, cap, value):
             self.caps[cap] = value
         def log(self, *args):
-            pass
-    return FakeDevice()
+            self.logs.append(" ".join(map(str, args)))
+    dev = FakeDevice()
+    dev.logs = []
+    return dev
 
 
 def _at(utc: str):
-    """Freeze the device module's clock at a UTC instant (São Paulo is UTC-3)."""
-    from app.drivers.deye import device as device_mod
+    """Freeze lib/local_time.py's clock at a UTC instant (São Paulo is UTC-3)."""
+    from app.lib import local_time
     instant = datetime.datetime.fromisoformat(utc).replace(tzinfo=datetime.UTC)
 
     class Frozen(datetime.datetime):
         @classmethod
         def now(cls, tz=None):
             return instant.astimezone(tz) if tz else instant
-    device_mod.datetime = Frozen
+    local_time.datetime = Frozen
+
+
+def test_local_time_sources():
+    from app.lib.local_time import local_date, resolve_tz
+    now = datetime.datetime(2026, 11, 24, 0, 1, tzinfo=datetime.UTC)  # field log: 21:01 local
+    tz, how = resolve_tz("America/Sao_Paulo", None, -42.7)
+    assert local_date(tz, now) == "2026-11-23" and how == "Homey time zone America/Sao_Paulo"
+    # The SDK default: a stored zone wins, else the longitude (-42.7 / 15 -> UTC-3).
+    tz, how = resolve_tz("UTC", "America/Sao_Paulo", -42.7)
+    assert local_date(tz, now) == "2026-11-23" and how.startswith("stored")
+    tz, how = resolve_tz("UTC", None, -42.7)
+    assert local_date(tz, now) == "2026-11-23" and how.startswith("UTC-3 from longitude")
+    # Near Greenwich (or no location / a bad name) "UTC" is taken as is.
+    for args in (("UTC", None, 4.9), ("UTC", None, None), ("Not/AZone", "Etc/GMT", None)):
+        assert resolve_tz(*args)[1].startswith("UTC (Homey reports")
+    assert resolve_tz(None, None, 139.7)[1].startswith("UTC+9")
+
+
+def test_homey_time_zone_is_remembered():
+    dev = _fake_deye_device(homey_tz="America/Sao_Paulo")
+    asyncio.run(dev._local_date())
+    assert dev.store["homeyTimezone"] == "America/Sao_Paulo"
+    assert dev.logs == ["daily reset uses Homey time zone America/Sao_Paulo"]
+    # After a restart the SDK says "UTC" again: the stored zone is used.
+    dev = _fake_deye_device(store=dev.store)
+    asyncio.run(dev._local_date())
+    assert dev.logs == ["daily reset uses stored time zone America/Sao_Paulo (Homey reports UTC)"]
 
 
 def test_daily_counters_reset_at_local_midnight():
-    from app.drivers.deye import device as device_mod
-    real_datetime = device_mod.datetime
+    from app.lib import local_time
+    real_datetime = local_time.datetime
     try:
         dev = _fake_deye_device()
         _at("2026-11-23T02:30")                  # 23:30 local on the 22nd
@@ -255,7 +286,7 @@ def test_daily_counters_reset_at_local_midnight():
             asyncio.run(dev._maybe_reset_daily())
             assert dev.caps["meter_power.today"] == 45.5 and not dev._daily_stale
     finally:
-        device_mod.datetime = real_datetime
+        local_time.datetime = real_datetime
 
 
 if __name__ == "__main__":

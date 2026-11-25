@@ -15,7 +15,6 @@ import logging
 import os
 import time
 from datetime import datetime, UTC
-from zoneinfo import ZoneInfo
 
 from astral import LocationInfo
 from astral.sun import sun
@@ -31,6 +30,7 @@ from app.drivers.deye.driver import _DERIVED_PV_POWER_MODELS, HYBRID_MODELS, STR
 from app.lib import shared_poller as _poller_mod
 from app.lib.fault_codes import decode_alert as _decode_alert
 from app.lib import debug
+from app.lib.local_time import local_date, real_tz_name, resolve_tz
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -126,6 +126,7 @@ class DeyeDevice(Device):
     _daily_date: str | None = None    # Homey-local ISO date the daily counters belong to
     _daily_stale: bool = False        # after a midnight reset: inverter still reports yesterday's
     _tz_error_logged: bool = False
+    _tz_source: str | None = None     # how the local date was last worked out (logged on change)
     _last_heartbeat_at: float = 0.0   # monotonic time of the last routine "poll ok" log line
     _last_values: dict | None = None  # last successful poll — used by restore_capabilities
     _debug_off_task: asyncio.Task | None = None
@@ -729,15 +730,33 @@ class DeyeDevice(Device):
                 self.log("night offline (expected)")
         self._was_night = True
 
-    def _local_date(self) -> str | None:
-        """Homey's local calendar date (ISO), or None when its time zone is unavailable."""
+    async def _local_date(self) -> str | None:
+        """Homey-local calendar date (ISO) — see lib/local_time.py for why the SDK's
+        time zone can't be trusted alone. None when it can't be worked out."""
         try:
-            tz_name = self.homey.clock.get_timezone()
-            return datetime.now(ZoneInfo(tz_name)).date().isoformat() if tz_name else None
+            homey_tz = self.homey.clock.get_timezone()
+            learned = (self.get_store() or {}).get("homeyTimezone")
+            if real_tz_name(homey_tz) and homey_tz != learned:
+                await self.set_store_value("homeyTimezone", homey_tz)
+            tz, how = resolve_tz(homey_tz, learned, self._longitude())
+            if how != self._tz_source:
+                self._tz_source = how
+                self.log(f"daily reset uses {how}")
+            return local_date(tz)
         except Exception as e:
             if not self._tz_error_logged:  # once — otherwise the reset silently never happens
                 self._tz_error_logged = True
-                self.log(f"daily reset unavailable — Homey time zone not readable: {e}")
+                self.log(f"daily reset unavailable — local date not available: {e}")
+            return None
+
+    def _longitude(self) -> float | None:
+        """Same source as the sun times: the manual setting, else Homey's location."""
+        lng = self._get_float_setting("solar_longitude")
+        if lng:
+            return lng
+        try:
+            return self.homey.geolocation.get_longitude()
+        except Exception:
             return None
 
     async def _maybe_reset_daily(self) -> None:
@@ -754,7 +773,7 @@ class DeyeDevice(Device):
             if self._daily_stale:
                 await self._set_daily_stale(False)
             return
-        today = self._local_date()
+        today = await self._local_date()
         if today is None:
             return
         if self._daily_date is None:  # app start: resume from the store
@@ -772,7 +791,7 @@ class DeyeDevice(Device):
         for cap in _DAILY_CAPS:
             if self.has_capability(cap):
                 await self._set(cap, 0)
-        self.log("daily energy reset at local midnight — waiting for production")
+        self.log(f"daily energy reset at local midnight ({self._tz_source}) — waiting for production")
 
     async def _set_daily_stale(self, stale: bool) -> None:
         self._daily_stale = stale
