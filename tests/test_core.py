@@ -224,6 +224,10 @@ def test_local_time_sources():
     assert local_date(tz, now) == "2026-11-23" and how.startswith("stored")
     tz, how = resolve_tz("UTC", None, -42.7)
     assert local_date(tz, now) == "2026-11-23" and how.startswith("UTC-3 from longitude")
+    # A stored zone far from the longitude is from before the Homey moved; Spain's
+    # political +1/+2 near Greenwich is kept.
+    assert resolve_tz("UTC", "Asia/Tokyo", -42.7)[1].startswith("UTC-3 from longitude")
+    assert resolve_tz("UTC", "Europe/Madrid", -3.7)[1].startswith("stored")
     # Near Greenwich (or no location / a bad name) "UTC" is taken as is.
     for args in (("UTC", None, 4.9), ("UTC", None, None), ("Not/AZone", "Etc/GMT", None)):
         assert resolve_tz(*args)[1].startswith("UTC (Homey reports")
@@ -239,6 +243,12 @@ def test_homey_time_zone_is_remembered():
     dev = _fake_deye_device(store=dev.store)
     asyncio.run(dev._local_date())
     assert dev.logs == ["daily reset uses stored time zone America/Sao_Paulo (Homey reports UTC)"]
+    # A failing store write doesn't cost the date.
+    dev = _fake_deye_device(homey_tz="America/Sao_Paulo")
+    async def broken(key, value):
+        raise RuntimeError("store busy")
+    dev.set_store_value = broken
+    assert asyncio.run(dev._local_date()) is not None
 
 
 def test_daily_counters_reset_at_local_midnight():
@@ -257,6 +267,10 @@ def test_daily_counters_reset_at_local_midnight():
         assert dev.caps == {"meter_power.today": 0, "meter_power.today_load": 0,
                             "meter_power": 72835.3}
         assert dev.store == {"dailyLocalDate": "2026-11-23", "dailyStale": True}
+        # No longitude setting: Homey's location is used, and the log names the source.
+        assert dev._longitude() == -42.6984
+        assert dev.logs[-1] == ("daily energy reset at local midnight, UTC-3 from longitude "
+                                "-42.7 (Homey reports UTC) — waiting for production")
 
         # App restart at 03:00, after the reset: the hold survives.
         dev = _fake_deye_device(store=dev.store)

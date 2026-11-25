@@ -737,7 +737,10 @@ class DeyeDevice(Device):
             homey_tz = self.homey.clock.get_timezone()
             learned = (self.get_store() or {}).get("homeyTimezone")
             if real_tz_name(homey_tz) and homey_tz != learned:
-                await self.set_store_value("homeyTimezone", homey_tz)
+                try:  # only a hint for later starts — today's date doesn't depend on it
+                    await self.set_store_value("homeyTimezone", homey_tz)
+                except Exception:
+                    pass
             tz, how = resolve_tz(homey_tz, learned, self._longitude())
             if how != self._tz_source:
                 self._tz_source = how
@@ -791,7 +794,7 @@ class DeyeDevice(Device):
         for cap in _DAILY_CAPS:
             if self.has_capability(cap):
                 await self._set(cap, 0)
-        self.log(f"daily energy reset at local midnight ({self._tz_source}) — waiting for production")
+        self.log(f"daily energy reset at local midnight, {self._tz_source} — waiting for production")
 
     async def _set_daily_stale(self, stale: bool) -> None:
         self._daily_stale = stale
