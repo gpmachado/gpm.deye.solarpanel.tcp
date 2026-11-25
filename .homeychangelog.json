@@ -127,5 +127,8 @@
   },
   "1.4.19": {
     "en": "String and micro inverters: daily energy values now go to 0 at midnight in Homey's time zone instead of showing yesterday's totals until the inverter wakes up, and stay 0 until production starts. Works across app restarts. New setting Reset daily energy at midnight (Advanced, on by default). Diagnostic reports are no longer filled with repeated connection warnings while the logger is off at night."
+  },
+  "1.4.20": {
+    "en": "Daily Energy now resets at local midnight. Homey reports UTC to apps, so the app works out the time zone from your location."
   }
 }
